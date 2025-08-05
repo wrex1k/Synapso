@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>appWidget</class>
+ <widget class="QWidget" name="appWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>914</width>
+    <height>864</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">font-family: &quot;General Sans&quot;;
+font-weight: 500;</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_5">
+   <item>
+    <layout class="QVBoxLayout" name="navbar_sidebar_content" stretch="0,1">
+     <item>
+      <widget class="QWidget" name="navbar" native="true">
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <property name="leftMargin">
+         <number>20</number>
+        </property>
+        <property name="topMargin">
+         <number>10</number>
+        </property>
+        <property name="rightMargin">
+         <number>10</number>
+        </property>
+        <property name="bottomMargin">
+         <number>10</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="title_2">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">font: 27pt;
+color: #3EAC91;
+font-weight: 500;</string>
+          </property>
+          <property name="text">
+           <string>Synapso</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QFrame" name="LPI">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QFrame#LPI {
+	background-color: #213D3B;
+	border: none;
+	border-radius: 21px;
+}</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::Shape::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Shadow::Raised</enum>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <property name="spacing">
+            <number>20</number>
+           </property>
+           <property name="leftMargin">
+            <number>20</number>
+           </property>
+           <property name="rightMargin">
+            <number>20</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="lpi_title">
+             <property name="text">
+              <string>LPI</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="number">
+             <property name="text">
+              <string>1458</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QWidget" name="notifications" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QWidget#notifications {
+	background-color: #213D3B;
+	border-radius: 21px;
+}</string>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QLabel" name="notifications_image">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>24</width>
+               <height>24</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true"/>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="pixmap">
+              <pixmap>:/images/icons/bell.png</pixmap>
+             </property>
+             <property name="scaledContents">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QFrame" name="profile_frame">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QFrame#profile_frame {
+	background-color: #213D3B;
+	border-radius: 21px;
+}</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::Shape::NoFrame</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Shadow::Raised</enum>
+          </property>
+          <property name="lineWidth">
+           <number>1</number>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <property name="spacing">
+            <number>20</number>
+           </property>
+           <property name="leftMargin">
+            <number>10</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>10</number>
+           </property>
+           <property name="bottomMargin">
+            <number>2</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="image">
+             <property name="minimumSize">
+              <size>
+               <width>40</width>
+               <height>40</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>40</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true"/>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::Shape::NoFrame</enum>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="textFormat">
+              <enum>Qt::TextFormat::AutoText</enum>
+             </property>
+             <property name="pixmap">
+              <pixmap>:/images/graphics/default.png</pixmap>
+             </property>
+             <property name="scaledContents">
+              <bool>true</bool>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignCenter</set>
+             </property>
+             <property name="wordWrap">
+              <bool>false</bool>
+             </property>
+             <property name="textInteractionFlags">
+              <set>Qt::TextInteractionFlag::LinksAccessibleByMouse</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="username">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>wrexik</string>
+             </property>
+             <property name="textInteractionFlags">
+              <set>Qt::TextInteractionFlag::LinksAccessibleByMouse</set>
+             </property>
+            </widget>
+           </item>
+           <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
+            <widget class="QLabel" name="arrowdown">
+             <property name="minimumSize">
+              <size>
+               <width>20</width>
+               <height>20</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>20</width>
+               <height>20</height>
+              </size>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="pixmap">
+              <pixmap>:/images/icons/arrow-down.png</pixmap>
+             </property>
+             <property name="scaledContents">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="sidebar_content" stretch="1,0">
+       <property name="spacing">
+        <number>20</number>
+       </property>
+       <property name="leftMargin">
+        <number>10</number>
+       </property>
+       <item alignment="Qt::AlignmentFlag::AlignTop">
+        <widget class="QWidget" name="sidebar" native="true">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,1,0">
+          <property name="spacing">
+           <number>60</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>20</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>20</number>
+          </property>
+          <item>
+           <widget class="QWidget" name="top_sidebar" native="true">
+            <property name="autoFillBackground">
+             <bool>false</bool>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: #20302f; border-radius: 27px</string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_3">
+             <property name="spacing">
+              <number>15</number>
+             </property>
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>10</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>10</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="dashboard">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">background-color: white; border-radius: 25px; padding: 15px</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap>:/images/icons/dashboard-selected.png</pixmap>
+               </property>
+               <property name="scaledContents">
+                <bool>false</bool>
+               </property>
+              </widget>
+             </item>
+             <item alignment="Qt::AlignmentFlag::AlignHCenter">
+              <widget class="QLabel" name="games">
+               <property name="styleSheet">
+                <string notr="true">padding: 15px</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap>:/images/icons/controller.png</pixmap>
+               </property>
+              </widget>
+             </item>
+             <item alignment="Qt::AlignmentFlag::AlignHCenter">
+              <widget class="QLabel" name="profile">
+               <property name="styleSheet">
+                <string notr="true">padding: 15px;</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap>:/images/icons/trophy.png</pixmap>
+               </property>
+              </widget>
+             </item>
+             <item alignment="Qt::AlignmentFlag::AlignHCenter">
+              <widget class="QLabel" name="statistics">
+               <property name="styleSheet">
+                <string notr="true">padding: 15px;</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap>:/images/icons/analytics.png</pixmap>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QWidget" name="bottom_sidebar" native="true">
+            <property name="styleSheet">
+             <string notr="true">background-color: #20302f; border-radius: 27px</string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_4">
+             <property name="spacing">
+              <number>15</number>
+             </property>
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>10</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>10</number>
+             </property>
+             <item alignment="Qt::AlignmentFlag::AlignHCenter">
+              <widget class="QLabel" name="settings">
+               <property name="styleSheet">
+                <string notr="true">border-radius: 10px;</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap>:/images/icons/settings.png</pixmap>
+               </property>
+              </widget>
+             </item>
+             <item alignment="Qt::AlignmentFlag::AlignHCenter">
+              <widget class="QLabel" name="info">
+               <property name="styleSheet">
+                <string notr="true">padding: 15px; border-radius: 10px;</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap>:/images/icons/info.png</pixmap>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
+           <widget class="QLabel" name="logout">
+            <property name="styleSheet">
+             <string notr="true">background-color: #20302f; border-radius: 27px; padding: 15px;</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>:/images/icons/logout.png</pixmap>
+            </property>
+           </widget>
+          </item>
+         </layout>
+         <zorder>bottom_sidebar</zorder>
+         <zorder>top_sidebar</zorder>
+         <zorder>logout</zorder>
+        </widget>
+       </item>
+       <item>
+        <widget class="QStackedWidget" name="stackedWidget">
+         <property name="currentIndex">
+          <number>0</number>
+         </property>
+         <widget class="QWidget" name="page"/>
+         <widget class="QWidget" name="page_2"/>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../../resources/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

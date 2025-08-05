@@ -1,0 +1,15 @@
+<RCC>
+  <qresource prefix="/">
+    <file>images/backgrounds/bg.png</file>
+    <file>images/graphics/default.png</file>
+    <file>images/icons/arrow-down.png</file>
+    <file>images/icons/bell.png</file>
+    <file>images/icons/analytics.png</file>
+    <file>images/icons/dashboard-selected.png</file>
+    <file>images/icons/controller.png</file>
+    <file>images/icons/settings.png</file>
+    <file>images/icons/logout.png</file>
+    <file>images/icons/info.png</file>
+    <file>images/icons/trophy.png</file>
+  </qresource>
+</RCC>
