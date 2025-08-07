@@ -11,18 +11,27 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Synapso - Main Window</string>
   </property>
   <property name="styleSheet">
    <string notr="true">font-family: &quot;General Sans&quot;;
 font-weight: 500;</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_5">
+  <layout class="QVBoxLayout" name="mainVerticalLayout">
    <item>
-    <layout class="QVBoxLayout" name="navbar_sidebar_content" stretch="0,1">
+    <layout class="QVBoxLayout" name="navigationAndContentLayout" stretch="0,1">
      <item>
-      <widget class="QWidget" name="navbar" native="true">
-       <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <widget class="QWidget" name="topNavigationBar" native="true">
+       <property name="styleSheet">
+        <string notr="true">QWidget #cieStatusWidget,
+QWidget #notificationWidget,
+QWidget #userProfileWidget {
+	background-color: #213D3B;
+	border: none;
+	border-radius: 21px;
+}</string>
+       </property>
+       <layout class="QHBoxLayout" name="navigationBarLayout">
         <property name="leftMargin">
          <number>20</number>
         </property>
@@ -36,7 +45,7 @@ font-weight: 500;</string>
          <number>10</number>
         </property>
         <item>
-         <widget class="QLabel" name="title_2">
+         <widget class="QLabel" name="applicationTitleLabel">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
             <horstretch>0</horstretch>
@@ -54,7 +63,7 @@ font-weight: 500;</string>
          </widget>
         </item>
         <item>
-         <widget class="QFrame" name="LPI">
+         <widget class="QWidget" name="cieStatusWidget" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
             <horstretch>0</horstretch>
@@ -62,19 +71,9 @@ font-weight: 500;</string>
            </sizepolicy>
           </property>
           <property name="styleSheet">
-           <string notr="true">QFrame#LPI {
-	background-color: #213D3B;
-	border: none;
-	border-radius: 21px;
-}</string>
+           <string notr="true"/>
           </property>
-          <property name="frameShape">
-           <enum>QFrame::Shape::StyledPanel</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Shadow::Raised</enum>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <layout class="QHBoxLayout" name="cieStatusLayout">
            <property name="spacing">
             <number>20</number>
            </property>
@@ -85,14 +84,14 @@ font-weight: 500;</string>
             <number>20</number>
            </property>
            <item>
-            <widget class="QLabel" name="lpi_title">
+            <widget class="QLabel" name="cieLabel">
              <property name="text">
-              <string>LPI</string>
+              <string>CIE</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="number">
+            <widget class="QLabel" name="cieValueLabel">
              <property name="text">
               <string>1458</string>
              </property>
@@ -102,7 +101,7 @@ font-weight: 500;</string>
          </widget>
         </item>
         <item>
-         <widget class="QWidget" name="notifications" native="true">
+         <widget class="QWidget" name="notificationWidget" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
             <horstretch>0</horstretch>
@@ -110,14 +109,14 @@ font-weight: 500;</string>
            </sizepolicy>
           </property>
           <property name="styleSheet">
-           <string notr="true">QWidget#notifications {
+           <string notr="true">QWidget#notificationWidget {
 	background-color: #213D3B;
 	border-radius: 21px;
 }</string>
           </property>
-          <layout class="QHBoxLayout" name="horizontalLayout">
+          <layout class="QHBoxLayout" name="notificationLayout">
            <item>
-            <widget class="QLabel" name="notifications_image">
+            <widget class="QLabel" name="notificationIconLabel">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -137,7 +136,7 @@ font-weight: 500;</string>
               <string/>
              </property>
              <property name="pixmap">
-              <pixmap>:/images/icons/bell.png</pixmap>
+              <pixmap resource="../../resources/resources.qrc">:/images/icons/bell.png</pixmap>
              </property>
              <property name="scaledContents">
               <bool>true</bool>
@@ -148,7 +147,7 @@ font-weight: 500;</string>
          </widget>
         </item>
         <item>
-         <widget class="QFrame" name="profile_frame">
+         <widget class="QWidget" name="userProfileWidget" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
             <horstretch>0</horstretch>
@@ -156,21 +155,9 @@ font-weight: 500;</string>
            </sizepolicy>
           </property>
           <property name="styleSheet">
-           <string notr="true">QFrame#profile_frame {
-	background-color: #213D3B;
-	border-radius: 21px;
-}</string>
+           <string notr="true"/>
           </property>
-          <property name="frameShape">
-           <enum>QFrame::Shape::NoFrame</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Shadow::Raised</enum>
-          </property>
-          <property name="lineWidth">
-           <number>1</number>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <layout class="QHBoxLayout" name="userProfileLayout">
            <property name="spacing">
             <number>20</number>
            </property>
@@ -186,8 +173,8 @@ font-weight: 500;</string>
            <property name="bottomMargin">
             <number>2</number>
            </property>
-           <item>
-            <widget class="QLabel" name="image">
+           <item alignment="Qt::AlignmentFlag::AlignBottom">
+            <widget class="QLabel" name="userAvatarLabel">
              <property name="minimumSize">
               <size>
                <width>40</width>
@@ -199,6 +186,9 @@ font-weight: 500;</string>
                <width>40</width>
                <height>40</height>
               </size>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::LayoutDirection::LeftToRight</enum>
              </property>
              <property name="styleSheet">
               <string notr="true"/>
@@ -213,7 +203,7 @@ font-weight: 500;</string>
               <enum>Qt::TextFormat::AutoText</enum>
              </property>
              <property name="pixmap">
-              <pixmap>:/images/graphics/default.png</pixmap>
+              <pixmap resource="../../resources/resources.qrc">:/images/graphics/default.png</pixmap>
              </property>
              <property name="scaledContents">
               <bool>true</bool>
@@ -230,7 +220,7 @@ font-weight: 500;</string>
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="username">
+            <widget class="QLabel" name="usernameLabel">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
                <horstretch>0</horstretch>
@@ -246,7 +236,7 @@ font-weight: 500;</string>
             </widget>
            </item>
            <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
-            <widget class="QLabel" name="arrowdown">
+            <widget class="QLabel" name="dropdownArrowLabel">
              <property name="minimumSize">
               <size>
                <width>20</width>
@@ -263,7 +253,7 @@ font-weight: 500;</string>
               <string/>
              </property>
              <property name="pixmap">
-              <pixmap>:/images/icons/arrow-down.png</pixmap>
+              <pixmap resource="../../resources/resources.qrc">:/images/icons/arrow-down.png</pixmap>
              </property>
              <property name="scaledContents">
               <bool>true</bool>
@@ -277,22 +267,44 @@ font-weight: 500;</string>
       </widget>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="sidebar_content" stretch="1,0">
+      <layout class="QHBoxLayout" name="sidebarAndContentLayout" stretch="0,0">
        <property name="spacing">
         <number>20</number>
        </property>
        <property name="leftMargin">
         <number>10</number>
        </property>
-       <item alignment="Qt::AlignmentFlag::AlignTop">
-        <widget class="QWidget" name="sidebar" native="true">
+       <item>
+        <widget class="QWidget" name="navigationSidebar" native="true">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,1,0">
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+    border-radius: 27px;
+    padding: 15px;
+    outline: none;
+}
+
+QPushButton:hover {
+    background-color: #1e3735;
+}
+
+QWidget#primaryNavigationContainer,
+QWidget#secondaryNavigationContainer,
+QPushButton#btnLogout {
+    background-color: #213D3B;
+    border-radius: 27px;
+}
+
+QPushButton#btnLogout:hover {
+    background-color: #1e1e1e;
+}</string>
+         </property>
+         <layout class="QVBoxLayout" name="sidebarLayout" stretch="1,1,0">
           <property name="spacing">
            <number>60</number>
           </property>
@@ -309,14 +321,17 @@ font-weight: 500;</string>
            <number>20</number>
           </property>
           <item>
-           <widget class="QWidget" name="top_sidebar" native="true">
+           <widget class="QWidget" name="primaryNavigationContainer" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="autoFillBackground">
              <bool>false</bool>
             </property>
-            <property name="styleSheet">
-             <string notr="true">background-color: #20302f; border-radius: 27px</string>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_3">
+            <layout class="QVBoxLayout" name="primaryNavigationLayout">
              <property name="spacing">
               <number>15</number>
              </property>
@@ -333,63 +348,82 @@ font-weight: 500;</string>
               <number>10</number>
              </property>
              <item>
-              <widget class="QLabel" name="dashboard">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
+              <widget class="QPushButton" name="btnDashboard">
                <property name="styleSheet">
-                <string notr="true">background-color: white; border-radius: 25px; padding: 15px</string>
+                <string notr="true"/>
                </property>
                <property name="text">
                 <string/>
                </property>
-               <property name="pixmap">
-                <pixmap>:/images/icons/dashboard-selected.png</pixmap>
+               <property name="icon">
+                <iconset resource="../../resources/resources.qrc">
+                 <normaloff>:/images/icons/dashboard.png</normaloff>:/images/icons/dashboard.png</iconset>
                </property>
-               <property name="scaledContents">
-                <bool>false</bool>
+               <property name="iconSize">
+                <size>
+                 <width>24</width>
+                 <height>24</height>
+                </size>
                </property>
               </widget>
              </item>
-             <item alignment="Qt::AlignmentFlag::AlignHCenter">
-              <widget class="QLabel" name="games">
+             <item>
+              <widget class="QPushButton" name="btnGames">
                <property name="styleSheet">
-                <string notr="true">padding: 15px</string>
+                <string notr="true"/>
                </property>
                <property name="text">
                 <string/>
                </property>
-               <property name="pixmap">
-                <pixmap>:/images/icons/controller.png</pixmap>
+               <property name="icon">
+                <iconset resource="../../resources/resources.qrc">
+                 <normaloff>:/images/icons/games.png</normaloff>:/images/icons/games.png</iconset>
+               </property>
+               <property name="iconSize">
+                <size>
+                 <width>24</width>
+                 <height>24</height>
+                </size>
                </property>
               </widget>
              </item>
-             <item alignment="Qt::AlignmentFlag::AlignHCenter">
-              <widget class="QLabel" name="profile">
+             <item>
+              <widget class="QPushButton" name="btnAchievements">
                <property name="styleSheet">
-                <string notr="true">padding: 15px;</string>
+                <string notr="true"/>
                </property>
                <property name="text">
                 <string/>
                </property>
-               <property name="pixmap">
-                <pixmap>:/images/icons/trophy.png</pixmap>
+               <property name="icon">
+                <iconset resource="../../resources/resources.qrc">
+                 <normaloff>:/images/icons/achievements.png</normaloff>:/images/icons/achievements.png</iconset>
+               </property>
+               <property name="iconSize">
+                <size>
+                 <width>24</width>
+                 <height>24</height>
+                </size>
                </property>
               </widget>
              </item>
-             <item alignment="Qt::AlignmentFlag::AlignHCenter">
-              <widget class="QLabel" name="statistics">
+             <item>
+              <widget class="QPushButton" name="btnStatistics">
                <property name="styleSheet">
-                <string notr="true">padding: 15px;</string>
+                <string notr="true"/>
                </property>
                <property name="text">
                 <string/>
                </property>
-               <property name="pixmap">
-                <pixmap>:/images/icons/analytics.png</pixmap>
+               <property name="icon">
+                <iconset resource="../../resources/resources.qrc">
+                 <normaloff>:/images/icons/statistics.png</normaloff>:/images/icons/statistics.png</iconset>
+               </property>
+               <property name="iconSize">
+                <size>
+                 <width>24</width>
+                 <height>24</height>
+                </size>
                </property>
               </widget>
              </item>
@@ -397,11 +431,17 @@ font-weight: 500;</string>
            </widget>
           </item>
           <item>
-           <widget class="QWidget" name="bottom_sidebar" native="true">
-            <property name="styleSheet">
-             <string notr="true">background-color: #20302f; border-radius: 27px</string>
+           <widget class="QWidget" name="secondaryNavigationContainer" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
-            <layout class="QVBoxLayout" name="verticalLayout_4">
+            <property name="styleSheet">
+             <string notr="true"/>
+            </property>
+            <layout class="QVBoxLayout" name="secondaryNavigationLayout">
              <property name="spacing">
               <number>15</number>
              </property>
@@ -417,61 +457,92 @@ font-weight: 500;</string>
              <property name="bottomMargin">
               <number>10</number>
              </property>
-             <item alignment="Qt::AlignmentFlag::AlignHCenter">
-              <widget class="QLabel" name="settings">
+             <item>
+              <widget class="QPushButton" name="btnInfo">
                <property name="styleSheet">
-                <string notr="true">border-radius: 10px;</string>
+                <string notr="true">border-radius: 27px; padding: 15px</string>
                </property>
                <property name="text">
                 <string/>
                </property>
-               <property name="pixmap">
-                <pixmap>:/images/icons/settings.png</pixmap>
+               <property name="icon">
+                <iconset resource="../../resources/resources.qrc">
+                 <normaloff>:/images/icons/info.png</normaloff>:/images/icons/info.png</iconset>
+               </property>
+               <property name="iconSize">
+                <size>
+                 <width>24</width>
+                 <height>24</height>
+                </size>
                </property>
               </widget>
              </item>
-             <item alignment="Qt::AlignmentFlag::AlignHCenter">
-              <widget class="QLabel" name="info">
+             <item>
+              <widget class="QPushButton" name="btnSettings">
                <property name="styleSheet">
-                <string notr="true">padding: 15px; border-radius: 10px;</string>
+                <string notr="true">border-radius: 27px; 
+padding: 15px;
+outline: none;</string>
                </property>
                <property name="text">
                 <string/>
                </property>
-               <property name="pixmap">
-                <pixmap>:/images/icons/info.png</pixmap>
+               <property name="icon">
+                <iconset resource="../../resources/resources.qrc">
+                 <normaloff>:/images/icons/settings.png</normaloff>:/images/icons/settings.png</iconset>
+               </property>
+               <property name="iconSize">
+                <size>
+                 <width>24</width>
+                 <height>24</height>
+                </size>
                </property>
               </widget>
              </item>
             </layout>
            </widget>
           </item>
-          <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
-           <widget class="QLabel" name="logout">
-            <property name="styleSheet">
-             <string notr="true">background-color: #20302f; border-radius: 27px; padding: 15px;</string>
+          <item>
+           <widget class="QPushButton" name="btnLogout">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
             <property name="text">
              <string/>
             </property>
-            <property name="pixmap">
-             <pixmap>:/images/icons/logout.png</pixmap>
+            <property name="icon">
+             <iconset resource="../../resources/resources.qrc">
+              <normaloff>:/images/icons/logout.png</normaloff>:/images/icons/logout.png</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>24</width>
+              <height>24</height>
+             </size>
             </property>
            </widget>
           </item>
          </layout>
-         <zorder>bottom_sidebar</zorder>
-         <zorder>top_sidebar</zorder>
-         <zorder>logout</zorder>
+         <zorder>secondaryNavigationContainer</zorder>
+         <zorder>primaryNavigationContainer</zorder>
+         <zorder>btnLogout</zorder>
         </widget>
        </item>
        <item>
-        <widget class="QStackedWidget" name="stackedWidget">
+        <widget class="QStackedWidget" name="contentStackedWidget">
          <property name="currentIndex">
-          <number>0</number>
+          <number>4</number>
          </property>
-         <widget class="QWidget" name="page"/>
-         <widget class="QWidget" name="page_2"/>
+         <widget class="QWidget" name="dashboardPage"/>
+         <widget class="QWidget" name="achievementsPage"/>
+         <widget class="QWidget" name="statisticsPage"/>
+         <widget class="QWidget" name="infoPage"/>
+         <widget class="QWidget" name="settingsPage"/>
+         <widget class="QWidget" name="profilePage"/>
+         <widget class="QWidget" name="gamesPage"/>
         </widget>
        </item>
       </layout>

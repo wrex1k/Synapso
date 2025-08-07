@@ -79,6 +79,7 @@ class AuthPage(QWidget):
                     self.ui.loginStatus.setStyleSheet("color: #3CB371; font: 11pt; font-weight: 400;")
                     self.ui.loginStatus.setText(f"Prihlásenie úspešné!")
                     self.login_success.emit(username)
+                    self.clearLoginFields()
                 else:
                     self.ui.loginStatus.setStyleSheet("color: #E94B3C; font: 11pt; font-weight: 400;")
                     self.ui.loginStatus.setText("Nesprávne meno alebo heslo.")
@@ -133,6 +134,7 @@ class AuthPage(QWidget):
                 self.ui.registerStatus.setStyleSheet("color: #3CB371; font: 11pt; font-weight: 400;")
                 self.ui.registerStatus.setText("Registrácia úspešná! Prosím prihlás sa.")
                 self.ui.stackedWidget.setCurrentWidget(self.ui.loginPage)
+                self.clearRegisterFields()
         except Exception as e:
             self.ui.registerStatus.setText(f"Chyba: {e}")
         finally:
@@ -144,3 +146,25 @@ class AuthPage(QWidget):
         pixmap = QPixmap(":/images/backgrounds/bg.png")
         painter.drawPixmap(self.rect(), pixmap)
         super().paintEvent(event)
+
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+            current_widget = self.ui.stackedWidget.currentWidget()
+            if current_widget == self.ui.loginPage:
+                self.handle_login()
+            elif current_widget == self.ui.registerPage:
+                self.handle_register()
+
+    def clearRegisterFields(self):
+        self.ui.registerUsername.clear()
+        self.ui.registerEmail.clear()
+        self.ui.registerPassword.clear()
+        self.ui.registerRePassword.clear()
+        self.ui.registerStatus.setText("")
+
+    def clearLoginFields(self):
+        self.ui.loginUsername.clear()
+        self.ui.loginPassword.clear()
+        self.ui.loginStatus.setText("")
+
+    

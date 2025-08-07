@@ -16,7 +16,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel,
-    QSizePolicy, QStackedWidget, QVBoxLayout, QWidget)
+    QPushButton, QSizePolicy, QStackedWidget, QVBoxLayout,
+    QWidget)
 import resources_rc
 
 class Ui_appWidget(object):
@@ -26,275 +27,335 @@ class Ui_appWidget(object):
         appWidget.resize(914, 864)
         appWidget.setStyleSheet(u"font-family: \"General Sans\";\n"
 "font-weight: 500;")
-        self.verticalLayout_5 = QVBoxLayout(appWidget)
-        self.verticalLayout_5.setObjectName(u"verticalLayout_5")
-        self.navbar_sidebar_content = QVBoxLayout()
-        self.navbar_sidebar_content.setObjectName(u"navbar_sidebar_content")
-        self.navbar = QWidget(appWidget)
-        self.navbar.setObjectName(u"navbar")
-        self.horizontalLayout_2 = QHBoxLayout(self.navbar)
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.horizontalLayout_2.setContentsMargins(20, 10, 10, 10)
-        self.title_2 = QLabel(self.navbar)
-        self.title_2.setObjectName(u"title_2")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.title_2.sizePolicy().hasHeightForWidth())
-        self.title_2.setSizePolicy(sizePolicy)
-        self.title_2.setStyleSheet(u"font: 27pt;\n"
-"color: #3EAC91;\n"
-"font-weight: 500;")
-
-        self.horizontalLayout_2.addWidget(self.title_2)
-
-        self.LPI = QFrame(self.navbar)
-        self.LPI.setObjectName(u"LPI")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
-        sizePolicy1.setHorizontalStretch(0)
-        sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.LPI.sizePolicy().hasHeightForWidth())
-        self.LPI.setSizePolicy(sizePolicy1)
-        self.LPI.setStyleSheet(u"QFrame#LPI {\n"
+        self.mainVerticalLayout = QVBoxLayout(appWidget)
+        self.mainVerticalLayout.setObjectName(u"mainVerticalLayout")
+        self.navigationAndContentLayout = QVBoxLayout()
+        self.navigationAndContentLayout.setObjectName(u"navigationAndContentLayout")
+        self.topNavigationBar = QWidget(appWidget)
+        self.topNavigationBar.setObjectName(u"topNavigationBar")
+        self.topNavigationBar.setStyleSheet(u"QWidget #cieStatusWidget,\n"
+"QWidget #notificationWidget,\n"
+"QWidget #userProfileWidget {\n"
 "	background-color: #213D3B;\n"
 "	border: none;\n"
 "	border-radius: 21px;\n"
 "}")
-        self.LPI.setFrameShape(QFrame.Shape.StyledPanel)
-        self.LPI.setFrameShadow(QFrame.Shadow.Raised)
-        self.horizontalLayout_4 = QHBoxLayout(self.LPI)
-        self.horizontalLayout_4.setSpacing(20)
-        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
-        self.horizontalLayout_4.setContentsMargins(20, -1, 20, -1)
-        self.lpi_title = QLabel(self.LPI)
-        self.lpi_title.setObjectName(u"lpi_title")
+        self.navigationBarLayout = QHBoxLayout(self.topNavigationBar)
+        self.navigationBarLayout.setObjectName(u"navigationBarLayout")
+        self.navigationBarLayout.setContentsMargins(20, 10, 10, 10)
+        self.applicationTitleLabel = QLabel(self.topNavigationBar)
+        self.applicationTitleLabel.setObjectName(u"applicationTitleLabel")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.applicationTitleLabel.sizePolicy().hasHeightForWidth())
+        self.applicationTitleLabel.setSizePolicy(sizePolicy)
+        self.applicationTitleLabel.setStyleSheet(u"font: 27pt;\n"
+"color: #3EAC91;\n"
+"font-weight: 500;")
 
-        self.horizontalLayout_4.addWidget(self.lpi_title)
+        self.navigationBarLayout.addWidget(self.applicationTitleLabel)
 
-        self.number = QLabel(self.LPI)
-        self.number.setObjectName(u"number")
+        self.cieStatusWidget = QWidget(self.topNavigationBar)
+        self.cieStatusWidget.setObjectName(u"cieStatusWidget")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.cieStatusWidget.sizePolicy().hasHeightForWidth())
+        self.cieStatusWidget.setSizePolicy(sizePolicy1)
+        self.cieStatusWidget.setStyleSheet(u"")
+        self.cieStatusLayout = QHBoxLayout(self.cieStatusWidget)
+        self.cieStatusLayout.setSpacing(20)
+        self.cieStatusLayout.setObjectName(u"cieStatusLayout")
+        self.cieStatusLayout.setContentsMargins(20, -1, 20, -1)
+        self.cieLabel = QLabel(self.cieStatusWidget)
+        self.cieLabel.setObjectName(u"cieLabel")
 
-        self.horizontalLayout_4.addWidget(self.number)
+        self.cieStatusLayout.addWidget(self.cieLabel)
+
+        self.cieValueLabel = QLabel(self.cieStatusWidget)
+        self.cieValueLabel.setObjectName(u"cieValueLabel")
+
+        self.cieStatusLayout.addWidget(self.cieValueLabel)
 
 
-        self.horizontalLayout_2.addWidget(self.LPI)
+        self.navigationBarLayout.addWidget(self.cieStatusWidget)
 
-        self.notifications = QWidget(self.navbar)
-        self.notifications.setObjectName(u"notifications")
-        sizePolicy1.setHeightForWidth(self.notifications.sizePolicy().hasHeightForWidth())
-        self.notifications.setSizePolicy(sizePolicy1)
-        self.notifications.setStyleSheet(u"QWidget#notifications {\n"
+        self.notificationWidget = QWidget(self.topNavigationBar)
+        self.notificationWidget.setObjectName(u"notificationWidget")
+        sizePolicy1.setHeightForWidth(self.notificationWidget.sizePolicy().hasHeightForWidth())
+        self.notificationWidget.setSizePolicy(sizePolicy1)
+        self.notificationWidget.setStyleSheet(u"QWidget#notificationWidget {\n"
 "	background-color: #213D3B;\n"
 "	border-radius: 21px;\n"
 "}")
-        self.horizontalLayout = QHBoxLayout(self.notifications)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.notifications_image = QLabel(self.notifications)
-        self.notifications_image.setObjectName(u"notifications_image")
-        sizePolicy.setHeightForWidth(self.notifications_image.sizePolicy().hasHeightForWidth())
-        self.notifications_image.setSizePolicy(sizePolicy)
-        self.notifications_image.setMaximumSize(QSize(24, 24))
-        self.notifications_image.setStyleSheet(u"")
-        self.notifications_image.setPixmap(QPixmap(u":/images/icons/bell.png"))
-        self.notifications_image.setScaledContents(True)
+        self.notificationLayout = QHBoxLayout(self.notificationWidget)
+        self.notificationLayout.setObjectName(u"notificationLayout")
+        self.notificationIconLabel = QLabel(self.notificationWidget)
+        self.notificationIconLabel.setObjectName(u"notificationIconLabel")
+        sizePolicy.setHeightForWidth(self.notificationIconLabel.sizePolicy().hasHeightForWidth())
+        self.notificationIconLabel.setSizePolicy(sizePolicy)
+        self.notificationIconLabel.setMaximumSize(QSize(24, 24))
+        self.notificationIconLabel.setStyleSheet(u"")
+        self.notificationIconLabel.setPixmap(QPixmap(u":/images/icons/bell.png"))
+        self.notificationIconLabel.setScaledContents(True)
 
-        self.horizontalLayout.addWidget(self.notifications_image)
+        self.notificationLayout.addWidget(self.notificationIconLabel)
 
 
-        self.horizontalLayout_2.addWidget(self.notifications)
+        self.navigationBarLayout.addWidget(self.notificationWidget)
 
-        self.profile_frame = QFrame(self.navbar)
-        self.profile_frame.setObjectName(u"profile_frame")
-        sizePolicy1.setHeightForWidth(self.profile_frame.sizePolicy().hasHeightForWidth())
-        self.profile_frame.setSizePolicy(sizePolicy1)
-        self.profile_frame.setStyleSheet(u"QFrame#profile_frame {\n"
-"	background-color: #213D3B;\n"
-"	border-radius: 21px;\n"
-"}")
-        self.profile_frame.setFrameShape(QFrame.Shape.NoFrame)
-        self.profile_frame.setFrameShadow(QFrame.Shadow.Raised)
-        self.profile_frame.setLineWidth(1)
-        self.horizontalLayout_3 = QHBoxLayout(self.profile_frame)
-        self.horizontalLayout_3.setSpacing(20)
-        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
-        self.horizontalLayout_3.setContentsMargins(10, 0, 10, 2)
-        self.image = QLabel(self.profile_frame)
-        self.image.setObjectName(u"image")
-        self.image.setMinimumSize(QSize(40, 40))
-        self.image.setMaximumSize(QSize(40, 40))
-        self.image.setStyleSheet(u"")
-        self.image.setFrameShape(QFrame.Shape.NoFrame)
-        self.image.setTextFormat(Qt.TextFormat.AutoText)
-        self.image.setPixmap(QPixmap(u":/images/graphics/default.png"))
-        self.image.setScaledContents(True)
-        self.image.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image.setWordWrap(False)
-        self.image.setTextInteractionFlags(Qt.TextInteractionFlag.LinksAccessibleByMouse)
+        self.userProfileWidget = QWidget(self.topNavigationBar)
+        self.userProfileWidget.setObjectName(u"userProfileWidget")
+        sizePolicy1.setHeightForWidth(self.userProfileWidget.sizePolicy().hasHeightForWidth())
+        self.userProfileWidget.setSizePolicy(sizePolicy1)
+        self.userProfileWidget.setStyleSheet(u"")
+        self.userProfileLayout = QHBoxLayout(self.userProfileWidget)
+        self.userProfileLayout.setSpacing(20)
+        self.userProfileLayout.setObjectName(u"userProfileLayout")
+        self.userProfileLayout.setContentsMargins(10, 0, 10, 2)
+        self.userAvatarLabel = QLabel(self.userProfileWidget)
+        self.userAvatarLabel.setObjectName(u"userAvatarLabel")
+        self.userAvatarLabel.setMinimumSize(QSize(40, 40))
+        self.userAvatarLabel.setMaximumSize(QSize(40, 40))
+        self.userAvatarLabel.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
+        self.userAvatarLabel.setStyleSheet(u"")
+        self.userAvatarLabel.setFrameShape(QFrame.Shape.NoFrame)
+        self.userAvatarLabel.setTextFormat(Qt.TextFormat.AutoText)
+        self.userAvatarLabel.setPixmap(QPixmap(u":/images/graphics/default.png"))
+        self.userAvatarLabel.setScaledContents(True)
+        self.userAvatarLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.userAvatarLabel.setWordWrap(False)
+        self.userAvatarLabel.setTextInteractionFlags(Qt.TextInteractionFlag.LinksAccessibleByMouse)
 
-        self.horizontalLayout_3.addWidget(self.image)
+        self.userProfileLayout.addWidget(self.userAvatarLabel, 0, Qt.AlignmentFlag.AlignBottom)
 
-        self.username = QLabel(self.profile_frame)
-        self.username.setObjectName(u"username")
+        self.usernameLabel = QLabel(self.userProfileWidget)
+        self.usernameLabel.setObjectName(u"usernameLabel")
         sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.username.sizePolicy().hasHeightForWidth())
-        self.username.setSizePolicy(sizePolicy2)
-        self.username.setTextInteractionFlags(Qt.TextInteractionFlag.LinksAccessibleByMouse)
+        sizePolicy2.setHeightForWidth(self.usernameLabel.sizePolicy().hasHeightForWidth())
+        self.usernameLabel.setSizePolicy(sizePolicy2)
+        self.usernameLabel.setTextInteractionFlags(Qt.TextInteractionFlag.LinksAccessibleByMouse)
 
-        self.horizontalLayout_3.addWidget(self.username)
+        self.userProfileLayout.addWidget(self.usernameLabel)
 
-        self.arrowdown = QLabel(self.profile_frame)
-        self.arrowdown.setObjectName(u"arrowdown")
-        self.arrowdown.setMinimumSize(QSize(20, 20))
-        self.arrowdown.setMaximumSize(QSize(20, 20))
-        self.arrowdown.setPixmap(QPixmap(u":/images/icons/arrow-down.png"))
-        self.arrowdown.setScaledContents(True)
+        self.dropdownArrowLabel = QLabel(self.userProfileWidget)
+        self.dropdownArrowLabel.setObjectName(u"dropdownArrowLabel")
+        self.dropdownArrowLabel.setMinimumSize(QSize(20, 20))
+        self.dropdownArrowLabel.setMaximumSize(QSize(20, 20))
+        self.dropdownArrowLabel.setPixmap(QPixmap(u":/images/icons/arrow-down.png"))
+        self.dropdownArrowLabel.setScaledContents(True)
 
-        self.horizontalLayout_3.addWidget(self.arrowdown, 0, Qt.AlignmentFlag.AlignHCenter|Qt.AlignmentFlag.AlignVCenter)
-
-
-        self.horizontalLayout_2.addWidget(self.profile_frame)
+        self.userProfileLayout.addWidget(self.dropdownArrowLabel, 0, Qt.AlignmentFlag.AlignHCenter|Qt.AlignmentFlag.AlignVCenter)
 
 
-        self.navbar_sidebar_content.addWidget(self.navbar)
-
-        self.sidebar_content = QHBoxLayout()
-        self.sidebar_content.setSpacing(20)
-        self.sidebar_content.setObjectName(u"sidebar_content")
-        self.sidebar_content.setContentsMargins(10, -1, -1, -1)
-        self.sidebar = QWidget(appWidget)
-        self.sidebar.setObjectName(u"sidebar")
-        sizePolicy1.setHeightForWidth(self.sidebar.sizePolicy().hasHeightForWidth())
-        self.sidebar.setSizePolicy(sizePolicy1)
-        self.verticalLayout_2 = QVBoxLayout(self.sidebar)
-        self.verticalLayout_2.setSpacing(60)
-        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        self.verticalLayout_2.setContentsMargins(0, 20, 0, 20)
-        self.top_sidebar = QWidget(self.sidebar)
-        self.top_sidebar.setObjectName(u"top_sidebar")
-        self.top_sidebar.setAutoFillBackground(False)
-        self.top_sidebar.setStyleSheet(u"background-color: #20302f; border-radius: 27px")
-        self.verticalLayout_3 = QVBoxLayout(self.top_sidebar)
-        self.verticalLayout_3.setSpacing(15)
-        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
-        self.verticalLayout_3.setContentsMargins(0, 10, 0, 10)
-        self.dashboard = QLabel(self.top_sidebar)
-        self.dashboard.setObjectName(u"dashboard")
-        sizePolicy.setHeightForWidth(self.dashboard.sizePolicy().hasHeightForWidth())
-        self.dashboard.setSizePolicy(sizePolicy)
-        self.dashboard.setStyleSheet(u"background-color: white; border-radius: 25px; padding: 15px")
-        self.dashboard.setPixmap(QPixmap(u":/images/icons/dashboard-selected.png"))
-        self.dashboard.setScaledContents(False)
-
-        self.verticalLayout_3.addWidget(self.dashboard)
-
-        self.games = QLabel(self.top_sidebar)
-        self.games.setObjectName(u"games")
-        self.games.setStyleSheet(u"padding: 15px")
-        self.games.setPixmap(QPixmap(u":/images/icons/controller.png"))
-
-        self.verticalLayout_3.addWidget(self.games, 0, Qt.AlignmentFlag.AlignHCenter)
-
-        self.profile = QLabel(self.top_sidebar)
-        self.profile.setObjectName(u"profile")
-        self.profile.setStyleSheet(u"padding: 15px;")
-        self.profile.setPixmap(QPixmap(u":/images/icons/trophy.png"))
-
-        self.verticalLayout_3.addWidget(self.profile, 0, Qt.AlignmentFlag.AlignHCenter)
-
-        self.statistics = QLabel(self.top_sidebar)
-        self.statistics.setObjectName(u"statistics")
-        self.statistics.setStyleSheet(u"padding: 15px;")
-        self.statistics.setPixmap(QPixmap(u":/images/icons/analytics.png"))
-
-        self.verticalLayout_3.addWidget(self.statistics, 0, Qt.AlignmentFlag.AlignHCenter)
+        self.navigationBarLayout.addWidget(self.userProfileWidget)
 
 
-        self.verticalLayout_2.addWidget(self.top_sidebar)
+        self.navigationAndContentLayout.addWidget(self.topNavigationBar)
 
-        self.bottom_sidebar = QWidget(self.sidebar)
-        self.bottom_sidebar.setObjectName(u"bottom_sidebar")
-        self.bottom_sidebar.setStyleSheet(u"background-color: #20302f; border-radius: 27px")
-        self.verticalLayout_4 = QVBoxLayout(self.bottom_sidebar)
-        self.verticalLayout_4.setSpacing(15)
-        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
-        self.verticalLayout_4.setContentsMargins(0, 10, 0, 10)
-        self.settings = QLabel(self.bottom_sidebar)
-        self.settings.setObjectName(u"settings")
-        self.settings.setStyleSheet(u"border-radius: 10px;")
-        self.settings.setPixmap(QPixmap(u":/images/icons/settings.png"))
+        self.sidebarAndContentLayout = QHBoxLayout()
+        self.sidebarAndContentLayout.setSpacing(20)
+        self.sidebarAndContentLayout.setObjectName(u"sidebarAndContentLayout")
+        self.sidebarAndContentLayout.setContentsMargins(10, -1, -1, -1)
+        self.navigationSidebar = QWidget(appWidget)
+        self.navigationSidebar.setObjectName(u"navigationSidebar")
+        sizePolicy1.setHeightForWidth(self.navigationSidebar.sizePolicy().hasHeightForWidth())
+        self.navigationSidebar.setSizePolicy(sizePolicy1)
+        self.navigationSidebar.setStyleSheet(u"QPushButton {\n"
+"    border-radius: 27px;\n"
+"    padding: 15px;\n"
+"    outline: none;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
+"    background-color: #1e3735;\n"
+"}\n"
+"\n"
+"QWidget#primaryNavigationContainer,\n"
+"QWidget#secondaryNavigationContainer,\n"
+"QPushButton#btnLogout {\n"
+"    background-color: #213D3B;\n"
+"    border-radius: 27px;\n"
+"}\n"
+"\n"
+"QPushButton#btnLogout:hover {\n"
+"    background-color: #1e1e1e;\n"
+"}")
+        self.sidebarLayout = QVBoxLayout(self.navigationSidebar)
+        self.sidebarLayout.setSpacing(60)
+        self.sidebarLayout.setObjectName(u"sidebarLayout")
+        self.sidebarLayout.setContentsMargins(0, 20, 0, 20)
+        self.primaryNavigationContainer = QWidget(self.navigationSidebar)
+        self.primaryNavigationContainer.setObjectName(u"primaryNavigationContainer")
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.primaryNavigationContainer.sizePolicy().hasHeightForWidth())
+        self.primaryNavigationContainer.setSizePolicy(sizePolicy3)
+        self.primaryNavigationContainer.setAutoFillBackground(False)
+        self.primaryNavigationLayout = QVBoxLayout(self.primaryNavigationContainer)
+        self.primaryNavigationLayout.setSpacing(15)
+        self.primaryNavigationLayout.setObjectName(u"primaryNavigationLayout")
+        self.primaryNavigationLayout.setContentsMargins(0, 10, 0, 10)
+        self.btnDashboard = QPushButton(self.primaryNavigationContainer)
+        self.btnDashboard.setObjectName(u"btnDashboard")
+        self.btnDashboard.setStyleSheet(u"")
+        icon = QIcon()
+        icon.addFile(u":/images/icons/dashboard.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnDashboard.setIcon(icon)
+        self.btnDashboard.setIconSize(QSize(24, 24))
 
-        self.verticalLayout_4.addWidget(self.settings, 0, Qt.AlignmentFlag.AlignHCenter)
+        self.primaryNavigationLayout.addWidget(self.btnDashboard)
 
-        self.info = QLabel(self.bottom_sidebar)
-        self.info.setObjectName(u"info")
-        self.info.setStyleSheet(u"padding: 15px; border-radius: 10px;")
-        self.info.setPixmap(QPixmap(u":/images/icons/info.png"))
+        self.btnGames = QPushButton(self.primaryNavigationContainer)
+        self.btnGames.setObjectName(u"btnGames")
+        self.btnGames.setStyleSheet(u"")
+        icon1 = QIcon()
+        icon1.addFile(u":/images/icons/games.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnGames.setIcon(icon1)
+        self.btnGames.setIconSize(QSize(24, 24))
 
-        self.verticalLayout_4.addWidget(self.info, 0, Qt.AlignmentFlag.AlignHCenter)
+        self.primaryNavigationLayout.addWidget(self.btnGames)
+
+        self.btnAchievements = QPushButton(self.primaryNavigationContainer)
+        self.btnAchievements.setObjectName(u"btnAchievements")
+        self.btnAchievements.setStyleSheet(u"")
+        icon2 = QIcon()
+        icon2.addFile(u":/images/icons/achievements.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnAchievements.setIcon(icon2)
+        self.btnAchievements.setIconSize(QSize(24, 24))
+
+        self.primaryNavigationLayout.addWidget(self.btnAchievements)
+
+        self.btnStatistics = QPushButton(self.primaryNavigationContainer)
+        self.btnStatistics.setObjectName(u"btnStatistics")
+        self.btnStatistics.setStyleSheet(u"")
+        icon3 = QIcon()
+        icon3.addFile(u":/images/icons/statistics.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnStatistics.setIcon(icon3)
+        self.btnStatistics.setIconSize(QSize(24, 24))
+
+        self.primaryNavigationLayout.addWidget(self.btnStatistics)
 
 
-        self.verticalLayout_2.addWidget(self.bottom_sidebar)
+        self.sidebarLayout.addWidget(self.primaryNavigationContainer)
 
-        self.logout = QLabel(self.sidebar)
-        self.logout.setObjectName(u"logout")
-        self.logout.setStyleSheet(u"background-color: #20302f; border-radius: 27px; padding: 15px;")
-        self.logout.setPixmap(QPixmap(u":/images/icons/logout.png"))
+        self.secondaryNavigationContainer = QWidget(self.navigationSidebar)
+        self.secondaryNavigationContainer.setObjectName(u"secondaryNavigationContainer")
+        sizePolicy3.setHeightForWidth(self.secondaryNavigationContainer.sizePolicy().hasHeightForWidth())
+        self.secondaryNavigationContainer.setSizePolicy(sizePolicy3)
+        self.secondaryNavigationContainer.setStyleSheet(u"")
+        self.secondaryNavigationLayout = QVBoxLayout(self.secondaryNavigationContainer)
+        self.secondaryNavigationLayout.setSpacing(15)
+        self.secondaryNavigationLayout.setObjectName(u"secondaryNavigationLayout")
+        self.secondaryNavigationLayout.setContentsMargins(0, 10, 0, 10)
+        self.btnInfo = QPushButton(self.secondaryNavigationContainer)
+        self.btnInfo.setObjectName(u"btnInfo")
+        self.btnInfo.setStyleSheet(u"border-radius: 27px; padding: 15px")
+        icon4 = QIcon()
+        icon4.addFile(u":/images/icons/info.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnInfo.setIcon(icon4)
+        self.btnInfo.setIconSize(QSize(24, 24))
 
-        self.verticalLayout_2.addWidget(self.logout, 0, Qt.AlignmentFlag.AlignHCenter|Qt.AlignmentFlag.AlignVCenter)
+        self.secondaryNavigationLayout.addWidget(self.btnInfo)
 
-        self.verticalLayout_2.setStretch(0, 1)
-        self.verticalLayout_2.setStretch(1, 1)
-        self.bottom_sidebar.raise_()
-        self.top_sidebar.raise_()
-        self.logout.raise_()
+        self.btnSettings = QPushButton(self.secondaryNavigationContainer)
+        self.btnSettings.setObjectName(u"btnSettings")
+        self.btnSettings.setStyleSheet(u"border-radius: 27px; \n"
+"padding: 15px;\n"
+"outline: none;")
+        icon5 = QIcon()
+        icon5.addFile(u":/images/icons/settings.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnSettings.setIcon(icon5)
+        self.btnSettings.setIconSize(QSize(24, 24))
 
-        self.sidebar_content.addWidget(self.sidebar, 0, Qt.AlignmentFlag.AlignTop)
+        self.secondaryNavigationLayout.addWidget(self.btnSettings)
 
-        self.stackedWidget = QStackedWidget(appWidget)
-        self.stackedWidget.setObjectName(u"stackedWidget")
-        self.page = QWidget()
-        self.page.setObjectName(u"page")
-        self.stackedWidget.addWidget(self.page)
-        self.page_2 = QWidget()
-        self.page_2.setObjectName(u"page_2")
-        self.stackedWidget.addWidget(self.page_2)
 
-        self.sidebar_content.addWidget(self.stackedWidget)
+        self.sidebarLayout.addWidget(self.secondaryNavigationContainer)
 
-        self.sidebar_content.setStretch(0, 1)
+        self.btnLogout = QPushButton(self.navigationSidebar)
+        self.btnLogout.setObjectName(u"btnLogout")
+        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Maximum)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.btnLogout.sizePolicy().hasHeightForWidth())
+        self.btnLogout.setSizePolicy(sizePolicy4)
+        icon6 = QIcon()
+        icon6.addFile(u":/images/icons/logout.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnLogout.setIcon(icon6)
+        self.btnLogout.setIconSize(QSize(24, 24))
 
-        self.navbar_sidebar_content.addLayout(self.sidebar_content)
+        self.sidebarLayout.addWidget(self.btnLogout)
 
-        self.navbar_sidebar_content.setStretch(1, 1)
+        self.sidebarLayout.setStretch(0, 1)
+        self.sidebarLayout.setStretch(1, 1)
+        self.secondaryNavigationContainer.raise_()
+        self.primaryNavigationContainer.raise_()
+        self.btnLogout.raise_()
 
-        self.verticalLayout_5.addLayout(self.navbar_sidebar_content)
+        self.sidebarAndContentLayout.addWidget(self.navigationSidebar)
+
+        self.contentStackedWidget = QStackedWidget(appWidget)
+        self.contentStackedWidget.setObjectName(u"contentStackedWidget")
+        self.dashboardPage = QWidget()
+        self.dashboardPage.setObjectName(u"dashboardPage")
+        self.contentStackedWidget.addWidget(self.dashboardPage)
+        self.achievementsPage = QWidget()
+        self.achievementsPage.setObjectName(u"achievementsPage")
+        self.contentStackedWidget.addWidget(self.achievementsPage)
+        self.statisticsPage = QWidget()
+        self.statisticsPage.setObjectName(u"statisticsPage")
+        self.contentStackedWidget.addWidget(self.statisticsPage)
+        self.infoPage = QWidget()
+        self.infoPage.setObjectName(u"infoPage")
+        self.contentStackedWidget.addWidget(self.infoPage)
+        self.settingsPage = QWidget()
+        self.settingsPage.setObjectName(u"settingsPage")
+        self.contentStackedWidget.addWidget(self.settingsPage)
+        self.profilePage = QWidget()
+        self.profilePage.setObjectName(u"profilePage")
+        self.contentStackedWidget.addWidget(self.profilePage)
+        self.gamesPage = QWidget()
+        self.gamesPage.setObjectName(u"gamesPage")
+        self.contentStackedWidget.addWidget(self.gamesPage)
+
+        self.sidebarAndContentLayout.addWidget(self.contentStackedWidget)
+
+
+        self.navigationAndContentLayout.addLayout(self.sidebarAndContentLayout)
+
+        self.navigationAndContentLayout.setStretch(1, 1)
+
+        self.mainVerticalLayout.addLayout(self.navigationAndContentLayout)
 
 
         self.retranslateUi(appWidget)
 
-        self.stackedWidget.setCurrentIndex(0)
+        self.contentStackedWidget.setCurrentIndex(4)
 
 
         QMetaObject.connectSlotsByName(appWidget)
     # setupUi
 
     def retranslateUi(self, appWidget):
-        appWidget.setWindowTitle(QCoreApplication.translate("appWidget", u"MainWindow", None))
-        self.title_2.setText(QCoreApplication.translate("appWidget", u"Synapso", None))
-        self.lpi_title.setText(QCoreApplication.translate("appWidget", u"LPI", None))
-        self.number.setText(QCoreApplication.translate("appWidget", u"1458", None))
-        self.notifications_image.setText("")
-        self.image.setText("")
-        self.username.setText(QCoreApplication.translate("appWidget", u"wrexik", None))
-        self.arrowdown.setText("")
-        self.dashboard.setText("")
-        self.games.setText("")
-        self.profile.setText("")
-        self.statistics.setText("")
-        self.settings.setText("")
-        self.info.setText("")
-        self.logout.setText("")
+        appWidget.setWindowTitle(QCoreApplication.translate("appWidget", u"Synapso - Main Window", None))
+        self.applicationTitleLabel.setText(QCoreApplication.translate("appWidget", u"Synapso", None))
+        self.cieLabel.setText(QCoreApplication.translate("appWidget", u"CIE", None))
+        self.cieValueLabel.setText(QCoreApplication.translate("appWidget", u"1458", None))
+        self.notificationIconLabel.setText("")
+        self.userAvatarLabel.setText("")
+        self.usernameLabel.setText(QCoreApplication.translate("appWidget", u"wrexik", None))
+        self.dropdownArrowLabel.setText("")
+        self.btnDashboard.setText("")
+        self.btnGames.setText("")
+        self.btnAchievements.setText("")
+        self.btnStatistics.setText("")
+        self.btnInfo.setText("")
+        self.btnSettings.setText("")
+        self.btnLogout.setText("")
     # retranslateUi
 
