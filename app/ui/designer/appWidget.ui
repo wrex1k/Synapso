@@ -6,20 +6,28 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>914</width>
-    <height>864</height>
+    <width>1280</width>
+    <height>920</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1280</width>
+    <height>920</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Synapso - Main Window</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">font-family: &quot;General Sans&quot;;
-font-weight: 500;</string>
+   <string notr="true">font-family: &quot;General Sans&quot;;</string>
   </property>
-  <layout class="QVBoxLayout" name="mainVerticalLayout">
+  <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
     <layout class="QVBoxLayout" name="navigationAndContentLayout" stretch="0,1">
+     <property name="spacing">
+      <number>0</number>
+     </property>
      <item>
       <widget class="QWidget" name="topNavigationBar" native="true">
        <property name="styleSheet">
@@ -29,7 +37,18 @@ QWidget #userProfileWidget {
 	background-color: #213D3B;
 	border: none;
 	border-radius: 21px;
-}</string>
+}
+
+QLabel#cieValueLabel {
+	font-weight: 500;
+	font-size: 11pt;
+}
+
+QLabel#usernameLabel {
+	font-weight: 500;
+	font-size: 10pt;
+}
+</string>
        </property>
        <layout class="QHBoxLayout" name="navigationBarLayout">
         <property name="leftMargin">
@@ -75,25 +94,24 @@ font-weight: 500;</string>
           </property>
           <layout class="QHBoxLayout" name="cieStatusLayout">
            <property name="spacing">
-            <number>20</number>
+            <number>0</number>
            </property>
            <property name="leftMargin">
-            <number>20</number>
+            <number>30</number>
+           </property>
+           <property name="topMargin">
+            <number>10</number>
            </property>
            <property name="rightMargin">
-            <number>20</number>
+            <number>30</number>
            </property>
-           <item>
-            <widget class="QLabel" name="cieLabel">
-             <property name="text">
-              <string>CIE</string>
-             </property>
-            </widget>
-           </item>
+           <property name="bottomMargin">
+            <number>10</number>
+           </property>
            <item>
             <widget class="QLabel" name="cieValueLabel">
              <property name="text">
-              <string>1458</string>
+              <string>CPP</string>
              </property>
             </widget>
            </item>
@@ -149,7 +167,7 @@ font-weight: 500;</string>
         <item>
          <widget class="QWidget" name="userProfileWidget" native="true">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+           <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -173,13 +191,13 @@ font-weight: 500;</string>
            <property name="bottomMargin">
             <number>2</number>
            </property>
-           <item alignment="Qt::AlignmentFlag::AlignBottom">
+           <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
             <widget class="QLabel" name="userAvatarLabel">
-             <property name="minimumSize">
-              <size>
-               <width>40</width>
-               <height>40</height>
-              </size>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
              <property name="maximumSize">
               <size>
@@ -195,6 +213,9 @@ font-weight: 500;</string>
              </property>
              <property name="frameShape">
               <enum>QFrame::Shape::NoFrame</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Shadow::Plain</enum>
              </property>
              <property name="text">
               <string/>
@@ -227,8 +248,11 @@ font-weight: 500;</string>
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="frameShape">
+              <enum>QFrame::Shape::NoFrame</enum>
+             </property>
              <property name="text">
-              <string>wrexik</string>
+              <string>_username</string>
              </property>
              <property name="textInteractionFlags">
               <set>Qt::TextInteractionFlag::LinksAccessibleByMouse</set>
@@ -534,15 +558,8 @@ outline: none;</string>
        <item>
         <widget class="QStackedWidget" name="contentStackedWidget">
          <property name="currentIndex">
-          <number>4</number>
+          <number>-1</number>
          </property>
-         <widget class="QWidget" name="dashboardPage"/>
-         <widget class="QWidget" name="achievementsPage"/>
-         <widget class="QWidget" name="statisticsPage"/>
-         <widget class="QWidget" name="infoPage"/>
-         <widget class="QWidget" name="settingsPage"/>
-         <widget class="QWidget" name="profilePage"/>
-         <widget class="QWidget" name="gamesPage"/>
         </widget>
        </item>
       </layout>

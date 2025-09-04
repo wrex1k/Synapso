@@ -9,3 +9,10 @@ __pycache__/
 # Environment files
 .env
 *.env
+
+# Auto-generated UI files
+app/ui/gen/*.py
+
+# Generated resources
+resources_rc.py
+

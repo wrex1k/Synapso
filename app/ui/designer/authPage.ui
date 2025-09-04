@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>836</width>
-    <height>800</height>
+    <width>1019</width>
+    <height>1171</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -23,14 +23,12 @@
    <string>Form</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">/* global */
-QPushButton, QLineEdit {
+   <string notr="true">* {
 font: 11pt;
 font-weight: 400;
 color: #fafafa;
 }
 
-/* switchTo */
 QPushButton#btnSwitchToRegister,
 QPushButton#btnSwitchToLogin {
     border: none;
@@ -43,7 +41,6 @@ QPushButton#btnSwitchToLogin:hover {
 	color: #3c8573
 }
 
-/* PushButton */
 QPushButton  {
     border: 1px solid #3c8573;
     border-radius: 16px;
@@ -64,8 +61,7 @@ QPushButton:pressed {
     border: 1px solid #6fb8a6;
 }
 
-/* LineEdit */
-QLineEdit {
+QLineEdit, QDateEdit {
     border: 1px solid #3c8573;
     border-radius: 16px;
     height: 25px;
@@ -74,14 +70,18 @@ QLineEdit {
     color: #fafafa;
 	font: 10pt;
 }
-QLineEdit:hover {
+QLineEdit:hover,
+QDateEdit:hover {
     border: 1px solid #93cabc;
 	color: #3c8573;
 }
-QLineEdit:focus {
+
+QLineEdit:focus, 
+QDateEdit:hover {
     border: 1px solid #6fb8a6;
     background-color: #191919;
 }
+
 </string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -166,7 +166,7 @@ QLineEdit:focus {
    <item>
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="registerPage">
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -287,12 +287,37 @@ QLineEdit:focus {
            </property>
           </widget>
          </item>
+         <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
+          <widget class="QDateEdit" name="registerDate">
+           <property name="minimumSize">
+            <size>
+             <width>600</width>
+             <height>45</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>800</width>
+             <height>45</height>
+            </size>
+           </property>
+           <property name="currentSection">
+            <enum>QDateTimeEdit::Section::YearSection</enum>
+           </property>
+           <property name="timeSpec">
+            <enum>Qt::TimeSpec::UTC</enum>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
        <item>
         <layout class="QVBoxLayout" name="register_actions_layout">
          <property name="spacing">
           <number>20</number>
+         </property>
+         <property name="topMargin">
+          <number>50</number>
          </property>
          <item alignment="Qt::AlignmentFlag::AlignHCenter">
           <widget class="QLabel" name="registerStatus">
@@ -415,7 +440,7 @@ QLineEdit:focus {
           <number>0</number>
          </property>
          <item alignment="Qt::AlignmentFlag::AlignHCenter">
-          <widget class="QLineEdit" name="loginUsername">
+          <widget class="QLineEdit" name="loginIdentifier">
            <property name="minimumSize">
             <size>
              <width>600</width>
