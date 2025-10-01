@@ -1,18 +1,22 @@
 import sys
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
-from app.db.schema import initialize_database
-from app.mainWindow import MainWindow
+# from app.db.schema import initialize_database
+from app.core.app import App
+from app.utils import load_fonts, get_clash_grotesk 
 
 def main():
-    initialize_database()
-
-    QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    # initialize_database()
 
     app = QApplication(sys.argv)
-    app.setFont(QFont("Barlow", 12))
-    window = MainWindow()
+    
+    # Load custom fonts
+    load_fonts()
+    
+    # Set default font for the entire application
+    default_font = get_clash_grotesk(size=10, weight="regular")
+    app.setFont(default_font)
+    
+    window = App()
     window.show()
     sys.exit(app.exec())
 

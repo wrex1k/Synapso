@@ -1,18 +1,18 @@
 # Python cache
 __pycache__/
-*.py[cod]
+*.pyc
 
-# IDEs
+# Environment
+.env
+
+# Qt auto-generated files
+app/ui/
+resources_rc.py
+
+# IDE/editor configs
 .vscode/
 .idea/
 
-# Environment files
-.env
-*.env
-
-# Auto-generated UI files
-app/ui/gen/*.py
-
-# Generated resources
-resources_rc.py
-
+# Virtual environments
+venv/
+env/
