@@ -1,9 +1,5 @@
-Faker==37.6.0
 keyring==25.4.1
-psycopg2==2.9.10
 pyside6==6.9.2
-pyside6_addons==6.9.2
-pyside6_essentials==6.9.2
 python-dotenv==1.1.1
-python_bcrypt==0.3.2
+shiboken6==6.9.2
 supabase==2.18.1

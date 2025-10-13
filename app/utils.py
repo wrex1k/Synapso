@@ -38,16 +38,17 @@ def show_error(button, message: str):
             if button is None:
                 return
             btn_name = button.objectName().lower()
+            btn_style = ("background-color: #3A9A8F; color: white;")
             button.setEnabled(True)
             if "next" in btn_name:
                 button.setText("Let's take next step")
-                button.setStyleSheet("background-color: #3A9A8F; color: white;")
+                button.setStyleSheet(btn_style)
             elif "signup" in btn_name:
                 button.setText("Finish registration")
-                button.setStyleSheet("background-color: #3A9A8F; color: white;")
+                button.setStyleSheet(btn_style)
             elif "signin" in btn_name:
                 button.setText("Sign In")
-                button.setStyleSheet("background-color: #3A9A8F; color: white;")
+                button.setStyleSheet(btn_style)
         except RuntimeError:
             return
     QTimer.singleShot(2000, reset)
@@ -91,11 +92,11 @@ def draw_background(widget, event):
     painter.end()
 
 def image_to_rounded(widget):
-    original_pixmap = widget.ui.avatarIcon.pixmap()
+    original_pixmap = widget.pixmap()
     if not original_pixmap:
         return
 
-    size = min(widget.ui.avatarIcon.width(), widget.ui.avatarIcon.height(), original_pixmap.width(), original_pixmap.height(), 200)
+    size = min(widget.width(), widget.height(), original_pixmap.width(), original_pixmap.height(), 200)
     scaled_pixmap = original_pixmap.scaled(size, size, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
 
     rounded = QPixmap(size, size)
@@ -112,7 +113,7 @@ def image_to_rounded(widget):
     painter.drawPixmap(0, 0, scaled_pixmap)
     painter.end()
 
-    widget.ui.avatarIcon.setPixmap(rounded)
+    widget.setPixmap(rounded)
 
 def window_resize(window: QWidget, width: int=1000, height: int=800):
     screen = window.screen()

@@ -28,8 +28,12 @@ class LoginAuth(QWidget):
     def handle_auth_login(self):
         email = self.ui.emailEdit.text().strip()
         password = self.ui.passwordEdit.text().strip()
+        email_regex = r'^[\w\.-]+@[\w\.-]+\.\w+$'
 
-        if not email or not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        if not email:
+            show_error(self.ui.signInButton, "Missing email")
+            return
+        if not re.match(email_regex, email):
             show_error(self.ui.signInButton, "Invalid email")
             return
         if not password:

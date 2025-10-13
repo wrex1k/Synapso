@@ -40,12 +40,24 @@ def upsert_public_users(user_id: str,
         data["avatar_path"] = avatar_path
     response = supabase.table("users").upsert(data).execute()
 
-# fetch user profile row from "public.user" table by user_id
-def get_user_row(user_id: str) -> dict:
+# fetch user data from "public.user" table
+def fetch_public_user(user_id: str) -> dict:
     try:
         resp = supabase.table("users").select("*").eq("id", user_id).limit(1).execute()
         rows = getattr(resp, "data", []) or []
         return rows[0] if rows else {}
     except Exception as e:
-        print(f"[DEBUG] get_user_row error: {e}")
+        print(f"[DEBUG] fetch_public_user error: {e}")
         return {}
+    
+# fetch avatar image from Supabase storage
+def fetch_avatar(avatar_path: str):
+    if not avatar_path:
+        return None
+    try:
+        storage = supabase.storage.from_("avatars")
+        data = storage.download(avatar_path)
+        return data
+    except Exception as e:
+        print(f"[WARN] Failed to fetch avatar from path {avatar_path}: {e}")
+        return None

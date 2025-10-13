@@ -15,7 +15,7 @@ from app.auth.supabase_auth import (
 from app.store.supabase_store import (
     upload_avatar_blob,
     upsert_public_users,
-    get_user_row
+    fetch_public_user
 )
 from app.utils import show_error, window_resize
 
@@ -32,7 +32,7 @@ class App(QMainWindow):
         # try to refresh session on startup
         session = refresh_session()
         if session:
-            user_row = get_user_row(session.user.id)
+            user_row = fetch_public_user(session.user.id)
             self.app = AppWidget(user_row)
             self.setCentralWidget(self.app)
             if hasattr(self.app, 'logout_requested'):
@@ -40,6 +40,44 @@ class App(QMainWindow):
             window_resize(self, 1400, 900)
         else:
             self._show_login()
+
+    # safely clean up old widget
+    def _cleanup_widget(self, widget_name: str):
+        if hasattr(self, widget_name):
+            widget = getattr(self, widget_name)
+            if widget is not None:
+                try:
+                    widget.deleteLater()
+                except:
+                    pass
+                setattr(self, widget_name, None)
+
+
+    # check if widget exists and is valid
+    def _is_widget_valid(self, widget_name: str) -> bool:
+        if not hasattr(self, widget_name):
+            return False
+        widget = getattr(self, widget_name)
+        return widget is not None and isValid(widget)
+
+    def _enable_button_safely(self, widget_path: str, enabled: bool = True):
+        try:
+            parts = widget_path.split('.')
+            current = self
+            
+            for part in parts:
+                if not hasattr(current, part):
+                    return False
+                current = getattr(current, part)
+                if current is None:
+                    return False
+            
+            if hasattr(current, 'setEnabled'):
+                current.setEnabled(enabled)
+                return True
+        except Exception:
+            pass
+        return False
 
     # perform login with email and password
     def do_login(self, email: str, password: str):
@@ -57,7 +95,7 @@ class App(QMainWindow):
             show_error(self.login_auth.ui.signInButton, "Login failed")
             return
 
-        self.app = AppWidget(get_user_row(user.id))
+        self.app = AppWidget(fetch_public_user(user.id))
         self.setCentralWidget(self.app)
         if hasattr(self.app, 'logout_requested'):
             self.app.logout_requested.connect(self.handle_logout)
@@ -99,7 +137,6 @@ class App(QMainWindow):
             birthday_date = self.registration_data['birthday_date']
             blob = self.registration_data.get('blob')
 
-
             user = sign_up(email, password)
 
             if not user:
@@ -130,7 +167,7 @@ class App(QMainWindow):
             except Exception as e:
                 print(f"[WARN] profile upsert failed: {e}")
 
-            self.app = AppWidget(get_user_row(user_id))
+            self.app = AppWidget(fetch_public_user(user_id))
             self.setCentralWidget(self.app)
             if hasattr(self.app, 'logout_requested'):
                 self.app.logout_requested.connect(self.handle_logout)
@@ -143,24 +180,21 @@ class App(QMainWindow):
             show_error(self.register_auth.ui.signUpButton, "Registration failed")
         finally:
             self._registering = False
-            if hasattr(self.register_auth, 'ui'):
-                try:
-                    self.register_auth.ui.signUpButton.setEnabled(True)
-                except Exception:
-                    pass
+            # Re-enable sign up button safely
+            self._enable_button_safely('register_auth.ui.signUpButton', True)
 
     # perform logout
     def do_logout(self):
         supabase_logout()
-        self.session = None
         self.registration_data.clear()
-
+        self._cleanup_widget('app')
         self._show_login()
-        self.app = None
 
     # show login/welcome page
     def _show_login(self):
-        if not hasattr(self, 'login_auth') or not isValid(getattr(self, 'login_auth')):
+        if not self._is_widget_valid('login_auth'):
+            self._cleanup_widget('login_auth')
+            
             self.login_auth = LoginAuth()
             self.login_auth.auth_login_data.connect(self.do_login)
             self.login_auth.switch_to_register_signal.connect(self.start_registration_flow)
@@ -169,8 +203,9 @@ class App(QMainWindow):
 
     # show personal registration page
     def _show_personal(self, prefill=False):
-        recreate = (not hasattr(self, 'register_personal') or not isValid(getattr(self, 'register_personal')))
-        if recreate:
+        if not self._is_widget_valid('register_personal'):
+            self._cleanup_widget('register_personal')
+                    
             self.register_personal = RegisterPersonal()
             if hasattr(self.register_personal, 'personal_data'):
                 self.register_personal.personal_data.connect(self.on_register_personal_data)
@@ -197,8 +232,9 @@ class App(QMainWindow):
 
     # show auth registration page
     def _show_auth(self):
-        recreate = (not hasattr(self, 'register_auth') or not isValid(getattr(self, 'register_auth')))
-        if recreate:
+        if not self._is_widget_valid('register_auth'):
+            self._cleanup_widget('register_auth')
+                    
             self.register_auth = RegisterAuth()
             if hasattr(self.register_auth, 'auth_data'):
                 self.register_auth.auth_data.connect(self.on_register_auth_data)
@@ -220,10 +256,7 @@ class App(QMainWindow):
         try:
             self.do_logout()
         finally:
-            if hasattr(self, 'app') and self.app and hasattr(self.app, 'ui') and hasattr(self.app.ui, 'btnLogout'):
-                try:
-                    self.app.ui.logoutButton.setEnabled(True)
-                except Exception:
-                    pass
+            # Re-enable logout button safely
+            self._enable_button_safely('app.ui.logoutButton', True)
 
     #TODO: heartbeat timer to update user activity
