@@ -3,32 +3,23 @@ from PySide6.QtGui import QPainter, QPixmap, QPainterPath, QFontDatabase, QFont,
 from PySide6.QtWidgets import QWidget, QLineEdit
 
 from PySide6.QtGui import QFontDatabase, QFont
+from typing import Optional
 
 def load_fonts():
     font_db = QFontDatabase()
-    
-    font_db.addApplicationFont(":/font/ClashGrotesk_Complete/Fonts/TTF/ClashGrotesk-Variable.ttf")
     
     font_db.addApplicationFont(":/font/GeneralSans_Complete/Fonts/OTF/GeneralSans-Regular.otf")
     font_db.addApplicationFont(":/font/GeneralSans_Complete/Fonts/OTF/GeneralSans-Bold.otf")
     font_db.addApplicationFont(":/font/GeneralSans_Complete/Fonts/OTF/GeneralSans-Medium.otf")
     font_db.addApplicationFont(":/font/GeneralSans_Complete/Fonts/OTF/GeneralSans-Light.otf")
 
-def get_clash_grotesk(size=10, weight="regular"):
+# get Clash Grotesk font
+def get_clash_grotesk(size=10):
     font = QFont("Clash Grotesk")
     font.setPointSize(size)
-    
-    if weight.lower() == "bold":
-        font.setBold(True)
-    elif weight.lower() == "light":
-        font.setWeight(QFont.Weight.Light)
-    elif weight.lower() == "medium":
-        font.setWeight(QFont.Weight.Medium)
-    else:
-        font.setWeight(QFont.Weight.Normal)
-    
-    return font
+    return font 
 
+# show error message on button and reset after delay
 def show_error(button, message: str):
     button.setEnabled(False)
     button.setStyleSheet("background-color: #9E3F3F;")
@@ -49,11 +40,14 @@ def show_error(button, message: str):
             elif "signin" in btn_name:
                 button.setText("Sign In")
                 button.setStyleSheet(btn_style)
+            elif "upload" in btn_name:
+                button.setText("Upload Image")
+                button.setStyleSheet("background-color: transparent;")
         except RuntimeError:
             return
     QTimer.singleShot(2000, reset)
 
-def shared_event_filter(owner: QWidget, watched: QWidget, event: QEvent) -> bool:
+def password_event_filter(owner: QWidget, watched: QWidget, event: QEvent):
     # show password on hover
     if event.type() == QEvent.Enter:
         if isinstance(watched, QLineEdit):
@@ -64,33 +58,42 @@ def shared_event_filter(owner: QWidget, watched: QWidget, event: QEvent) -> bool
         if isinstance(watched, QLineEdit):
             watched.setEchoMode(QLineEdit.Password)
         return True
-    # key press handling
+
+    return QWidget.eventFilter(owner, watched, event)
+
+# enter key event filter to handle Enter/Return key presses
+def enter_key_event_filter(owner: QWidget, watched: QWidget, event: QEvent):
     if event.type() == QEvent.KeyPress:
         key = event.key()
         if isinstance(watched, QLineEdit):
             if key == Qt.Key_Space:
                 return True
         if key in (Qt.Key_Return, Qt.Key_Enter):
-            if hasattr(owner, 'handle_auth_register'):
-                owner.handle_auth_register()
-            elif hasattr(owner, 'handle_auth_login'):
-                owner.handle_auth_login()
-            return True
-    # disable right-click context menu
+                if hasattr(owner, 'handle_auth_register'):
+                    owner.handle_auth_register()
+                elif hasattr(owner, 'handle_auth_login'):
+                    owner.handle_auth_login()
+                elif hasattr(owner, 'handle_personal_register'):
+                    owner.handle_personal_register()
+                return True
+
+    return QWidget.eventFilter(owner, watched, event)
+
+# context menu event filter to disable context menus
+def context_menu_event_filter(owner: QWidget, watched: QWidget, event: QEvent):
     if event.type() == QEvent.ContextMenu:
         return True
-    # fallback to default implementation
-    try:
-        return QWidget.eventFilter(owner, watched, event)
-    except Exception:
-        return False
 
-def draw_background(widget, event):
+    return QWidget.eventFilter(owner, watched, event)
+
+# paint event for custom background
+def draw_background(widget: QWidget, event: QEvent):
     painter = QPainter(widget)
     pixmap = QPixmap(":/images/graphics/bg.png")
     painter.drawPixmap(widget.rect(), pixmap)
     painter.end()
 
+# convert image in widget to rounded pixmap
 def image_to_rounded(widget):
     original_pixmap = widget.pixmap()
     if not original_pixmap:
@@ -115,6 +118,7 @@ def image_to_rounded(widget):
 
     widget.setPixmap(rounded)
 
+# resize window to specified dimensions with screen bounds checking
 def window_resize(window: QWidget, width: int=1000, height: int=800):
     screen = window.screen()
     if screen:
@@ -130,25 +134,23 @@ def window_resize(window: QWidget, width: int=1000, height: int=800):
         window.setMinimumSize(new_width, new_height)
         window.move((screen_width - new_width) // 2, (screen_height - new_height) // 2)
 
-def set_default_avatar(label_widget):
-    size = label_widget.size()
-    
-    default_pixmap = QPixmap(":/images/graphics/avatar.png")
-    if default_pixmap.isNull():
-        print("[WARN] Default avatar image not found.")
-        return
 
-    pixmap = default_pixmap.scaled(size, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+# safely replace the current central widget and resize the window
+def set_central_widget(main_window, widget, width=None, height=None):
+    old_widget = main_window.centralWidget()
 
-    rounded = QPixmap(size)
-    rounded.fill(Qt.transparent)
+    if old_widget and old_widget is not widget:
+        old_widget.setParent(None)
 
-    painter = QPainter(rounded)
-    painter.setRenderHint(QPainter.Antialiasing)
-    path = QPainterPath()
-    path.addRoundedRect(0, 0, size.width(), size.height(), 20, 20)
-    painter.setClipPath(path)
-    painter.drawPixmap(0, 0, pixmap)
-    painter.end()
+    main_window.setCentralWidget(widget)
 
-    label_widget.setPixmap(rounded)
+    if width and height:
+        main_window.resize(width, height)
+
+# safely enable/disable a widget if it exists and supports setEnabled()
+def set_enabled_safe(widget: Optional[QWidget], enabled: bool = True):
+    if widget and hasattr(widget, "setEnabled"):
+        try:
+            widget.setEnabled(enabled)
+        except Exception:
+            pass

@@ -13,7 +13,7 @@ def main():
     load_fonts()
     
     # Set default font for the entire application
-    default_font = get_clash_grotesk(size=10, weight="regular")
+    default_font = get_clash_grotesk()
     app.setFont(default_font)
     
     window = App()

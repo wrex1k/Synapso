@@ -1,16 +1,18 @@
 import re
 from PySide6.QtWidgets import QWidget, QLineEdit
 from PySide6.QtCore import QEvent, Qt, Signal
-from app.utils import show_error, draw_background, shared_event_filter
+from app.utils import show_error, draw_background
 from app.ui.register_auth_ui import Ui_registerAuth
 
 class RegisterAuth(QWidget):
+    # define signal for registration data and back request
     auth_data = Signal(str)
     back_requested = Signal()
 
     def __init__(self):
         super().__init__()
         
+        # initialize UI and set window title
         self.ui = Ui_registerAuth()
         self.ui.setupUi(self)
         self.setWindowTitle("Synapso")
@@ -38,7 +40,8 @@ class RegisterAuth(QWidget):
         if hasattr(self.ui, 'back'):
             self.ui.back.clicked.connect(self.back_requested.emit)
 
-    def evaluate_password_strength(self, password: str) -> int:
+    # evaluate password strength
+    def evaluate_password_strength(self, password):
         score = 0
         if len(password) >= 8:
             score += 1
@@ -48,6 +51,7 @@ class RegisterAuth(QWidget):
             score += 1
         return int((score / 3) * 100)
 
+    # update password strength bar by evaluating password
     def update_password_strength_bar(self):
         password = self.ui.passwordEdit.text()
         score = self.evaluate_password_strength(password)
@@ -67,6 +71,7 @@ class RegisterAuth(QWidget):
             }}
         """)
 
+    # handle sign up button click
     def handle_auth_register(self):
         password = self.ui.passwordEdit.text().strip()
         copassword = self.ui.copasswordEdit.text().strip()
@@ -93,13 +98,12 @@ class RegisterAuth(QWidget):
             return
         self.auth_data.emit(password)
 
-    def eventFilter(self, watched: QWidget, event: QEvent) -> bool:
-        return shared_event_filter(self, watched, event)
-
+    
+    # key press event to handle Enter key
     def keyPressEvent(self, event):
         if event.key() in (Qt.Key_Return, Qt.Key_Enter):
             self.handle_auth_register()
             
+    # paint event for custom background
     def paintEvent(self, event):
         draw_background(self, event)
-        super().paintEvent(event)
