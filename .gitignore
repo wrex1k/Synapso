@@ -5,10 +5,6 @@ __pycache__/
 # Environment
 .env
 
-# Qt auto-generated files
-app/ui/
-resources_rc.py
-
 # IDE/editor configs
 .vscode/
 .idea/
@@ -16,3 +12,12 @@ resources_rc.py
 # Virtual environments
 venv/
 env/
+
+# Working files
+
+logs/
+*.log
+
+tools/
+
+resources_rc.py
