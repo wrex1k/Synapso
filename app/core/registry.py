@@ -1,0 +1,123 @@
+from __future__ import annotations
+
+from typing import Callable, Optional
+
+from PySide6.QtCore import QObject, QThread, Qt, Signal, Slot
+
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+class _Runner(QObject):
+    finished = Signal(object)
+
+    def __init__(self, fn: Callable[[], object]):
+        super().__init__()
+        self._fn = fn
+
+    @Slot()
+    def run(self):
+        try:
+            result = self._fn()
+
+        except Exception:
+            logger.exception("Thread task error")
+            result = None
+        self.finished.emit(result)
+
+class Operation:
+    def __init__(self, key: str | None = None):
+        self._key = key
+        self._thread: Optional[QThread] = None
+
+    def is_running(self) -> bool:
+        return self._thread is not None and self._thread.isRunning()
+
+    def start(
+        self,
+        run_thread_fn: Callable[..., QThread],
+        fn: Callable[[], object],
+        on_finished: Callable[[object], None],
+        *,
+        name: str | None = None,
+    ) -> bool:
+        if self.is_running():
+            return False
+        
+        logger.debug("Starting operation %s with %s", self._key, name)
+
+        thread = run_thread_fn(fn, on_finished, name=name)
+        self._thread = thread
+
+        def _clear():
+            if self._thread is thread:
+                self._thread = None
+
+        thread.finished.connect(_clear)
+        return True
+
+    def cancel(self, wait_ms: int = 2000) -> None:
+        t = self._thread
+        if not t:
+            return
+
+        if t.isRunning():
+            logger.debug("Stopping thread: %s", t.objectName() or repr(t))
+            t.quit()
+
+            if not t.wait(wait_ms):
+                logger.warning("Thread did not stop within %d ms: %s", wait_ms, t.objectName() or repr(t))
+
+        self._thread = None
+
+
+class Registry:
+    def __init__(self):
+        self._handlers: list[Callable[[], None]] = []
+        self._ops: dict[str, Operation] = {}
+
+    def register(self, fn: Callable[[], None]) -> None:
+        if callable(fn):
+            self._handlers.append(fn)
+
+    def cleanup(self) -> None:
+        for fn in list(self._handlers):
+            try:
+                fn()
+            except Exception:
+                logger.exception("Error during cleanup handler: %r", fn)
+
+    def operation(self, key: str) -> Operation:
+        op = self._ops.get(key)
+        if op is None:
+            op = Operation(key=key)
+            self._ops[key] = op
+            self.register(op.cancel)
+        return op
+
+    def run_thread(self, fn: Callable[[], object], on_finished: Callable[[object], None] | None = None, *, name: str | None = None) -> QThread:
+        thread = QThread()
+        if name:
+            thread.setObjectName(name)
+
+        worker = _Runner(fn)
+        worker.moveToThread(thread)
+
+        thread._worker = worker
+
+        thread.started.connect(worker.run)
+
+        if callable(on_finished):
+            worker.finished.connect(on_finished, Qt.QueuedConnection)
+            worker.finished.connect(lambda *_: logger.debug("%s finished", name.capitalize()), Qt.QueuedConnection)
+
+        worker.finished.connect(thread.quit)
+        worker.finished.connect(worker.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+
+        thread.start()
+        return thread
+
+
+registry = Registry()

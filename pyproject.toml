@@ -1,0 +1,5 @@
+[tool.pyside6-project]
+files = ["main.py"]
+
+[tool.pyside6-project.lupdate]
+ts_files = ["translations/synapso_sk.ts"]

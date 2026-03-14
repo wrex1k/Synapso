@@ -1,192 +1,163 @@
-from typing import Any, Dict, Optional
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMainWindow
-from PySide6.QtCore import QTimer
 
-from app.views.login_auth import LoginAuth
-from app.views.app_widget import AppWidget
-from app.views.register_auth import RegisterAuth
-from app.views.register_personal import RegisterPersonal
-from app.auth.supabase_auth import (sign_in, sign_up, refresh_session, logout as supabase_logout)
-from app.store.supabase_store import (upload_avatar_blob, upsert_public_users, fetch_public_user)
-from app.store.user_activity import send_heartbeat
-from app.utils import show_error, set_central_widget, set_enabled_safe
-import datetime
+from app.models.user import User
+from app.ui.views.app_widget import AppWidget
+from app.ui.views.forgot_password import ForgotPassword
+from app.ui.views.login_auth import LoginAuth
+from app.ui.views.register_auth import RegisterAuth
+from app.ui.views.register_personal import RegisterPersonal
+from app.controller.forgot_password_controller import ForgotPasswordController
+from app.controller.login_controller import LoginController
+from app.controller.logout_controller import LogoutController
+from app.controller.registration_controller import RegistrationController
+from app.utils.frameless_window import FramelessWindowMixin
 
+from app.service.auth_service import refresh_up
+from app.utils.logger import get_logger
+from app.utils.window import set_central_widget
+from app.ui.styles.base import get_full_stylesheet
 
-class App(QMainWindow):
-    def __init__(self):
-        super().__init__()
+logger = get_logger(__name__)
+
+class App(FramelessWindowMixin, QMainWindow):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # set window title and icon
         self.setWindowTitle("Synapso")
+        self.setWindowIcon(QIcon(":/images/graphics/logo.png"))
 
-        # hold data for multistep registration
-        self.registration_data: Dict[str, Any] = {}
-        self.app: Optional[AppWidget] = None
+        # set initial window size and properties
+        self.resize(1000, 800)
         
-        # initialize the views once
-        self.login_auth = LoginAuth()
-        self.register_personal = RegisterPersonal()
-        self.register_auth = RegisterAuth()
-
-        # connect view signals
-        self.login_auth.auth_login_data.connect(self.do_login)
-        self.login_auth.switch_to_register_signal.connect(self.start_registration_flow)
-
-        self.register_personal.personal_data.connect(self.on_register_personal_data)
-        self.register_personal.back_requested.connect(self.back_to_login)
-
-        self.register_auth.auth_data.connect(self.on_register_auth_data)
-        self.register_auth.back_requested.connect(self.back_to_personal)
-
-        # try to refresh session on startup and show appropriate view
-        session = refresh_session()
-        if session:
-            user_row = fetch_public_user(session.user.id)
-            if user_row:
-                self.on_user_authenticated(session.user.id)
-            else:
-                set_central_widget(self, self.login_auth, 1000, 800)
-        else:
-            set_central_widget(self, self.login_auth, 1000, 800)
-
-    # perform login with email and password
-    def do_login(self, email: str, password: str):
-        email = (email or "").strip()
-        password = (password or "").strip()
-
-        try:
-            user = sign_in(email, password)
-            
-        except Exception as e:
-            print(f"[DEBUG] sign_in exception: {e}")
-            show_error(self.login_auth.ui.signInButton, "Invalid password or email")
-            return
-        if not user:
-            show_error(self.login_auth.ui.signInButton, "Login failed")
-            return
+        # remove title bar and window frame
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowMinimizeButtonHint)
         
-        # on successful login, call authenticated handler
-        self.on_user_authenticated(user.id)
+        # enable translucent background for rounded corners
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
-    # start registration flow
-    def start_registration_flow(self):
-        self.show_view(self.register_personal, 1000, 800)
+        # create widgets
+        self.loginWidget = LoginAuth(self)  
+        self.loginWidget.hide()
 
-    # when personal data is ready, show auth page
-    def on_register_personal_data(self, username: str, email: str, birthday_date: datetime.date, blob: bytes):
-        self.registration_data = {
-            'username': username,
-            'email': email,
-            'birthday_date': birthday_date,
-            'blob': blob
-        }
-        self.show_view(self.register_auth, 1000, 800)
+        self.registerPersonalWidget = RegisterPersonal(self)
+        self.registerPersonalWidget.hide()
+        
+        self.registerAuthWidget = RegisterAuth(self)
+        self.registerAuthWidget.hide()
 
-    # when auth data is ready, complete registration
-    def on_register_auth_data(self, password: str):
-        self.registration_data['password'] = password
-        self.do_register()
+        self.forgotPasswordWidget = ForgotPassword(self)
+        self.forgotPasswordWidget.hide()
 
-    # perform registration
-    def do_register(self):
-        if getattr(self, "_registering", False):
-            return
-        self._registering = True
+        # create controllers
+        self._loginController = LoginController(
+            view=self.loginWidget,
+            on_success=self.openApp,
+            parent=self
+        )
+
+        self._logoutController = LogoutController(
+            view=(self.loginWidget, self.registerPersonalWidget),
+            on_logout=self._start_login_flow,
+            parent=self
+        )
+    
+        self._registrationController = RegistrationController(
+            view=(self.registerPersonalWidget, self.registerAuthWidget),
+            on_complete=self.openApp,
+            on_back_to_login=self._back_to_login,
+            on_back_to_personal=self._back_to_personal,
+            on_next_to_auth=self._go_to_register_auth,
+            parent=self
+        )
+        
+        self._forgotPasswordController = ForgotPasswordController(
+            view=self.forgotPasswordWidget,
+            on_success=self._back_to_login,
+            on_back=self._back_to_login,
+            parent=self
+        )
+
+        # apply global stylesheet
+        self.setStyleSheet(get_full_stylesheet())
+
+        # app-level navigation
+        self.loginWidget.start_registration.connect(self._start_registration_flow)
+        self.loginWidget.forgot_password_signal.connect(self._go_to_forgot_password)
+
+        # log the app initialization
+        logger.info(f"{80 * "-"}")
+        logger.info("Views, controllers, and signal connections initializing..")
+
+        # attempt refreshing the remembered user or show the login screen
         try:
-            username = self.registration_data['username']
-            email = self.registration_data['email']
-            password = self.registration_data['password']
-            birthday_date = self.registration_data['birthday_date']
-            blob = self.registration_data.get('blob')
+            user = refresh_up()
 
-            user = sign_up(email, password)
-
-            if not user:
-                show_error(self.register_auth.ui.signUpButton, "Registration failed")
+            if user and user.id:
+                logger.info("User refreshed successfully..")
+                self.openApp(user)
                 return
 
-            try:
-                avatar_path = upload_avatar_blob(user.id, blob, "avatar.png") if blob else None
-            except Exception as e:
-                print(f"[WARN] Avatar upload failed: {e}")
-
-            try:
-                upsert_public_users(user.id, username=username, birthday_date=birthday_date, avatar_path=avatar_path)
-            except Exception as e:
-                print(f"[WARN] profile upsert failed: {e}")
-
-            # on successful registration, call authenticated handler
-            self.on_user_authenticated(user.id)
-
-            # clear registration data
-            self.registration_data.clear()
+            self._start_login_flow()
 
         except Exception as e:
-            print(f"Registration error: {e}")
-            show_error(self.register_auth.ui.signUpButton, str(e))
-        finally:
-            self._registering = False
-            # safely enable signUpButton if present
-            ra_ui = getattr(getattr(self, 'register_auth', None), 'ui', None)
-            set_enabled_safe(getattr(ra_ui, 'signUpButton', None), True)
+            logger.exception("Session refresh failed: %s", e)
+            self._start_login_flow()
 
-    # handle user authenticated event
-    def on_user_authenticated(self, user_id: str):
-        self.app = AppWidget(fetch_public_user(user_id))
-        set_central_widget(self, self.app, 1400, 900)
-        if hasattr(self.app, 'logout_requested'):
-            self.app.logout_requested.connect(self.handle_logout)
-        self.start_heartbeat_timer(user_id)
+    # show the login screen
+    def _start_login_flow(self):
+        logger.info("Login flow started..")
+        set_central_widget(self, self.loginWidget)
 
-    # perform logout
-    def do_logout(self):
-        if hasattr(self, "heartbeat_timer") and self.heartbeat_timer.isActive():
-            self.heartbeat_timer.stop()
-            print("[DEBUG] Heartbeat stopped")
+    # show the registration flow starting with personal info step
+    def _start_registration_flow(self):
+        set_central_widget(self, self.registerPersonalWidget)
+        logger.info("Registration flow started..")
+    
+    # go to forgot password screen
+    def _go_to_forgot_password(self):
+        set_central_widget(self, self.forgotPasswordWidget)
+        logger.info("Forgot password flow started..")
 
-        supabase_logout()
-        self.registration_data.clear()
-        self.show_view(self.login_auth, 1000, 800)
+    # return to the login screen
+    def _back_to_login(self):
+        set_central_widget(self, self.loginWidget)
+        logger.info("Returned to login screen..")
 
-    # show personal information view with prefill
-    def show_personal(self, prefill=True):
-        # if prefill is True, fill in the fields
-        if prefill and self.registration_data:
-            data = self.registration_data
-            try:
-                self.register_personal.ui.usernameEdit.setText(data.get('username',''))
-                self.register_personal.ui.emailEdit.setText(data.get('email',''))
-                bdate = data.get('birthday_date')
-                if bdate and hasattr(bdate, 'year'):
-                    self.register_personal.ui.yearBox.setCurrentText(str(bdate.year))
-                    if hasattr(bdate, 'month'):
-                        self.register_personal.ui.birthMonthBox.setCurrentIndex(bdate.month - 1)
-                    if hasattr(bdate, 'day'):
-                        self.register_personal.ui.dayBox.setCurrentText(str(bdate.day))
-            except Exception:
-                pass
+    # return to the personal screen
+    def _back_to_personal(self):
+        set_central_widget(self, self.registerPersonalWidget)
+        logger.info("Returned to personal registration step..")
 
-    # show view helper
-    def show_view(self, view, width=1000, height=800):
-        set_central_widget(self, view, width, height)
+    # go to the auth screen
+    def _go_to_register_auth(self):
+        set_central_widget(self, self.registerAuthWidget)
+        logger.info("Navigated to auth registration step..")
 
-    # go back to login page
-    def back_to_login(self):
-        self.show_login()
+    # show a app view
+    def openApp(self, user: "User"):
+        self.appWidget = AppWidget(user, parent=self)
+        self.appWidget.logout_requested.connect(self._logoutController.logout)
 
-    # go back to personal registration page with prefill register data
-    def back_to_personal(self):
-        self.show_view(self.register_personal, 1000, 800)
-        self.show_personal(prefill=True)
+        set_central_widget(self, self.appWidget)
+        logger.info("Welcome in app..")
 
-    # handle logout request from app widget
-    def handle_logout(self):
-        self.do_logout()
-        if self.app and hasattr(self.app, "ui"):
-            set_enabled_safe(self.app.ui.logoutButton, True)
+    # clean up threads and resources on app close
+    def closeEvent(self, event):
+        logger.info("Application closing..")
 
-    # send heartbeat timer to update user activity
-    def start_heartbeat_timer(self, user_id: str, interval: int = 15000):
-        self.heartbeat_timer = QTimer(self)
-        self.heartbeat_timer.timeout.connect(lambda: send_heartbeat(user_id))
-        self.heartbeat_timer.start(interval)
-        print(f"[DEBUG] Heartbeat started for {user_id}")
+        for controller in (
+            getattr(self, "_registrationController", None),
+            getattr(self, "_forgotPasswordController", None),
+            getattr(self, "_loginController", None),
+        ):
+            if controller and hasattr(controller, "cleanup"):
+                try:
+                    controller.cleanup()
+                except Exception as e:
+                    logger.error("Cleanup error: %s", e)
+
+        event.accept()
+        super().closeEvent(event)
