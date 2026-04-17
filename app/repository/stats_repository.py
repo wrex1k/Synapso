@@ -47,9 +47,13 @@ def _fetch_player_stats(client, game_db_id: int) -> list[dict]:
     )
     rows = res.data or []
     for row in rows:
-        q = row.get("quality_average")
+        if "quality_average" in row:
+            row["avg_quality"] = row.pop("quality_average")
+        if "skill_rating" in row:
+            row["elo_rating"] = row.pop("skill_rating")
+        q = row.get("avg_quality")
         if q is not None and 0 < q <= 1:
-            row["quality_average"] = q * 100
+            row["avg_quality"] = q * 100
     return rows
 
 
@@ -82,7 +86,7 @@ def fetch_game_stats(game_db_id: int, user_id: str | None = None) -> dict:
         counts = _fetch_run_counts(client, game_db_id, today_start, week_start)
         pgs_rows = _fetch_player_stats(client, game_db_id)
 
-        avg_quality, quality_diff = _avg_and_user_diff(pgs_rows, "quality_average", user_id)
+        avg_quality, quality_diff = _avg_and_user_diff(pgs_rows, "avg_quality", user_id)
         if quality_diff is not None:
             quality_diff = round(quality_diff, 1)
 
@@ -170,7 +174,7 @@ def fetch_leaderboard(game_db_id: int, user_id: str, limit: int | None = None) -
             entries.append({
                 "user_id": uid,
                 "username": user_info.get("username", "Player"),
-                "skill_rating": round(float(rating_val) if rating_val else 1000, 0),
+                "elo_rating": round(float(rating_val) if rating_val else 1000, 0),
                 "is_online": uid in online_ids,
                 "avatar_path": user_info.get("avatar_path") or "default.webp",
             })
@@ -229,12 +233,11 @@ def subscribe_leaderboard(
         logger.warning("Realtime: listen() returned unexpectedly for game_id=%d", game_db_id)
 
     loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    if on_loop_ready is not None:
-        on_loop_ready(loop)
     try:
+        if on_loop_ready is not None:
+            on_loop_ready(loop)
         loop.run_until_complete(_run())
-    except Exception as exc:
+    except BaseException as exc:
         logger.warning("Realtime listener ended for game_id=%d: %s", game_db_id, exc)
     finally:
         try:
@@ -250,7 +253,7 @@ def subscribe_leaderboard(
 
 def fetch_player_game_stats(user_id: str, game_slug: str) -> dict | None:
     """Fetch the current player_game_stats row, or None if the player has no entry yet."""
-    try:
+    def _fetch():
         game_id = GAME_ID_MAP.get(game_slug, 1)
         client = get_client()
         res = (
@@ -266,14 +269,23 @@ def fetch_player_game_stats(user_id: str, game_slug: str) -> dict | None:
         )
         row = res.data[0] if res.data else None
         if row is not None:
+            # Rename DB column names to internal keys used throughout the codebase
+            if "quality_average" in row:
+                row["avg_quality"] = row.pop("quality_average")
+            if "consistency_average" in row:
+                row["avg_consistency"] = row.pop("consistency_average")
+            if "skill_rating" in row:
+                row["elo_rating"] = row.pop("skill_rating")
             # Compatibility: pre-backfill rows may store on 0-1 scale
-            q = row.get("quality_average")
+            q = row.get("avg_quality")
             if q is not None and 0 < q <= 1:
-                row["quality_average"] = q * 100
-            c = row.get("consistency_average")
+                row["avg_quality"] = q * 100
+            c = row.get("avg_consistency")
             if c is not None and 0 < c <= 1:
-                row["consistency_average"] = c * 100
+                row["avg_consistency"] = c * 100
         return row
+    try:
+        return with_retry(_fetch)
     except Exception as e:
         logger.warning(
             "Failed to fetch player_game_stats for user=..%s, game_slug=%s: %s",
@@ -287,9 +299,16 @@ def upsert_player_game_stats(user_id: str, game_slug: str, data: dict) -> dict |
     try:
         game_id = GAME_ID_MAP.get(game_slug, 1)
         client = get_client()
+        # Remap internal keys to actual DB column names
+        _KEY_MAP = {
+            "avg_quality": "quality_average",
+            "avg_consistency": "consistency_average",
+            "elo_rating": "skill_rating",
+        }
+        db_data = {_KEY_MAP.get(k, k): v for k, v in data.items()}
         response = (
             client.table("player_game_stats")
-            .upsert({"user_id": user_id, "game_id": game_id, **data}, on_conflict="user_id,game_id")
+            .upsert({"user_id": user_id, "game_id": game_id, **db_data}, on_conflict="user_id,game_id")
             .execute()
         )
         logger.debug("player_game_stats upserted: user=..%s, game_slug=%s", user_id[-10:], game_slug)
@@ -303,7 +322,7 @@ def upsert_player_game_stats(user_id: str, game_slug: str, data: dict) -> dict |
 
 def fetch_all_user_stats(user_id: str) -> dict:
     """Fetch all cumulative stats for a user across every game they have played."""
-    try:
+    def _fetch():
         client = get_client()
         result = (
             client.table("player_game_stats")
@@ -316,15 +335,24 @@ def fetch_all_user_stats(user_id: str) -> dict:
             .execute()
         )
         rows = result.data or []
-        # Compatibility: pre-backfill rows may store on 0-1 scale
         for row in rows:
-            q = row.get("quality_average")
+            # Rename DB column names to internal keys used throughout the codebase
+            if "quality_average" in row:
+                row["avg_quality"] = row.pop("quality_average")
+            if "consistency_average" in row:
+                row["avg_consistency"] = row.pop("consistency_average")
+            if "skill_rating" in row:
+                row["elo_rating"] = row.pop("skill_rating")
+            # Compatibility: pre-backfill rows may store on 0-1 scale
+            q = row.get("avg_quality")
             if q is not None and 0 < q <= 1:
-                row["quality_average"] = q * 100
-            c = row.get("consistency_average")
+                row["avg_quality"] = q * 100
+            c = row.get("avg_consistency")
             if c is not None and 0 < c <= 1:
-                row["consistency_average"] = c * 100
+                row["avg_consistency"] = c * 100
         return {"games": rows}
+    try:
+        return with_retry(_fetch)
     except Exception as e:
         logger.warning("Failed to fetch all stats for user=..%s: %s", user_id[-10:], e)
         return {"games": []}

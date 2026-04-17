@@ -234,7 +234,7 @@
     <message>
         <location filename="../app/ui/views/games.py" line="415"/>
         <source>Players playing</source>
-        <translation>Aktívni hráči</translation>
+        <translation>Hráči v hre</translation>
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="416"/>
@@ -313,13 +313,13 @@
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="576"/>
-        <source>your quality is {value} above global avg</source>
-        <translation>si o {value} kvalitnejší ako globálny priemer</translation>
+        <source>your quality is {value}% above global avg</source>
+        <translation>si o {value} % kvalitnejší ako globálny priemer</translation>
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="580"/>
-        <source>your quality is {value} below global avg</source>
-        <translation>si o {value} menej kvalitnejší ako globálny priemer</translation>
+        <source>your quality is {value}% below global avg</source>
+        <translation>si o {value} % menej kvalitný ako globálny priemer</translation>
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="648"/>
@@ -1562,11 +1562,6 @@ Všetky tvoje údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
         <translation>Hry</translation>
     </message>
     <message>
-        <location filename="../app/ui/views/statistics.py" line="397"/>
-        <source>Avg PI</source>
-        <translation>Priem. PI</translation>
-    </message>
-    <message>
         <location filename="../app/ui/views/statistics.py" line="398"/>
         <source>Best PI</source>
         <translation>Najlepší PI</translation>
@@ -1579,9 +1574,14 @@ Všetky tvoje údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
         <translation>Presnosť</translation>
     </message>
     <message>
+        <location filename="../app/ui/views/statistics.py" line="341"/>
+        <source>Average accuracy</source>
+        <translation>Priemerná presnosť</translation>
+    </message>
+    <message>
         <location filename="../app/ui/views/statistics.py" line="400"/>
-        <source>Avg RT</source>
-        <translation>Priem. RT</translation>
+        <source>Average reaction time</source>
+        <translation>Priemerný reakčný čas</translation>
     </message>
     <message>
         <location filename="../app/ui/views/statistics.py" line="497"/>
@@ -1590,13 +1590,8 @@ Všetky tvoje údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
     </message>
     <message>
         <location filename="../app/ui/views/statistics.py" line="552"/>
-        <source>Run #</source>
-        <translation>Hra</translation>
-    </message>
-    <message>
-        <location filename="../app/ui/views/statistics.py" line="558"/>
-        <source>PI</source>
-        <translation>PI</translation>
+        <source>Runs</source>
+        <translation>Hry</translation>
     </message>
     <message>
         <location filename="../app/ui/views/statistics.py" line="572"/>

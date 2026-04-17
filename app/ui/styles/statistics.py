@@ -52,4 +52,8 @@ QWidget#statChartCard,
 QWidget#statGameCard {{
     border: 1px solid {BORDER_LIGHTGREY};
 }}
+
+QLabel#trendHoverLabel {{
+    color: {OFF_WHITE};
+}}
 """

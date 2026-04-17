@@ -9,61 +9,65 @@ from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 from app.service.pi_adapters import compute_trial_accuracy
+from app.service.population_baseline import get_population_baseline
+from app.games.core.base_game import MIN_LEVEL, MAX_LEVEL
 
 
+# Constants
 
-# contants
-DELTA = 100                    # ms buffer | prevents extreme scores on sub-100ms RT
-K = 1000                       # scaling factor | fallback scaling constant
+DELTA = 100  # Reaction-time buffer in ms to avoid extreme scores for very low RT.
+K = 1000  # Default scaling constant used when a game-specific value is unavailable.
+
 K_PER_GAME: dict[str, int] = {
     "stroop": 800,
     "memory_grid": 2400,
-    "mental_rotation": 2550,
+    "mental_rotation": 900,
 }
-MIN_LEVEL = 1
-MAX_LEVEL = 6
 
-# Fixed reference reaction times per game (ms)
-REFERENCE_RT: dict[str, int] = {
+# Fallback reference reaction times per game (ms).
+# Used when the population sample is too small to derive stable values.
+FALLBACK_REFERENCE_RT: dict[str, int] = {
     "stroop": 700,
     "memory_grid": 1700,
     "mental_rotation": 1300,
 }
 
-# RT floor = round(reference_rt * 0.35)
+# Lower RT bound per game to prevent unrealistically low reaction times
+# from disproportionately inflating the score.
 RT_FLOOR: dict[str, int] = {
-    slug: round(rt * 0.35) for slug, rt in REFERENCE_RT.items()
+    slug: round(rt * 0.35) for slug, rt in FALLBACK_REFERENCE_RT.items()
 }
 
-# Fixed reference baselines for centering pi_run around zero
+# Reference parameters used to compute a fixed baseline for each game.
+# This baseline is later subtracted from raw run performance.
 REFERENCE_BASELINE_PARAMS: dict[str, dict] = {
-    "stroop":          {"accuracy": 0.70, "reaction_time_ms": 700,  "level": 1},
-    "memory_grid":     {"accuracy": 0.25, "reaction_time_ms": 1700, "level": 1},
+    "stroop": {"accuracy": 0.70, "reaction_time_ms": 700, "level": 1},
+    "memory_grid": {"accuracy": 0.25, "reaction_time_ms": 1700, "level": 1},
     "mental_rotation": {"accuracy": 0.60, "reaction_time_ms": 1300, "level": 1},
 }
 
-# Rating-eligibility accuracy thresholds (percent, 0-100 — matches runs.avg_accuracy canonical scale)
+# Minimum binary accuracy required for a run to be rating-eligible.
+# Values are expressed as percentages (0-100), matching runs.avg_accuracy scale.
 RATING_ACCURACY_THRESHOLDS: dict[str, float] = {
     "stroop": 50.0,
     "memory_grid": 30.0,
     "mental_rotation": 50.0,
 }
 
-# Skill rating constants
+# Skill rating configuration.
 SKILL_RATING_BASE = 1000
 SKILL_RATING_SCALE = 100
 SKILL_RATING_WINDOW = 7
 
-# Consistency window
+# Number of runs considered when computing rolling consistency.
 CONSISTENCY_WINDOW = 5
 
-
-# Cached baseline
+# Cache for precomputed fixed baselines.
 _BASELINE_CACHE: dict[str, float] = {}
 
 
 def get_fixed_baseline(game_slug: str) -> float:
-    """Return the fixed per-game baseline (pi_trial_raw at reference params)."""
+    """Return the fixed per-game baseline computed from reference parameters."""
     if game_slug not in _BASELINE_CACHE:
         params = REFERENCE_BASELINE_PARAMS.get(game_slug, REFERENCE_BASELINE_PARAMS["stroop"])
         _BASELINE_CACHE[game_slug] = calculate_pi_trial_raw(
@@ -75,8 +79,8 @@ def get_fixed_baseline(game_slug: str) -> float:
     return _BASELINE_CACHE[game_slug]
 
 
-
 # Data classes
+
 @dataclass
 class TrialResult:
     trial_number: int
@@ -104,8 +108,8 @@ class RunResult:
     rating_eligible: bool = False
 
 
-
 # Per-trial scoring
+
 def calculate_pi_trial_raw(
     accuracy: float,
     reaction_time_ms: float,
@@ -113,18 +117,26 @@ def calculate_pi_trial_raw(
     game_slug: str = "stroop",
     delta: int = DELTA,
 ) -> float:
-    """Core trial score: (accuracy / (effective_rt + DELTA)) * K * exp(0.15 * level)."""
+    """
+    Compute the raw Performance Index for a single trial.
+
+    Formula:
+        (accuracy / (effective_rt + DELTA)) * K * exp(0.15 * level)
+
+    The reaction time is clamped to a game-specific floor to avoid
+    unrealistically small RT values producing inflated scores.
+    """
     accuracy = max(0.0, min(1.0, accuracy))
     level = max(MIN_LEVEL, min(MAX_LEVEL, level))
     k = K_PER_GAME.get(game_slug, K)
-    rt_floor = RT_FLOOR.get(game_slug, round(REFERENCE_RT.get(game_slug, 700) * 0.35))
+    rt_floor = RT_FLOOR.get(game_slug, round(FALLBACK_REFERENCE_RT.get(game_slug, 700) * 0.35))
     effective_rt = max(reaction_time_ms, rt_floor)
     level_bonus = math.exp(0.15 * level)
     return (accuracy / (effective_rt + delta)) * k * level_bonus
 
 
-
 # Run processing
+
 def process_run(
     player_id: str,
     game_slug: str,
@@ -133,11 +145,23 @@ def process_run(
     stage: str = "training",
     recent_runs: list[dict] | None = None,
 ) -> RunResult:
-    """Process a completed run: compute pi_trial, pi_run, quality, consistency, rating eligibility."""
+    """
+    Process a completed run and compute all derived metrics.
+
+    This includes:
+    - per-trial accuracy
+    - per-trial PI
+    - baseline-adjusted run PI
+    - quality score
+    - consistency score
+    - rating eligibility
+    """
     if not trials:
         logger.warning("Empty trials for run %s", run_id)
         return RunResult(
-            player_id=player_id, game_id=game_slug, run_id=run_id,
+            player_id=player_id,
+            game_id=game_slug,
+            run_id=run_id,
             timestamp=datetime.now(timezone.utc),
         )
 
@@ -146,11 +170,11 @@ def process_run(
         "=" * 90, run_id[-12:], len(trials), "=" * 90,
     )
 
-    # 1. Compute trial accuracy
+    # 1. Compute trial-level accuracy.
     for trial in trials:
         trial.accuracy = compute_trial_accuracy(game_slug=game_slug, trial=trial)
 
-    # 2. Compute pi_trial for each trial
+    # 2. Compute raw PI for each trial.
     for trial in trials:
         raw_pi = calculate_pi_trial_raw(
             trial.accuracy, trial.reaction_time_ms, trial.level, game_slug=game_slug,
@@ -162,24 +186,27 @@ def process_run(
             trial.reaction_time_ms, raw_pi,
         )
 
-    # 3. Compute pi_run = mean(pi_trial) - fixed_baseline
+    # 3. Compute run-level PI:
+    #    mean(pi_trial) - fixed_baseline - population_median
     pi_trials = [t.pi_trial for t in trials]
     pi_run_raw = statistics.mean(pi_trials)
     baseline = get_fixed_baseline(game_slug)
     pi_run = pi_run_raw - baseline
+    pop = get_population_baseline(game_slug)
+    pi_run -= pop.median_pi_run
 
     if math.isnan(pi_run) or math.isinf(pi_run):
         logger.warning("Invalid pi_run (%.4f) for %s, resetting to 0", pi_run, run_id)
         pi_run = 0.0
 
-    # 4. Compute run metrics
+    # 4. Compute aggregate run metrics.
     accuracies = [t.accuracy for t in trials]
     reaction_times = [t.reaction_time_ms for t in trials]
     avg_accuracy = statistics.mean(accuracies)
     avg_rt = statistics.mean(reaction_times)
     final_level = trials[-1].level
 
-    # 5. Quality score (0-100)
+    # 5. Compute quality score.
     quality_score = calculate_quality_score(
         avg_accuracy=avg_accuracy,
         avg_reaction_time_ms=avg_rt,
@@ -187,7 +214,7 @@ def process_run(
         game_slug=game_slug,
     )
 
-    # 6. Consistency score (rolling across recent runs)
+    # 6. Compute consistency score using recent runs.
     consistency_score = calculate_consistency_score(
         current_pi_run=pi_run,
         current_avg_accuracy=avg_accuracy,
@@ -195,7 +222,7 @@ def process_run(
         recent_runs=recent_runs,
     )
 
-    # 7. Rating eligibility — binary accuracy in percent (matches runs.avg_accuracy canonical scale)
+    # 7. Determine rating eligibility based on binary accuracy in percent.
     rating_eligible = False
     if stage == "training":
         binary_accuracy_pct = 100.0 * statistics.mean(
@@ -233,8 +260,8 @@ def process_run(
     return result
 
 
-
 # Quality score
+
 def calculate_quality_score(
     avg_accuracy: float,
     avg_reaction_time_ms: float,
@@ -242,12 +269,17 @@ def calculate_quality_score(
     game_slug: str = "stroop",
 ) -> float:
     """
-    Quality (0-100):
-      50% accuracy + 30% speed + 20% difficulty
+    Compute the overall quality score in the range 0-100.
+
+    Weighted components:
+    - 50% accuracy
+    - 30% speed
+    - 20% difficulty
     """
     accuracy_component = max(0.0, min(1.0, avg_accuracy))
 
-    ref_rt = REFERENCE_RT.get(game_slug, 700)
+    pop = get_population_baseline(game_slug)
+    ref_rt = pop.median_rt
     rt_floor = RT_FLOOR.get(game_slug, round(ref_rt * 0.35))
     speed_component = max(0.0, min(1.0, ref_rt / max(avg_reaction_time_ms, rt_floor)))
 
@@ -263,6 +295,7 @@ def calculate_quality_score(
 
 
 # Consistency score
+
 def calculate_consistency_score(
     current_pi_run: float,
     current_avg_accuracy: float,
@@ -270,8 +303,14 @@ def calculate_consistency_score(
     recent_runs: list[dict] | None = None,
 ) -> float:
     """
-    Consistency (0-100): rolling stability across last up to 5 runs including current.
-    If fewer than 2 runs, returns 100.
+    Compute consistency in the range 0-100 using a rolling run window.
+
+    The score reflects stability across:
+    - run PI
+    - average accuracy
+    - average reaction time
+
+    If fewer than two runs are available, the score defaults to 100.
     """
     pi_list = [current_pi_run]
     acc_list = [current_avg_accuracy]
@@ -308,10 +347,17 @@ def calculate_consistency_score(
 
 
 # Skill rating
+
 def calculate_skill_rating(eligible_pi_runs: list[float]) -> int:
     """
-    Compute skill_rating from last up to 7 rating-eligible pi_run values.
-    Values should be ordered by ended_at descending (most recent first).
+    Compute skill rating from up to the last 7 rating-eligible pi_run values.
+
+    Expected input order:
+        most recent first
+
+    For up to 4 values, the mean is used directly.
+    For more than 4 values, the lowest and highest values are removed
+    before averaging to reduce the effect of outliers.
     """
     values = eligible_pi_runs[:SKILL_RATING_WINDOW]
 

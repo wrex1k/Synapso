@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import time
+
 from PySide6.QtCore import QEvent, QObject, QSize, Qt, QThread, Signal
 from PySide6.QtGui import QColor, QIcon, QPixmap
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget
 
 from app.games.stroop.game import StroopGame
-from app.games.memory_grid import MemoryGridGame
-from app.games.mental_rotation import MentalRotationGame
+from app.games.memory_grid.game import MemoryGridGame
+from app.games.mental_rotation.game import MentalRotationGame
 from app.games.core.base_game import BaseGame, GAME_ID_MAP
 from app.games.core.tutorial import TutorialRunner
 from app.service.game_service import GameService
@@ -100,11 +102,14 @@ class _RealtimeWorker(QObject):
 
     def run(self) -> None:
         """Subscribe to Supabase Realtime updates for the player_game_stats of this game."""
-        subscribe_leaderboard(
-            self._game_db_id,
-            self.changed.emit,
-            on_loop_ready=self._store_loop,
-        )
+        try:
+            subscribe_leaderboard(
+                self._game_db_id,
+                self.changed.emit,
+                on_loop_ready=self._store_loop,
+            )
+        except Exception as exc:
+            logger.warning("Realtime worker exited unexpectedly for game_db_id=%d: %s", self._game_db_id, exc)
 
     def _store_loop(self, loop) -> None:
         """Callback from subscribe_leaderboard with the asyncio event loop used for the Realtime subscription."""
@@ -138,6 +143,10 @@ class GamesView(QWidget):
         self._current_index: int = 0
         self._game_panels: dict[str, QWidget] = {}
         self._threads: list = []
+
+        # Named operations to prevent duplicate concurrent fetches
+        self._stats_op = registry.operation("games-stats-fetch")
+        self._lb_op = registry.operation("games-leaderboard-fetch")
 
         # Realtime leaderboard workers by game_db_id
         self._rt_workers: dict[int, tuple[QThread, _RealtimeWorker]] = {}
@@ -531,16 +540,39 @@ class GamesView(QWidget):
         self._switcher_refresh()
 
         if self._game_keys:
-            self._load_stats_for_current()
+            self._load_all_stats()
             self._load_leaderboard_for_current()
             for key in self._game_keys:
                 self._start_realtime_for(self._game_db_ids[key])
 
+    def _load_all_stats(self) -> None:
+        """Fetch stats for all games in one background operation."""
+        keys = list(self._game_keys)
+        db_ids = dict(self._game_db_ids)
+        uid = self._user_id
+
+        def _fetch_all() -> dict:
+            results = {}
+            for k in keys:
+                db_id = db_ids.get(k)
+                if db_id is not None:
+                    results[k] = fetch_game_stats(db_id, uid)
+            return results
+
+        def _on_all_loaded(results: dict) -> None:
+            if not results:
+                return
+            for k, stats in results.items():
+                self._on_stats_loaded(k, stats)
+
+        self._stats_op.start(registry.run_thread, _fetch_all, _on_all_loaded)
+
     def _load_stats_for(self, key: str, db_id: int) -> None:
-        self._keep_thread(registry.run_thread(
+        self._stats_op.start(
+            registry.run_thread,
             lambda gid=db_id, uid=self._user_id: fetch_game_stats(gid, uid),
             lambda stats, k=key: self._on_stats_loaded(k, stats),
-        ))
+        )
 
     def _load_stats_for_current(self) -> None:
         if not self._game_keys:
@@ -549,10 +581,11 @@ class GamesView(QWidget):
         self._load_stats_for(key, self._game_db_ids[key])
 
     def _load_leaderboard_for(self, db_id: int) -> None:
-        self._keep_thread(registry.run_thread(
+        self._lb_op.start(
+            registry.run_thread,
             lambda gid=db_id: fetch_leaderboard(gid, self._user_id),
             lambda data, gid=db_id: self._on_leaderboard_loaded(data, gid),
-        ))
+        )
 
     def _load_leaderboard_for_current(self) -> None:
         if not self._game_keys:
@@ -624,18 +657,18 @@ class GamesView(QWidget):
 
         avg_quality = stats.get("avg_quality")
         val, delta = stat_lbls["quality"]
-        val.setText(f"{avg_quality:.0f}" if avg_quality is not None else "—")
+        val.setText(f"{avg_quality:.0f}%" if avg_quality is not None else "—")
         quality_diff = stats.get("quality_diff")
         if quality_diff is not None:
             is_better = quality_diff > 0
             direction = "↑" if is_better else "↓"
             color = f"{SUCCESS}" if is_better else f"{DANGER}"
             if is_better:
-                message = translate("GamesView", "your quality is {value} above global avg").format(
+                message = translate("GamesView", "your quality is {value}% above global avg").format(
                     value=f"{abs(quality_diff):.1f}"
                 )
             else:
-                message = translate("GamesView", "your quality is {value} below global avg").format(
+                message = translate("GamesView", "your quality is {value}% below global avg").format(
                     value=f"{abs(quality_diff):.1f}"
                 )
             delta.setText(f'<span style="color:{color}; font-weight: 600;">{direction}</span>&nbsp;<span style="color:#FAFAFA;">{message}</span>')
@@ -727,9 +760,9 @@ class GamesView(QWidget):
         layout.addLayout(middle_col)
         layout.addStretch()
 
-        # Skill Rating on the right
-        skill_rating = entry.get('skill_rating', 1000)
-        score_lbl = QLabel(f"{int(skill_rating)}")
+        # ELO Rating on the right
+        elo_rating = entry.get('elo_rating', 1000)
+        score_lbl = QLabel(f"{int(elo_rating)}")
         score_lbl.setObjectName("leaderboardRowValue")
         score_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         layout.addWidget(score_lbl)
@@ -777,23 +810,17 @@ class GamesView(QWidget):
             lbl.setScaledContents(True)
             image_to_rounded(lbl)
         else:
-            logger.warning("Failed to load avatar from bytes (corrupted?), trying default.webp")
+            logger.warning("Failed to load avatar from bytes (corrupted?), using resource fallback")
             if "default.webp" in self._avatar_cache:
                 lbl.setPixmap(self._avatar_cache["default.webp"])
                 lbl.setScaledContents(True)
                 image_to_rounded(lbl)
             else:
-                try:
-                    default_data = fetch_avatar("default.webp")
-                    if default_data:
-                        default_pix = QPixmap()
-                        if default_pix.loadFromData(default_data):
-                            self._avatar_cache["default.webp"] = default_pix
-                            lbl.setPixmap(default_pix)
-                            lbl.setScaledContents(True)
-                            image_to_rounded(lbl)
-                except Exception as e:
-                    logger.warning("Failed to load default.webp as fallback: %s", e)
+                fallback = QPixmap(":/images/graphics/avatar.png")
+                if not fallback.isNull():
+                    lbl.setPixmap(fallback)
+                    lbl.setScaledContents(True)
+                    image_to_rounded(lbl)
 
     def _launch_tutorial(self, game_id: str):
         if game_id in _INTRO_TUTORIAL_CLASSES:
@@ -991,6 +1018,13 @@ class GamesView(QWidget):
         thread.start()
 
     def _on_realtime_change(self, game_db_id: int) -> None:
+        now = time.monotonic()
+        last = getattr(self, "_rt_last_change", {})
+        if now - last.get(game_db_id, 0) < 5.0:
+            return
+        last[game_db_id] = now
+        self._rt_last_change = last
+
         key = next((k for k, v in self._game_db_ids.items() if v == game_db_id), None)
         if key is None:
             return
@@ -1000,7 +1034,15 @@ class GamesView(QWidget):
     def _stop_all_realtime(self) -> None:
         logger.info("Stopping all realtime subscriptions")
         add_breadcrumb("realtime", "Stopping all realtime subscriptions")
+        # Invalidate any pending avatar callbacks so they cannot touch deleted widgets
+        self._lb_avatar_slots.clear()
         for _db_id, (thread, worker) in list(self._rt_workers.items()):
+            # Disconnect before stopping so queued changed events fired after cleanup
+            # cannot reach the (soon-to-be-deleted) GamesView via QueuedConnection
+            try:
+                worker.changed.disconnect()
+            except RuntimeError:
+                pass
             worker.stop()
             self._dying_threads.append(thread)
             thread.finished.connect(
@@ -1017,6 +1059,8 @@ class GamesView(QWidget):
     def showEvent(self, event):
         super().showEvent(event)
         self._retranslate_ui()
+        if self._game_keys:
+            self._load_leaderboard_for_current()
 
     def hideEvent(self, event) -> None:
         super().hideEvent(event)

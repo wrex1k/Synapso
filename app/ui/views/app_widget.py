@@ -220,9 +220,22 @@ class AppWidget(QWidget):
         flush_heartbeat()
         self._root_stack.setCurrentIndex(0)
         old = self._root_stack.widget(1)
-        self._root_stack.removeWidget(old)
-        old.deleteLater()
+        if old is not None:
+            self._root_stack.removeWidget(old)
+            old.deleteLater()
         self._root_stack.insertWidget(1, QWidget())
+
+    def cleanup(self) -> None:
+        """Stop background workers (realtime subscriptions) from the previous session before logout/re-login."""
+        games_view = self._page_instances.get("games")
+        if games_view is not None and hasattr(games_view, "_stop_all_realtime"):
+            games_view._stop_all_realtime()
+
+    def closeEvent(self, event):
+        games_view = self._page_instances.get("games")
+        if games_view is not None and hasattr(games_view, "_stop_all_realtime"):
+            games_view._stop_all_realtime()
+        super().closeEvent(event)
 
     def paintEvent(self, event):
         draw_background(self, event)

@@ -178,7 +178,7 @@ class DashboardController(QObject):
             reaction = row.get("avg_reaction_time_ms")
             reaction_text = f"{int(reaction)} ms" if isinstance(reaction, (int, float)) else "—"
             acc = row.get("avg_accuracy")
-            acc_text = f"{acc:.2f}%" if isinstance(acc, (int, float)) else "—"
+            acc_text = self._fmt_pct(acc) if isinstance(acc, (int, float)) else "—"
             items.append(
                 {
                     "game": self._label_for_slug(slug),

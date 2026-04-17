@@ -107,7 +107,7 @@ class MemoryGridTutorial(BaseTutorialWidget):
     def _get_practice_subtitle_html(self) -> str:
         return translate(
             "MemoryGridTutorial",
-            'Let\'s learn how the <span style="color:#3EAC91;">Memory Grid</span> works. Memorize the pattern!',
+            'Let\'s learn how the <span style="color:#3EAC91;">Memory Grid</span> works. This will only take a minute!',
         )
 
     def _build_example_page(self, step: dict) -> QWidget:

@@ -2,6 +2,7 @@ from datetime import datetime
 
 from PySide6.QtCore import QTimer
 
+from app.core.registry import registry
 from app.repository.activity_repository import send_heartbeat
 from app.utils.logger import get_logger
 from app.utils.breadcrumbs import add_breadcrumb
@@ -15,7 +16,7 @@ ActivityService manages the user activity heartbeats to update the last seen att
 _heartbeat_timer: QTimer | None = None
 _current_user_id: str | None = None
 _last_tick: datetime | None = None
-
+_heartbeat_op = registry.operation("heartbeat")
 
 
 def _tick(user_id: str):
@@ -23,7 +24,7 @@ def _tick(user_id: str):
     now = datetime.now()
     elapsed = int((now - _last_tick).total_seconds()) if _last_tick else 0
     _last_tick = now
-    send_heartbeat(user_id, elapsed)
+    _heartbeat_op.start(registry.run_thread, lambda: send_heartbeat(user_id, elapsed), None)
 
 
 def start_heartbeat(user_id: str):

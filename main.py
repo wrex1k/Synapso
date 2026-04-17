@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
-from app.utils.logging_config import setup_logging, get_logger
+from app.utils.logger import setup_logging, get_logger
 
 if getattr(sys, "frozen", False):
     load_dotenv(dotenv_path=Path(sys.executable).parent / ".env", override=False)
@@ -13,13 +13,13 @@ else:
 
 setup_logging()
 
-_logger = get_logger("synapso.main")
+_logger = get_logger(__name__)
 
 from app.utils.crash_handler import install_crash_handlers, log_startup_diagnostics
 from app.utils.breadcrumbs import add_breadcrumb
 
-from PySide6.QtGui import Qt, QIcon
-from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import Qt, QIcon, QPalette, QColor
+from PySide6.QtWidgets import QApplication, QStyleFactory
 
 import resources_rc
 
@@ -39,12 +39,16 @@ def get_resource_path(relative: str) -> str:
 
 
 def _get_app_icon() -> QIcon:
-    ico_path = get_resource_path("resources/images/graphics/logo.ico")
+    for name in ("synapso.ico", "logo.ico"):
+        ico_path = get_resource_path(f"resources/images/graphics/{name}")
+        if os.path.isfile(ico_path):
+            return QIcon(ico_path)
 
-    if os.path.isfile(ico_path):
-        return QIcon(ico_path)
+    icon = QIcon(":/images/graphics/logo.png")
+    if not icon.isNull():
+        return icon
 
-    return QIcon(":/images/graphics/logo.png")
+    return QIcon()
 
 
 def _acquire_single_instance_lock() -> object | None:
@@ -69,7 +73,23 @@ def main():
 
     app = QApplication(sys.argv)
 
-    # Install crash handlers after QApplication exists
+    # override system-dependent widget colors with Fusion style and a custom dark palette
+    app.setStyle(QStyleFactory.create("Fusion"))
+
+    dark_palette = QPalette()
+    dark_palette.setColor(QPalette.ColorRole.Window,          QColor(30, 30, 30))
+    dark_palette.setColor(QPalette.ColorRole.WindowText,      QColor(250, 250, 250))
+    dark_palette.setColor(QPalette.ColorRole.Base,            QColor(25, 25, 25))
+    dark_palette.setColor(QPalette.ColorRole.AlternateBase,   QColor(40, 40, 40))
+    dark_palette.setColor(QPalette.ColorRole.Text,            QColor(250, 250, 250))
+    dark_palette.setColor(QPalette.ColorRole.Button,          QColor(50, 50, 50))
+    dark_palette.setColor(QPalette.ColorRole.ButtonText,      QColor(250, 250, 250))
+    dark_palette.setColor(QPalette.ColorRole.BrightText,      QColor(255, 255, 255))
+    dark_palette.setColor(QPalette.ColorRole.Highlight,       QColor(34, 117, 111))
+    dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(250, 250, 250))
+    app.setPalette(dark_palette)
+
+    # install crash handlers after QApplication exists
     install_crash_handlers()
     log_startup_diagnostics()
 
@@ -77,8 +97,9 @@ def main():
     app.setWindowIcon(_get_app_icon())
 
     # initialize translations based on saved language preference or system language
-    init_translations(get_language())
-    add_breadcrumb("app", "Translations initialized", language=get_language())
+    lang = get_language()
+    init_translations(lang)
+    add_breadcrumb("app", "Translations initialized", language=lang)
 
     # get custom cursor for the entire application
     app.setOverrideCursor(create_custom_cursor())

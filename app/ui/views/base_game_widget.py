@@ -85,6 +85,7 @@ class BaseGameWidget(QWidget):
         self._trial_params: dict | None = None
         self._after_feedback: str | None = None
         self._threads: list = []
+        self._session_finished: bool = False
 
         self._build_ui()
 
@@ -242,6 +243,7 @@ class BaseGameWidget(QWidget):
         def _task() -> bool:
             try:
                 self._service.start_run()
+                self._service.persist_run_creation()
                 return True
             except Exception:
                 logger.exception("Failed to initialize %s training", self._game_name)
@@ -291,6 +293,11 @@ class BaseGameWidget(QWidget):
         return False
 
     def _finish_session(self, completed: bool) -> None:
+        if self._session_finished:
+            return
+        self._session_finished = True
+        self._timer.stop()
+        self._tick.stop()
         add_breadcrumb("game", f"{self._game_name} session finished", completed=completed, mode=self._mode)
         if self._service:
             if self._mode == "training":
@@ -322,7 +329,7 @@ class BaseGameWidget(QWidget):
                             "Could not abort %s tutorial run: %s", self._game_name, exc
                         )
         self._service = None
-        self.session_done.emit(completed)
+        QTimer.singleShot(0, self, lambda: self.session_done.emit(completed))
 
     def closeEvent(self, event) -> None:
         if self._service:

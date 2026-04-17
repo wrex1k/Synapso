@@ -608,6 +608,10 @@ STATISTICS_FONT_STYLES = f"""
     QLabel#statGameMetricValue {{
         font-size: {SIZE_SMALL}px;
     }}
+
+    QLabel#statChartTitle {{
+        font-size: {SIZE_XSMALL}
+    }}
 """
 
 # about.py

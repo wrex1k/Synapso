@@ -274,9 +274,11 @@ class DashboardView(QWidget):
         self._recent_games_title_lbl.setObjectName("dashboardCardTitle")
 
         self._recent_games_container = QWidget()
+        self._recent_games_container.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._recent_games_layout = QVBoxLayout(self._recent_games_container)
         self._recent_games_layout.setContentsMargins(0, 0, 0, 0)
         self._recent_games_layout.setSpacing(60)
+        self._recent_games_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         empty = QLabel(translate("DashboardView", "Loading..."))
         empty.setObjectName("dashboardCardSubtitle")
@@ -285,7 +287,6 @@ class DashboardView(QWidget):
 
         layout.addWidget(self._recent_games_title_lbl)
         layout.addWidget(self._recent_games_container)
-        layout.addStretch()
 
         return card
 

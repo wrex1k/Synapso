@@ -3,28 +3,8 @@ from __future__ import annotations
 import random
 
 from app.games.core.base_game import BaseGame, TrialResult
-from app.games.stroop.config import (
-    COLORS,
-    LEVEL_PARAMS,
-    NEUTRAL_WORDS,
-    MAX_LEVEL,
-    MIN_LEVEL,
-    COLOR_MAP,
-    RT_PENALTY_THRESHOLD_PER_LEVEL,
-    ColorDef,
-)
-
-
-__all__ = [
-    "COLORS",
-    "MIN_LEVEL",
-    "MAX_LEVEL",
-    "COLOR_MAP",
-    "RT_PENALTY_THRESHOLD_PER_LEVEL",
-    "LEVEL_PARAMS",
-    "ColorDef",
-    "StroopGame",
-]
+from app.games.stroop.config import COLORS, LEVEL_PARAMS, NEUTRAL_WORDS, ColorDef
+from app.games.core.base_game import MIN_LEVEL, MAX_LEVEL
 
 
 class StroopGame(BaseGame):
@@ -101,7 +81,6 @@ class StroopGame(BaseGame):
     def _next_stimulus(self, stimulus_type: str) -> dict:
         stimulus = self._generate_stimulus(stimulus_type)
 
-        # Avoid immediate duplicate stimuli to keep the sequence varied.
         for _ in range(self.REROLL_ATTEMPTS - 1):
             sig = self._stimulus_signature(stimulus)
             if sig != self._last_stimulus_signature or self._same_stimulus_run < self.MAX_SAME_STIMULUS_RUN:

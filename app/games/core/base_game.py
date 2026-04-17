@@ -11,6 +11,8 @@ GAME_ID_MAP = {
 }
 
 NUM_TRIALS_PER_RUN = 20
+MIN_LEVEL = 1
+MAX_LEVEL = 6
 
 @dataclass
 class TrialResult:
@@ -26,6 +28,9 @@ class TrialResult:
 
 
 class BaseGame(ABC):
+    _LEVEL_UP_STREAK: int = 3
+    _LEVEL_DOWN_STREAK: int = 2
+
     def __init__(
         self,
         game_slug: str,
@@ -46,6 +51,8 @@ class BaseGame(ABC):
         self.current_trial_index: int = 0
         self.trials: list[TrialResult] = []
         self.started_at: datetime | None = None
+        self._correct_streak: int = 0
+        self._incorrect_streak: int = 0
 
     @abstractmethod
     def start_trial(self) -> dict:
@@ -69,6 +76,8 @@ class BaseGame(ABC):
         self.current_trial_index = 0
         self.trials = []
         self.started_at = None
+        self._correct_streak = 0
+        self._incorrect_streak = 0
 
     def get_progress(self) -> dict:
         return {
@@ -98,15 +107,34 @@ class BaseGame(ABC):
             "total_trials": len(self.trials),
         }
 
+    def _is_trial_correct_for_streak(self, trial: TrialResult) -> bool:
+        """Return whether *trial* counts as 'correct' for level-adjustment purposes."""
+        return trial.is_correct
+
     def _adjust_level(self) -> None:
-        window = 5
-        if len(self.trials) < window:
+        """3-up / 2-down staircase adaptive algorithm.
+
+        Level increases after *_LEVEL_UP_STREAK* consecutive correct trials.
+        Level decreases after *_LEVEL_DOWN_STREAK* consecutive incorrect trials.
+        Streaks reset whenever the level changes so the player must prove
+        ability at the new level before any further adjustment.
+        """
+        if not self.trials:
             return
 
-        recent = self.trials[-window:]
-        accuracy = sum(1 for t in recent if t.is_correct) / window
+        last = self.trials[-1]
+        if self._is_trial_correct_for_streak(last):
+            self._correct_streak += 1
+            self._incorrect_streak = 0
+        else:
+            self._incorrect_streak += 1
+            self._correct_streak = 0
 
-        if accuracy >= 0.8 and self.level < self.max_level:
+        if self._correct_streak >= self._LEVEL_UP_STREAK and self.level < self.max_level:
             self.level += 1
-        elif accuracy < 0.5 and self.level > self.min_level:
+            self._correct_streak = 0
+            self._incorrect_streak = 0
+        elif self._incorrect_streak >= self._LEVEL_DOWN_STREAK and self.level > self.min_level:
             self.level -= 1
+            self._correct_streak = 0
+            self._incorrect_streak = 0

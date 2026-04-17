@@ -5,7 +5,7 @@ TutorialRepository manages game tutorial completion state in Supabase:
 """
 from datetime import datetime, timezone
 
-from app.repository.supabase_client import get_client
+from app.repository.supabase_client import get_client, with_retry
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -15,9 +15,8 @@ from app.games.core.base_game import GAME_ID_MAP
 
 def get_tutorial_completed(user_id: str, game_slug: str) -> bool:
     """Check if the user has completed the tutorial for the specified game."""
-    try:
+    def _fetch():
         game_id = GAME_ID_MAP.get(game_slug, 1)
-
         result = (
             get_client()
             .table("game_tutorials")
@@ -27,11 +26,11 @@ def get_tutorial_completed(user_id: str, game_slug: str) -> bool:
             .limit(1)
             .execute()
         )
-
         if result.data:
             return bool(result.data[0].get("completed", False))
         return False
-
+    try:
+        return with_retry(_fetch)
     except Exception as e:
         logger.warning("Failed to check tutorial status: %s", e)
         return False

@@ -200,6 +200,7 @@ class RegistrationController(QObject):
                 self._draft.avatar_path = "default.webp"
 
             save_user(self._draft.to_dict())
+            self._draft.created_at = datetime.datetime.now(datetime.timezone.utc)
             logger.info(
                 "User registered successfully (user_id: ..%s, username: %s)",
                 self._draft.id[-10:],

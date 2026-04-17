@@ -154,7 +154,7 @@ class MentalRotationTutorial(BaseTutorialWidget):
     def _get_practice_subtitle_html(self) -> str:
         return translate(
             "MentalRotationTutorial",
-            'Let\'s learn how the <span style="color:#3EAC91;">Mental Rotation</span> works. Compare both shapes!',
+            'Let\'s learn how the <span style="color:#3EAC91;">Mental Rotation</span> works. This will only take a minute!',
         )
 
     def _build_example_page(self, step: dict) -> QWidget:

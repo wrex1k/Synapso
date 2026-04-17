@@ -11,7 +11,7 @@ RunRepository manages game run and trial data in Supabase:
 from datetime import datetime, timezone
 import uuid
 
-from app.repository.supabase_client import get_client
+from app.repository.supabase_client import get_client, with_retry
 from app.utils.logger import get_logger
 from app.utils.crash_handler import set_last_backend_op
 from app.games.core.base_game import GAME_ID_MAP
@@ -203,7 +203,7 @@ def save_trials(run_id: str, game_slug: str, trials: list) -> None:
 
 def fetch_user_run_history(user_id: str, game_slug: str, limit: int = 20) -> list[dict]:
     """Return the most recent completed training runs for a user and game, in chronological order."""
-    try:
+    def _fetch():
         game_id = GAME_ID_MAP.get(game_slug, 1)
         client = get_client()
         result = (
@@ -223,6 +223,8 @@ def fetch_user_run_history(user_id: str, game_slug: str, limit: int = 20) -> lis
         )
         rows = result.data or []
         return list(reversed(rows))
+    try:
+        return with_retry(_fetch)
     except Exception as e:
         logger.warning(
             "Failed to fetch run history for user=..%s, game_slug=%s: %s",
@@ -259,29 +261,25 @@ def fetch_recent_completed_training_runs(
         return []
 
 
-def fetch_rating_eligible_pi_runs(
-    user_id: str, game_slug: str, limit: int = 7,
-) -> list[float]:
-    """Return the last N rating-eligible pi_run values (most recent first)."""
+def fetch_rating_eligible_run_count(user_id: str, game_slug: str) -> int:
+    """Return the number of completed rating-eligible training runs for this player/game."""
     try:
         game_id = GAME_ID_MAP.get(game_slug, 1)
         client = get_client()
         result = (
             client.table("runs")
-            .select("pi_run")
+            .select("run_id", count="exact")
             .eq("user_id", user_id)
             .eq("game_id", game_id)
             .eq("status", "completed")
             .eq("stage", "training")
             .eq("rating_eligible", True)
-            .order("ended_at", desc=True)
-            .limit(limit)
             .execute()
         )
-        return [r["pi_run"] for r in (result.data or []) if r.get("pi_run") is not None]
+        return result.count or 0
     except Exception as e:
         logger.warning(
-            "Failed to fetch rating-eligible runs for user=..%s, game=%s: %s",
+            "Failed to fetch eligible run count for user=..%s, game=%s: %s",
             user_id[-10:], game_slug, e,
         )
-        return []
+        return 0

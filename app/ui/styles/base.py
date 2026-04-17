@@ -13,6 +13,8 @@ from app.ui.styles.fonts import get_full_fonts
 GLOBAL_STYLES = f"""
     * {{
         outline: none;
+        selection-background-color: {PRIMARY};
+        selection-color: {OFF_WHITE};
     }}
     
     QLabel {{
@@ -88,6 +90,7 @@ INPUT_FIELD_STYLES = f"""
         border: 1px solid {BORDER_PRIMARY};
         border-radius: 20px;
         padding: 10px 15px;
+
     }}
 
     QLineEdit#inputEdit:hover {{
@@ -248,6 +251,27 @@ DIALOG_WINDOW_STYLES = f"""
     }}
 """
 
+CLOSE_BTN_STYLES = f"""
+    QPushButton#closeBtnOverlay {{
+        border: none;
+        background-color: transparent;
+        color: transparent;
+        border-radius: 17px;
+        font-weight: 400;
+    }}
+
+    QPushButton#closeBtnOverlay:hover {{
+        color: {OFF_WHITE};
+        background-color: {BACKGROUND_GLASS};
+        border: 1px solid {BORDER_LIGHTGREY};
+    }}
+
+    QPushButton#closeBtnOverlay:pressed {{
+        background-color: {DARK};
+        color: {OFF_WHITE};
+    }}
+"""
+
 def get_full_stylesheet():
     return (
         get_full_fonts()
@@ -270,4 +294,5 @@ def get_full_stylesheet():
         + FORGOT_PASSWORD_STYLES
         + PROFILE_STYLES
         + SETTINGS_STYLES
+        + CLOSE_BTN_STYLES
     )

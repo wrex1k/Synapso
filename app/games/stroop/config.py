@@ -18,9 +18,6 @@ COLORS: list[ColorDef] = [
     ColorDef("PURPLE", (150, 60, 200), "p"),
 ]
 
-MIN_LEVEL = 1
-MAX_LEVEL = 6
-
 COLOR_MAP = {c.name.lower(): c.rgb for c in COLORS}
 
 RT_PENALTY_THRESHOLD_PER_LEVEL = {

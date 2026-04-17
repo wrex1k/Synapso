@@ -1,8 +1,5 @@
 """Memory Grid game configuration and constants."""
 
-MIN_LEVEL = 1
-MAX_LEVEL = 6
-
 LEVEL_PARAMS: dict[int, dict] = {
     1: {"grid_size": 3, "pattern_min": 3, "pattern_max": 5, "display_ms": 1200, "response_ms": 3000, "cluster_factor": 0.0},
     2: {"grid_size": 4, "pattern_min": 5, "pattern_max": 7, "display_ms": 1400, "response_ms": 4200, "cluster_factor": 0.0},

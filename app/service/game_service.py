@@ -9,11 +9,12 @@ from app.games.core.base_game import BaseGame
 from app.games.core.tutorial import TutorialRunner
 from app.repository.run_repository import (
     abandon_run, create_run, save_run, save_trials,
-    fetch_recent_completed_training_runs, fetch_rating_eligible_pi_runs,
+    fetch_recent_completed_training_runs, fetch_rating_eligible_run_count,
 )
 from app.repository.tutorial_repository import set_tutorial_completed
 from app.repository.stats_repository import fetch_player_game_stats, upsert_player_game_stats
-from app.service.pi_system import TrialResult as PITrialResult, process_run, calculate_skill_rating
+from app.service.pi_system import TrialResult as PITrialResult, process_run, calculate_elo_rating
+from app.service.population_baseline import get_population_baseline
 from app.utils.logger import get_logger
 from app.utils.breadcrumbs import add_breadcrumb
 from app.utils.crash_handler import set_last_backend_op
@@ -30,7 +31,7 @@ def _compute_player_stats_update(
     avg_reaction_time_ms: float | None = None,
     quality_score: float | None = None,
     consistency_score: float | None = None,
-    skill_rating: int = 1000,
+    elo_rating: int = 1000,
 ) -> dict:
     """Compute the new player_game_stats values after a completed run."""
     if current:
@@ -39,8 +40,8 @@ def _compute_player_stats_update(
         best_pi = current.get("best_pi_run")
         old_rt = current.get("avg_reaction_time_ms") or 0.0
         old_acc = current.get("avg_accuracy") or 0.0
-        old_quality = current.get("quality_average") or 0.0
-        old_consistency = current.get("consistency_average") or 0.0
+        old_quality = current.get("avg_quality") or 0.0
+        old_consistency = current.get("avg_consistency") or 0.0
         # Compatibility: pre-backfill rows may store on 0-1 scale
         if 0 < old_quality <= 1:
             old_quality = old_quality * 100
@@ -63,8 +64,8 @@ def _compute_player_stats_update(
     now = datetime.now(timezone.utc).isoformat()
 
     logger.info(
-        "\nSTATS UPDATE: pi_run=%.2f | runs=%d | skill_rating=%d",
-        pi_run, total_runs, skill_rating,
+        "\nSTATS UPDATE: pi_run=%.2f | runs=%d | elo_rating=%d",
+        pi_run, total_runs, elo_rating,
     )
 
     return {
@@ -75,9 +76,9 @@ def _compute_player_stats_update(
         "updated_at": now,
         "avg_reaction_time_ms": _running_avg(old_rt, avg_reaction_time_ms),
         "avg_accuracy": _running_avg(old_acc, avg_accuracy),
-        "quality_average": _running_avg(old_quality, quality_score),
-        "consistency_average": _running_avg(old_consistency, consistency_score),
-        "skill_rating": skill_rating,
+        "avg_quality": _running_avg(old_quality, quality_score),
+        "avg_consistency": _running_avg(old_consistency, consistency_score),
+        "elo_rating": elo_rating,
     }
 
 
@@ -197,7 +198,7 @@ class GameService:
 
         normalized_metrics = {
             "avg_reaction_time_ms": metrics.get("avg_reaction_time_ms", 0.0),
-            "avg_accuracy": metrics.get("accuracy", 0.0),
+            "avg_accuracy": run_result.avg_accuracy,
             "final_level": self.game.level,
             "total_trials": len(self.game.trials),
             "pi_run": run_result.pi_run,
@@ -235,15 +236,25 @@ class GameService:
                     try:
                         current = fetch_player_game_stats(self.game.user_id, self.game.game_slug)
 
-                        # Compute skill_rating from rating-eligible runs
                         try:
-                            eligible_pis = fetch_rating_eligible_pi_runs(
-                                self.game.user_id, self.game.game_slug, limit=7,
+                            pop = get_population_baseline(self.game.game_slug)
+                            current_rating = int(current.get("elo_rating") or 1000) if current else 1000
+                            eligible_count = fetch_rating_eligible_run_count(
+                                self.game.user_id, self.game.game_slug,
                             )
-                            skill_rating = calculate_skill_rating(eligible_pis)
+                            if run_result.rating_eligible:
+                                elo_rating = calculate_elo_rating(
+                                    current_rating=current_rating,
+                                    pi_run=run_result.pi_run,
+                                    pop_median_pi_run=pop.median_pi_run,
+                                    pop_pi_run_scale=pop.pi_run_scale,
+                                    eligible_run_count=eligible_count,
+                                )
+                            else:
+                                elo_rating = current_rating
                         except Exception as e_rating:
-                            logger.warning("Could not compute skill_rating: %s", e_rating)
-                            skill_rating = current.get("skill_rating", 1000) if current else 1000
+                            logger.warning("Could not compute elo_rating: %s", e_rating)
+                            elo_rating = current.get("elo_rating", 1000) if current else 1000
 
                         new_stats = _compute_player_stats_update(
                             current=current,
@@ -253,7 +264,7 @@ class GameService:
                             avg_reaction_time_ms=run_result.avg_reaction_time,
                             quality_score=run_result.quality_score,
                             consistency_score=run_result.consistency_score,
-                            skill_rating=skill_rating,
+                            elo_rating=elo_rating,
                         )
                         upsert_player_game_stats(self.game.user_id, self.game.game_slug, new_stats)
                     except Exception as e:

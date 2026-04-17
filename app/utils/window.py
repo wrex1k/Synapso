@@ -35,3 +35,6 @@ def set_central_widget(window, widget: QWidget):
 
     window.setCentralWidget(widget)
     widget.show()
+
+    if hasattr(window, "_reposition_close_btn"):
+        window._reposition_close_btn()

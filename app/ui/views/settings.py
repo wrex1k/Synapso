@@ -8,9 +8,10 @@ from app.ui.styles.settings import SETTINGS_STYLES
 from app.utils.settings import get_language, set_language
 from app.utils.ui_helpers import build_header
 from translations.translation import get_translation_manager, translate
-from app.utils.logger import logger
 from app.core.registry import registry
 
+from app.utils.logger import get_logger
+logger = get_logger(__name__)
 
 
 class SettingsView(QWidget):

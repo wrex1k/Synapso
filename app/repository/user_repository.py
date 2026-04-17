@@ -110,9 +110,9 @@ def delete_user(user_id: str) -> None:
             client.table("trials").delete().in_("run_id", run_ids).execute()
             logger.debug("Deleted trials for %d runs (user_id=..%s)", len(run_ids), user_id[-10:])
 
+        client.table("game_tutorials").delete().eq("user_id", user_id).execute()
         client.table("runs").delete().eq("user_id", user_id).execute()
         client.table("player_game_stats").delete().eq("user_id", user_id).execute()
-        client.table("game_tutorials").delete().eq("user_id", user_id).execute()
         client.table("user_activity").delete().eq("user_id", user_id).execute()
         client.table("reports").delete().eq("user_id", user_id).execute()
 

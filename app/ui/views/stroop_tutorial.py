@@ -147,7 +147,7 @@ class StroopTutorial(BaseTutorialWidget):
     def _get_practice_subtitle_html(self) -> str:
         return translate(
             "StroopTutorial",
-            'Let\'s learn how the <span style="color:#3EAC91;">Stroop</span> test works. This will only take a minute!',
+            'Let\'s learn how the <span style="color:#3EAC91;">Stroop</span> Test works. This will only take a minute!',
         )
 
     def _build_example_page(self, step: dict[str, str]) -> QWidget:

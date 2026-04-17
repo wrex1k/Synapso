@@ -1,11 +1,11 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QMainWindow
+from PySide6.QtWidgets import QMainWindow, QPushButton
 
 from app.models.user import User
 
 from app.utils.logger import get_logger
 from app.utils.breadcrumbs import add_breadcrumb
-from app.utils.logging_config import set_user_context
+from app.utils.logger import set_user_context
 from app.utils.crash_handler import set_active_view
 from app.utils.window import set_central_widget
 from app.service.auth_service import refresh_up
@@ -39,7 +39,7 @@ class App(FramelessWindowMixin, QMainWindow):
         self.resize(1000, 800)
         
         # remove title bar and window frame
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowMinimizeButtonHint)
+        self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowMinimizeButtonHint)
         
         # enable translucent background for rounded corners
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -88,6 +88,10 @@ class App(FramelessWindowMixin, QMainWindow):
 
         # apply global stylesheet
         self.setStyleSheet(get_full_stylesheet())
+
+        # set close button
+        self.set_close_button()
+
 
         # app-level navigation
         self.loginWidget.start_registration.connect(self._start_registration_flow)
@@ -153,11 +157,23 @@ class App(FramelessWindowMixin, QMainWindow):
         set_active_view("register_auth")
         logger.info("Navigated to auth registration step")
 
+    def set_close_button(self):
+        self._close_btn = QPushButton("✕", self)
+        self._close_btn.setObjectName("closeBtnOverlay")
+        self._close_btn.setFixedSize(42, 42)
+        self._close_btn.clicked.connect(self.close)
+        self._close_btn.raise_()
+        self._reposition_close_btn()
+ 
     # show a app view
     def openApp(self, user: "User"):
         set_user_context(user.id)
         add_breadcrumb("auth", "User logged in", user_id=user.id[-10:])
         set_active_view("dashboard")
+
+        old_widget = getattr(self, "appWidget", None)
+        if old_widget is not None:
+            old_widget.cleanup()
 
         self.appWidget = AppWidget(user, parent=self)
         self.appWidget.logout_requested.connect(self._logoutController.logout)
@@ -165,6 +181,15 @@ class App(FramelessWindowMixin, QMainWindow):
         start_heartbeat(user.id)
         set_central_widget(self, self.appWidget)
         logger.info("App view opened for user (user_id: ..%s)", user.id[-10:])
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._reposition_close_btn()
+
+    def _reposition_close_btn(self):
+        if hasattr(self, "_close_btn"):
+            self._close_btn.move(self.width() - 50, 6)
+            self._close_btn.raise_()
 
     # clean up threads and resources on app close
     def closeEvent(self, event):

@@ -4,7 +4,8 @@ import random
 from enum import Enum, auto
 
 from app.games.core.base_game import BaseGame, TrialResult
-from app.games.memory_grid.config import LEVEL_PARAMS, MAX_LEVEL, MIN_LEVEL
+from app.games.memory_grid.config import LEVEL_PARAMS
+from app.games.core.base_game import MIN_LEVEL, MAX_LEVEL
 from app.utils.logger import get_logger
 logger = get_logger(__name__)
 
@@ -153,24 +154,9 @@ class MemoryGridGame(BaseGame):
         self._adjust_level()
         return result
 
-    def _adjust_level(self) -> None:
-        window = 5
-        if len(self.trials) < window:
-            return
-
-        recent = self.trials[-window:]
-        error_ratios: list[float] = []
-        for t in recent:
-            target_count = max(1, int(t.stimulus_params.get("target_count", 1)))
-            error_count = int(t.stimulus_params.get("error_count", 0))
-            error_ratios.append(error_count / target_count)
-
-        avg_error_ratio = sum(error_ratios) / len(error_ratios)
-
-        if avg_error_ratio <= 0.20 and self.level < self.max_level:
-            self.level += 1
-        elif avg_error_ratio >= 0.45 and self.level > self.min_level:
-            self.level -= 1
+    def _is_trial_correct_for_streak(self, trial: TrialResult) -> bool:
+        ratio = trial.stimulus_params.get("accuracy_ratio", 0.0)
+        return float(ratio) >= 0.75
 
 
 class _MGPhase(Enum):

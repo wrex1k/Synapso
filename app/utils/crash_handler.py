@@ -1,27 +1,16 @@
-"""
-Crash handling a startup diagnostics pre Synapso.
-
-Poskytuje:
-- install_crash_handlers()  — sys.excepthook + threading.excepthook
-- log_startup_diagnostics() — environment info pri štarte
-- write_crash_dump()        — separátny crash súbor
-"""
-
 import logging
 import os
 import platform
 import sys
 import threading
 import traceback
-import time
 from datetime import datetime
 
-from app.utils.logging_config import SESSION_ID, get_log_dir, get_user_context
+from app.utils.logger import get_log_dir, get_user_context
 from app.utils.breadcrumbs import add_breadcrumb, format_breadcrumbs
 
 logger = logging.getLogger("synapso.crash")
 
-# ── Track last active view for crash context ───────────────────────
 _active_view: str = "unknown"
 
 
@@ -34,7 +23,6 @@ def get_active_view() -> str:
     return _active_view
 
 
-# ── Track last backend operation ───────────────────────────────────
 _last_backend_op: str = "none"
 
 
@@ -47,7 +35,6 @@ def get_last_backend_op() -> str:
     return _last_backend_op
 
 
-# ── Crash dump writer ──────────────────────────────────────────────
 def write_crash_dump(exc_type, exc_value, exc_tb, thread_name: str = "MainThread") -> str | None:
     try:
         log_dir = get_log_dir()
@@ -63,8 +50,6 @@ def write_crash_dump(exc_type, exc_value, exc_tb, thread_name: str = "MainThread
             "SYNAPSO CRASH REPORT",
             "=" * 80,
             f"Timestamp:       {datetime.now().isoformat()}",
-            f"Session ID:      {SESSION_ID}",
-            f"PID:             {os.getpid()}",
             f"Thread:          {thread_name}",
             f"User ID:         {user_id}",
             f"Active view:     {_active_view}",
@@ -97,7 +82,6 @@ def write_crash_dump(exc_type, exc_value, exc_tb, thread_name: str = "MainThread
         return None
 
 
-# ── Crash summary logger ───────────────────────────────────────────
 def _log_crash_summary(exc_type, exc_value, exc_tb, thread_name: str = "MainThread"):
     tb_text = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
     user_id = get_user_context() or "not-logged-in"
@@ -107,7 +91,6 @@ def _log_crash_summary(exc_type, exc_value, exc_tb, thread_name: str = "MainThre
         "╔══════════════════════════════════════════════════════════════╗\n"
         "║                    UNHANDLED EXCEPTION                      ║\n"
         "╚══════════════════════════════════════════════════════════════╝\n"
-        f"  Session:      {SESSION_ID}\n"
         f"  Thread:       {thread_name}\n"
         f"  User:         {user_id}\n"
         f"  Active view:  {_active_view}\n"
@@ -126,14 +109,12 @@ def _log_crash_summary(exc_type, exc_value, exc_tb, thread_name: str = "MainThre
         logger.critical("Crash dump written to: %s", dump_path)
 
 
-# ── Exception hooks ────────────────────────────────────────────────
 _original_excepthook = sys.excepthook
 
 
 def _main_thread_excepthook(exc_type, exc_value, exc_tb):
     add_breadcrumb("crash", f"Unhandled exception: {exc_type.__name__}: {exc_value}")
     _log_crash_summary(exc_type, exc_value, exc_tb, thread_name="MainThread")
-    # Call original hook (prints to stderr)
     _original_excepthook(exc_type, exc_value, exc_tb)
 
 
@@ -144,7 +125,6 @@ def _threading_excepthook(args):
     thread = args.thread
     thread_name = thread.name if thread else "UnknownThread"
 
-    # Suppress SystemExit in daemon threads (normal shutdown)
     if exc_type is SystemExit:
         return
 
@@ -158,7 +138,6 @@ def install_crash_handlers() -> None:
     logger.debug("Crash handlers installed (sys.excepthook + threading.excepthook)")
 
 
-# ── Startup diagnostics ───────────────────────────────────────────
 def log_startup_diagnostics() -> None:
     frozen = getattr(sys, "frozen", False)
     exe_path = sys.executable if frozen else sys.argv[0] if sys.argv else __file__
@@ -166,7 +145,6 @@ def log_startup_diagnostics() -> None:
     is_dev = not frozen
     build_type = "development (script)" if is_dev else "production (frozen)"
 
-    # Screen resolution
     screen_info = "unknown"
     try:
         from PySide6.QtWidgets import QApplication
@@ -179,7 +157,6 @@ def log_startup_diagnostics() -> None:
     except Exception:
         pass
 
-    # App language
     language = "unknown"
     try:
         from app.utils.settings import get_language
@@ -187,7 +164,6 @@ def log_startup_diagnostics() -> None:
     except Exception:
         pass
 
-    # App version
     version = "unknown"
     try:
         from app import __version__
@@ -200,13 +176,11 @@ def log_startup_diagnostics() -> None:
         "┌──────────────────────────────────────────────────────────────┐\n"
         "│                   SYNAPSO STARTUP                           │\n"
         "└──────────────────────────────────────────────────────────────┘\n"
-        f"  Session ID:   {SESSION_ID}\n"
         f"  Version:      {version}\n"
         f"  Build:        {build_type}\n"
         f"  Python:       {platform.python_version()}\n"
         f"  OS:           {platform.platform()}\n"
         f"  Architecture: {platform.machine()}\n"
-        f"  PID:          {os.getpid()}\n"
         f"  CWD:          {os.getcwd()}\n"
         f"  Executable:   {exe_path}\n"
         f"  Screen:       {screen_info}\n"
@@ -214,4 +188,4 @@ def log_startup_diagnostics() -> None:
         f"  Log dir:      {get_log_dir()}\n"
     )
     logger.info(diag)
-    add_breadcrumb("app", "Application started", session_id=SESSION_ID)
+    add_breadcrumb("app", "Application started")

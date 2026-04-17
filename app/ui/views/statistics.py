@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QEvent, QMargins, QPointF, Qt, QThread
-from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPen
+from PySide6.QtGui import QBrush, QColor, QCursor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 from PySide6.QtCharts import QBarCategoryAxis, QBarSeries, QBarSet, QChart, QChartView, QLineSeries, QValueAxis
 
@@ -30,6 +30,7 @@ _GAME_LABELS = {
 }
 
 
+# formate float
 def _fmt_float(v: float | None, decimals: int = 2) -> str:
     return f"{v:.{decimals}f}" if v is not None else "—"
 
@@ -39,7 +40,6 @@ def _fmt_int(v: int | None) -> str:
 
 
 def _fmt_pct(v: float | None) -> str:
-    """v is 0-1 fraction or 0-100; treat >1 as already 0-100."""
     if v is None:
         return "—"
     pct = v * 100 if v <= 1.0 else v
@@ -54,6 +54,22 @@ def _make_divider() -> QFrame:
     line.setObjectName("statDivider")
     line.setFrameShape(QFrame.Shape.HLine)
     return line
+
+
+def _show_trend_hover(lbl: QLabel, view: "QChartView", chart: QChart, series: QLineSeries, pt: QPointF) -> None:
+    nearest = round(pt.x())
+    if nearest < 1 or abs(pt.x() - nearest) > 0.30:
+        lbl.hide()
+        return
+    scene_pos = chart.mapToPosition(QPointF(nearest, series.at(nearest - 1).y()), series)
+    widget_pos = view.mapFromScene(scene_pos)
+    lbl.setText(f"{series.at(nearest - 1).y():.2f}")
+    lbl.adjustSize()
+    x = int(widget_pos.x() - lbl.width() / 2)
+    y = int(widget_pos.y() - lbl.height() - 8)
+    lbl.move(x, y)
+    lbl.show()
+    lbl.raise_()
 
 
 def _create_chart_view(chart: QChart) -> QChartView:
@@ -106,6 +122,7 @@ class StatisticsView(QWidget):
         self._user_id = user_id
         self._chart_refs: list = []
         self._threads: list[QThread] = []
+        self._fetch_op = registry.operation("statistics-fetch")
 
         self._time_played: int = 0
         self._all_stats: dict = {"games": []}
@@ -129,7 +146,6 @@ class StatisticsView(QWidget):
         content_row.setSpacing(20)
         content_row.setContentsMargins(0, 0, 0, 0)
 
-        # Left column: trend chart on top, 3 game cards in a horizontal row below
         left_col = QVBoxLayout()
         left_col.setSpacing(16)
         left_col.setContentsMargins(0, 0, 0, 0)
@@ -137,7 +153,6 @@ class StatisticsView(QWidget):
         left_col.addLayout(self._build_game_cards_row(), 2)
         content_row.addLayout(left_col, 3)
 
-        # Right column: quick insights on top, game comparison below
         right_col = QVBoxLayout()
         right_col.setSpacing(16)
         right_col.setContentsMargins(0, 0, 0, 0)
@@ -320,10 +335,10 @@ class StatisticsView(QWidget):
 
         metric_defs = [
             ("Runs", "runs"),
-            ("Skill Rating", "skill_rating"),
+            ("ELO Rating", "elo_rating"),
             ("Best PI", "best_pi"),
-            ("Accuracy", "accuracy"),
-            ("Avg RT", "avg_rt"),
+            ("Average accuracy", "avg_acc"),
+            ("Average reaction time", "avg_rt"),
         ]
 
         labels: dict[str, QLabel] = {}
@@ -351,8 +366,6 @@ class StatisticsView(QWidget):
 
         return row_widget
 
-    # ── data loading ───────────────────────────────────────────────
-
     def showEvent(self, event):
         super().showEvent(event)
         self._load_data()
@@ -379,9 +392,10 @@ class StatisticsView(QWidget):
         for labels in self._game_cards.values():
             labels["_lbl_runs"].setText(translate("StatisticsView", "Runs"))
             labels["_lbl_best_pi"].setText(translate("StatisticsView", "Best PI"))
-            labels["_lbl_accuracy"].setText(translate("StatisticsView", "Accuracy"))
-            labels["_lbl_avg_rt"].setText(translate("StatisticsView", "Avg RT"))
+            labels["_lbl_avg_acc"].setText(translate("StatisticsView", "Average accuracy"))
+            labels["_lbl_avg_rt"].setText(translate("StatisticsView", "Average reaction time"))
 
+        self._chart_refs.clear()
         self._populate_trend_chart()
         self._populate_comparison_chart()
         self._populate_insights()
@@ -391,11 +405,12 @@ class StatisticsView(QWidget):
         thread.finished.connect(lambda t=thread: self._threads.remove(t) if t in self._threads else None)
 
     def _load_data(self):
-        self._keep_thread(registry.run_thread(
+        self._fetch_op.start(
+            registry.run_thread,
             self._fetch_all,
             self._on_data_loaded,
             name="stats-fetch",
-        ))
+        )
 
     def _fetch_all(self) -> dict:
         time_played = 0
@@ -428,12 +443,11 @@ class StatisticsView(QWidget):
         self._per_game = result["per_game"]
         self._run_histories = result["histories"]
 
+        self._chart_refs.clear()
         self._populate_game_cards()
         self._populate_insights()
         self._populate_trend_chart()
         self._populate_comparison_chart()
-
-    # ── populate ───────────────────────────────────────────────────
 
     def _populate_game_cards(self) -> None:
         for slug, labels in self._game_cards.items():
@@ -441,19 +455,18 @@ class StatisticsView(QWidget):
             if stats is None:
                 continue
             labels["runs"].setText(_fmt_int(stats.get("total_runs")))
-            labels["skill_rating"].setText(_fmt_int(stats.get("skill_rating")))
+            labels["elo_rating"].setText(_fmt_int(stats.get("elo_rating")))
             labels["best_pi"].setText(_fmt_float(stats.get("best_pi_run")))
-            labels["accuracy"].setText(_fmt_pct(stats.get("avg_accuracy")))
+            labels["avg_acc"].setText(_fmt_pct(stats.get("avg_accuracy")))
             labels["avg_rt"].setText(_fmt_ms(stats.get("avg_reaction_time_ms")))
 
     def _populate_insights(self) -> None:
         games_data = self._all_stats.get("games", [])
         id_to_slug = {v: k for k, v in GAME_ID_MAP.items()}
 
-        # Best game by skill_rating
         best_game_row = max(
-            (g for g in games_data if g.get("skill_rating") is not None),
-            key=lambda g: g["skill_rating"],
+            (g for g in games_data if g.get("elo_rating") is not None),
+            key=lambda g: g["elo_rating"],
             default=None,
         )
         if best_game_row:
@@ -462,7 +475,7 @@ class StatisticsView(QWidget):
         else:
             self._ins_best_game.setText("—")
 
-        best_acc = max((g.get("avg_accuracy") or 0.0 for g in games_data), default=0.0)
+        best_acc = max((game.get("avg_accuracy") or 0.0 for game in games_data), default=0.0)
         rt_values = [
             g["avg_reaction_time_ms"]
             for g in games_data
@@ -479,10 +492,9 @@ class StatisticsView(QWidget):
         else:
             self._ins_best_metric.setText(translate("StatisticsView", "Reaction time"))
 
-        # Needs improvement: lowest skill_rating game
         worst_game_row = min(
-            (g for g in games_data if g.get("skill_rating") is not None),
-            key=lambda g: g["skill_rating"],
+            (g for g in games_data if g.get("elo_rating") is not None),
+            key=lambda g: g["elo_rating"],
             default=None,
         )
         if worst_game_row and worst_game_row != best_game_row:
@@ -492,7 +504,6 @@ class StatisticsView(QWidget):
             self._ins_worst_metric.setText("—")
 
     def _populate_trend_chart(self) -> None:
-        # Clear the placeholder
         while self._trend_chart_layout.count():
             item = self._trend_chart_layout.takeAt(0)
             if item.widget():
@@ -517,6 +528,7 @@ class StatisticsView(QWidget):
             pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
             series.setPen(pen)
+            series.setPointsVisible(True)
 
             for i, v in enumerate(pi_values, start=1):
                 series.append(QPointF(i, v))
@@ -528,13 +540,13 @@ class StatisticsView(QWidget):
             all_vals.extend(pi_values)
 
         if has_data:
-            ax_x = _value_axis(translate("StatisticsView", "Run #"), min(max_x, 8))
+            ax_x = _value_axis(translate("StatisticsView", "Runs"), min(max_x, 8))
             ax_x.setRange(1, max(max_x, 2))
             ax_x.setLabelFormat("%d")
 
             y_min = min(all_vals) * 0.9
             y_max = max(all_vals) * 1.1
-            ax_y = _value_axis(translate("StatisticsView", "PI"))
+            ax_y = _value_axis("")
             ax_y.setRange(round(y_min, 1), round(y_max, 1))
 
             chart.addAxis(ax_x, Qt.AlignmentFlag.AlignBottom)
@@ -545,6 +557,19 @@ class StatisticsView(QWidget):
 
             view = _create_chart_view(chart)
             view.setMinimumHeight(200)
+
+            hover_lbl = QLabel(view)
+            hover_lbl.setObjectName("trendHoverLabel")
+            hover_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            hover_lbl.hide()
+
+            for s in all_series:
+                s.hovered.connect(
+                    lambda pt, state, _s=s, _c=chart, _v=view, _l=hover_lbl: (
+                        _show_trend_hover(_l, _v, _c, _s, pt) if state else _l.hide()
+                    )
+                )
+
             self._chart_refs.extend([chart, view])
             self._trend_chart_layout.addWidget(view)
         else:
@@ -554,7 +579,6 @@ class StatisticsView(QWidget):
             self._trend_chart_layout.addWidget(lbl)
 
     def _populate_comparison_chart(self) -> None:
-        # Clear the placeholder
         while self._comparison_layout.count():
             item = self._comparison_layout.takeAt(0)
             if item.widget():
@@ -577,11 +601,11 @@ class StatisticsView(QWidget):
             stats = self._per_game[slug]
             acc = stats.get("avg_accuracy")
             accuracy_vals.append(round((acc * 100) if acc is not None else 0, 1))
-            qual = stats.get("quality_average")
+            qual = stats.get("avg_quality")
             if qual is not None and 0 < qual <= 1:
                 qual = qual * 100
             quality_vals.append(round(qual if qual is not None else 0, 1))
-            cons = stats.get("consistency_average")
+            cons = stats.get("avg_consistency")
             if cons is not None and 0 < cons <= 1:
                 cons = cons * 100
             consistency_vals.append(round(cons if cons is not None else 0, 1))

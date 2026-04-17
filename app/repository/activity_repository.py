@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from app.repository.supabase_client import get_client
+from app.repository.supabase_client import get_client, with_retry
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -17,16 +17,18 @@ def send_heartbeat(user_id: str, elapsed_seconds: int):
         return
 
     try:
-        data = {
-            "user_id": user_id,
-            "last_seen": datetime.now(timezone.utc).isoformat(),
-            "time_played": get_time_played(user_id) + elapsed_seconds,
-        }
-        
-        result = get_client().table("user_activity").upsert(
-            data,
-            on_conflict="user_id",
-        ).execute()
+        def _do_heartbeat():
+            data = {
+                "user_id": user_id,
+                "last_seen": datetime.now(timezone.utc).isoformat(),
+                "time_played": get_time_played(user_id) + elapsed_seconds,
+            }
+            return get_client().table("user_activity").upsert(
+                data,
+                on_conflict="user_id",
+            ).execute()
+
+        result = with_retry(_do_heartbeat)
         
         if result.data:
             logger.debug("Heartbeat sent successfully (user_id: ..%s)", user_id[-10:])
@@ -38,8 +40,8 @@ def send_heartbeat(user_id: str, elapsed_seconds: int):
 
 
 def get_time_played(user_id: str) -> int:
-    data = (
-        get_client().table("user_activity")
+    data = with_retry(
+        lambda: get_client().table("user_activity")
         .select("time_played")
         .eq("user_id", user_id)
         .limit(1)

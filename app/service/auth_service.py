@@ -12,7 +12,7 @@ from app.repository.user_repository import fetch_user
 from app.utils.settings import get_language
 from app.utils.logger import get_logger
 from app.utils.breadcrumbs import add_breadcrumb
-from app.utils.logging_config import set_user_context
+from app.utils.logger import set_user_context
 from app.utils.crash_handler import set_last_backend_op
 
 logger = get_logger(__name__)

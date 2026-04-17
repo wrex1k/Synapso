@@ -41,7 +41,7 @@ REGISTER_STYLES = f"""
     QComboBox#dayBox::drop-down,
     QComboBox#yearBox::drop-down {{
         border: none;
-    }}
+   }}
 
     QComboBox#birthMonthBox QAbstractItemView,
     QComboBox#dayBox QAbstractItemView,
@@ -53,11 +53,11 @@ REGISTER_STYLES = f"""
         margin-top: 5px;
     }}
 
-    QComboBox#birthMonthBox QAbstractItemView::item:hover,
-    QComboBox#dayBox QAbstractItemView::item:hover,
-    QComboBox#yearBox QAbstractItemView::item:hover {{
-            background-color: #1B5E56;
-            color: #FFFFFF;
+    #birthMonthBox QAbstractItemView::item:hover,
+    #dayBox QAbstractItemView::item:hover,
+    #yearBox QAbstractItemView::item:hover {{
+        background-color: #1B5E56;
+        color: #FFFFFF;
     }}
 
     QPushButton#privacyNotice {{

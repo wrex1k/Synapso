@@ -4,8 +4,8 @@ import random
 from enum import Enum, auto
 
 from app.games.core.base_game import BaseGame, TrialResult
-from app.games.mental_rotation.config import LEVEL_PARAMS, MAX_LEVEL, MIN_LEVEL, SHAPES
-
+from app.games.mental_rotation.config import LEVEL_PARAMS, SHAPES
+from app.games.core.base_game import MIN_LEVEL, MAX_LEVEL
 
 class MentalRotationGame(BaseGame):
     def __init__(self, user_id: str):
@@ -113,19 +113,6 @@ class MentalRotationGame(BaseGame):
         self._adjust_level()
         return result
 
-    def _adjust_level(self) -> None:
-        window = 5
-        if len(self.trials) < window:
-            return
-
-        recent = self.trials[-window:]
-        performance = sum(1 for t in recent if t.is_correct) / window
-
-        if performance >= 0.8 and self.level < self.max_level:
-            self.level += 1
-        elif performance <= 0.5 and self.level > self.min_level:
-            self.level -= 1
-
 
 class _MRPhase(Enum):
     WARMUP = auto()
@@ -138,20 +125,20 @@ class _MRPhase(Enum):
 
 class MentalRotationTutorialRunner:
     _WARMUP_REQUIRED_CORRECT = 3
-    _WARMUP_MAX_TRIALS = 8
-    _ROTATION_REQUIRED_STREAK = 3
-    _ROTATION_MAX_TRIALS = 10
+    _WARMUP_MAX_TRIALS = 10
+    _ROTATION_REQUIRED_STREAK = 2
+    _ROTATION_MAX_TRIALS = 12
     _MIRROR_MIN_TRIALS = 6
-    _MIRROR_REQUIRED_ACCURACY = 0.70
-    _MIRROR_MAX_TRIALS = 14
-    _SPEED_REQUIRED_STREAK = 3
-    _SPEED_MAX_RT_RATIO = 0.70   # respond within 70% of stimulus window
-    _SPEED_MAX_TRIALS = 10
+    _MIRROR_REQUIRED_ACCURACY = 0.60
+    _MIRROR_MAX_TRIALS = 16
+    _SPEED_REQUIRED_STREAK = 2
+    _SPEED_MAX_RT_RATIO = 0.85   # respond within 85% of stimulus window
+    _SPEED_MAX_TRIALS = 12
 
-    _LEVEL_WARMUP    = 1   # 0%  mirror, 15-45°,   2000 ms
-    _LEVEL_ROTATION  = 2   # 20% mirror, 45-75°,   1800 ms
-    _LEVEL_MIRROR    = 4   # 40% mirror, 105-135°, 1400 ms
-    _LEVEL_SPEED     = 3   # 30% mirror, 75-105°,  1600 ms
+    _LEVEL_WARMUP    = 1   # 10% mirror, 15-45°,  2000 ms
+    _LEVEL_ROTATION  = 2   # 20% mirror, 45-75°,  1800 ms
+    _LEVEL_MIRROR    = 2   # 20% mirror, 45-75°,  1800 ms
+    _LEVEL_SPEED     = 2   # 20% mirror, 45-75°,  1800 ms
 
     def __init__(self, game: MentalRotationGame):
         self.game = game

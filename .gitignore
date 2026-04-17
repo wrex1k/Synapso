@@ -46,6 +46,7 @@ supabase/*
 # Dev tools
 tools/
 app/utils/dev/
+scripts/*
 
 # Tests
 tests/
@@ -54,3 +55,9 @@ pytest.ini
 # Lint
 .pylintrc
 pylint_report.txt
+
+# supabase
+supabase/*
+
+# internal
+_internal/*
