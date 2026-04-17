@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class ColorDef:
+    """Color definition with name, RGB value, and keyboard key."""
+
     name: str
     rgb: tuple[int, int, int]
     key: str
@@ -19,20 +21,6 @@ COLORS: list[ColorDef] = [
 ]
 
 COLOR_MAP = {c.name.lower(): c.rgb for c in COLORS}
-
-RT_PENALTY_THRESHOLD_PER_LEVEL = {
-    1: 1500,
-    2: 1400,
-    3: 1300,
-    4: 1200,
-    5: 1100,
-    6: 1000,
-}
-
-
-def get_rt_penalty_thresholds() -> dict[int, int]:
-    return dict(RT_PENALTY_THRESHOLD_PER_LEVEL)
-
 
 NEUTRAL_WORDS = [
     "TABLE", "CHAIR", "HOUSE", "PLATE", "GRASS", "CLOUD", "BRICK", "FLOOR"

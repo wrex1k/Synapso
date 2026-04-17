@@ -3,9 +3,8 @@ from __future__ import annotations
 import random
 from enum import Enum, auto
 
-from app.games.core.base_game import BaseGame, TrialResult
+from app.games.core.base_game import BaseGame, TrialResult, MIN_LEVEL, MAX_LEVEL
 from app.games.memory_grid.config import LEVEL_PARAMS
-from app.games.core.base_game import MIN_LEVEL, MAX_LEVEL
 from app.utils.logger import get_logger
 logger = get_logger(__name__)
 
@@ -13,6 +12,7 @@ class MemoryGridGame(BaseGame):
     """Spatial working-memory game based on reproducing highlighted cells."""
 
     def __init__(self, user_id: str):
+        """Initialize Memory Grid game with difficulty parameters."""
         super().__init__(
             game_slug="memory_grid",
             user_id=user_id,
@@ -21,17 +21,21 @@ class MemoryGridGame(BaseGame):
         )
 
     def _level_params(self) -> dict[str, int]:
+        """Return configuration parameters for current difficulty level."""
         return LEVEL_PARAMS.get(self.level, LEVEL_PARAMS[MIN_LEVEL])
 
     def create_tutorial_runner(self) -> "MemoryGridTutorialRunner":
+        """Create and return tutorial runner instance for this game."""
         return MemoryGridTutorialRunner(self)
 
     @staticmethod
     def _serialize_positions(positions: set[int] | list[int]) -> str:
+        """Convert position set to comma-separated string."""
         return ",".join(str(p) for p in sorted(positions))
 
     @staticmethod
     def _deserialize_positions(raw: str | None) -> set[int]:
+        """Parse comma-separated string into position set."""
         if not raw:
             return set()
         parsed: set[int] = set()
@@ -47,11 +51,13 @@ class MemoryGridGame(BaseGame):
 
     @staticmethod
     def _generate_pattern(grid_size: int, count: int, cluster_factor: float) -> list[int]:
+        """Generate pattern of highlighted cells with optional spatial clustering."""
         all_cells = list(range(grid_size * grid_size))
         if cluster_factor <= 0.0 or count >= len(all_cells):
             return sorted(random.sample(all_cells, count))
 
         def _neighbors(cell: int) -> list[int]:
+            """Return adjacent cells in grid."""
             r, c = divmod(cell, grid_size)
             result = []
             for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
@@ -75,6 +81,7 @@ class MemoryGridGame(BaseGame):
         return sorted(selected)
 
     def start_trial(self) -> dict:
+        """Generate next trial with random pattern based on current level."""
         p = self._level_params()
         grid_size = p["grid_size"]
         target_count = random.randint(p["pattern_min"], p["pattern_max"])
@@ -94,6 +101,7 @@ class MemoryGridGame(BaseGame):
         }
 
     def get_correct_answer(self, trial_params: dict) -> str:
+        """Return serialized correct answer positions."""
         return self._serialize_positions(trial_params.get("pattern_positions", []))
 
     def evaluate_trial(
@@ -102,6 +110,7 @@ class MemoryGridGame(BaseGame):
         response: str | None,
         reaction_time_ms: float,
     ) -> TrialResult:
+        """Evaluate trial and return result with hit/miss/false-positive metrics."""
         correct_set = set(trial_params.get("pattern_positions", []))
         selected_set = self._deserialize_positions(response)
 
@@ -155,11 +164,14 @@ class MemoryGridGame(BaseGame):
         return result
 
     def _is_trial_correct_for_streak(self, trial: TrialResult) -> bool:
+        """Check if trial meets threshold for streak counting."""
         ratio = trial.stimulus_params.get("accuracy_ratio", 0.0)
         return float(ratio) >= 0.75
 
 
 class _MGPhase(Enum):
+    """Memory Grid tutorial phase enumeration."""
+
     WARMUP = auto()
     SMALL_GRID = auto()
     LARGER_GRID = auto()
@@ -168,12 +180,7 @@ class _MGPhase(Enum):
 
 
 class MemoryGridTutorialRunner:
-    """
-    3-phase tutorial (each trial takes 5-7 s, so phases are kept short):
-      WARMUP       – 3×3 grid (level 1).  2 correct / max 5 trials.
-      SMALL_GRID   – 3×3 grid (level 1).  2 consecutive correct / max 7 trials.
-      LARGER_GRID  – 4×4 grid (level 2).  2 correct (total) / max 7 trials.
-    """
+    """Three-phase tutorial runner with warmup, small grid, and larger grid phases."""
 
     _WARMUP_REQUIRED_CORRECT = 2
     _WARMUP_MAX_TRIALS = 5
@@ -186,29 +193,32 @@ class MemoryGridTutorialRunner:
     _LEVEL_LARGER = 2
 
     def __init__(self, game: MemoryGridGame):
+        """Initialize tutorial runner with game instance and phase tracking."""
         self.game = game
         self._phase = _MGPhase.WARMUP
         self._phase_trials: list = []
-        self._failed_reason: str = ""
 
     @property
     def passed(self) -> bool:
+        """Return True if tutorial has been passed."""
         return self._phase == _MGPhase.PASSED
 
     @property
     def failed(self) -> bool:
+        """Return True if tutorial has failed."""
         return self._phase == _MGPhase.FAILED
 
     def configure(self):
+        """Configure game for tutorial mode and start warmup phase."""
         self.game.total_trials = 10**9
         self._phase = _MGPhase.WARMUP
         self._phase_trials = []
-        self._failed_reason = ""
         self.game.level = self._LEVEL_SMALL
         self.game.initial_level = self._LEVEL_SMALL
         self.game.begin_run()
 
     def check_after_trial(self) -> bool:
+        """Check phase completion criteria after trial and advance if passed."""
         if self._phase in (_MGPhase.PASSED, _MGPhase.FAILED):
             return self.passed
         latest = self.game.trials[-1] if self.game.trials else None
@@ -223,23 +233,8 @@ class MemoryGridTutorialRunner:
             return self._check_larger()
         return False
 
-    def get_progress_text(self) -> str:
-        pt = self._phase_trials
-        if self._phase == _MGPhase.WARMUP:
-            correct = sum(1 for t in pt if t.is_correct)
-            return f"Warm-up: {correct}/{self._WARMUP_REQUIRED_CORRECT}"
-        if self._phase == _MGPhase.SMALL_GRID:
-            return f"3\u00d73 streak: {self._trailing_streak(pt)}/{self._SMALL_REQUIRED_STREAK}"
-        if self._phase == _MGPhase.LARGER_GRID:
-            correct = sum(1 for t in pt if t.is_correct)
-            return f"4\u00d74: {correct}/{self._LARGER_REQUIRED_CORRECT}"
-        if self._phase == _MGPhase.PASSED:
-            return "\u2713 Tutorial passed!"
-        if self._phase == _MGPhase.FAILED:
-            return f"\u2717 Failed: {self._failed_reason}"
-        return ""
-
     def get_progress_pct(self) -> int:
+        """Return tutorial progress as percentage."""
         if self._phase == _MGPhase.PASSED:
             return 100
         base_map = {
@@ -260,6 +255,7 @@ class MemoryGridTutorialRunner:
         return int(base + within * 33)
 
     def _check_warmup(self) -> bool:
+        """Check warmup phase completion criteria."""
         pt = self._phase_trials
         correct = sum(1 for t in pt if t.is_correct)
         if correct >= self._WARMUP_REQUIRED_CORRECT:
@@ -269,6 +265,7 @@ class MemoryGridTutorialRunner:
         return False
 
     def _check_small(self) -> bool:
+        """Check small grid phase completion criteria."""
         pt = self._phase_trials
         streak = self._trailing_streak(pt)
         if streak >= self._SMALL_REQUIRED_STREAK:
@@ -278,6 +275,7 @@ class MemoryGridTutorialRunner:
         return False
 
     def _check_larger(self) -> bool:
+        """Check larger grid phase completion criteria."""
         pt = self._phase_trials
         correct = sum(1 for t in pt if t.is_correct)
         if correct >= self._LARGER_REQUIRED_CORRECT:
@@ -289,18 +287,20 @@ class MemoryGridTutorialRunner:
         return False
 
     def _enter_phase(self, phase: _MGPhase, level: int) -> None:
+        """Enter new phase and reset trial tracking."""
         self._phase = phase
         self._phase_trials = []
         self.game.level = level
         self.game.initial_level = level
 
     def _fail(self, reason: str) -> None:
-        self._failed_reason = reason
+        """Mark tutorial as failed."""
         self._phase = _MGPhase.FAILED
         self._phase_trials = []
 
     @staticmethod
     def _trailing_streak(trials) -> int:
+        """Calculate consecutive correct trials from end of list."""
         streak = 0
         for t in reversed(trials):
             if t.is_correct:

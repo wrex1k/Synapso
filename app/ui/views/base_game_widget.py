@@ -9,7 +9,6 @@ from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QProgressBar, QVBoxLayout, QWidget
 
 from app.utils.logger import get_logger
-from app.utils.breadcrumbs import add_breadcrumb
 
 logger = get_logger(__name__)
 from app.core.registry import registry
@@ -184,9 +183,9 @@ class BaseGameWidget(QWidget):
         self._runner = runner
         self._mode = "tutorial"
         self.setFocus()
+        self._set_drag_locked(True)
         self._db_ready = False
         self._countdown_done = False
-        add_breadcrumb("game", f"{self._game_name} tutorial starting")
         self._show_countdown()
         if self._should_skip_tutorial_async_init():
             self._db_ready = True
@@ -202,9 +201,9 @@ class BaseGameWidget(QWidget):
         self._runner = None
         self._mode = "training"
         self.setFocus()
+        self._set_drag_locked(True)
         self._db_ready = False
         self._countdown_done = False
-        add_breadcrumb("game", f"{self._game_name} play starting")
         self._show_countdown()
         self._start_play_flow_async()
 
@@ -298,7 +297,6 @@ class BaseGameWidget(QWidget):
         self._session_finished = True
         self._timer.stop()
         self._tick.stop()
-        add_breadcrumb("game", f"{self._game_name} session finished", completed=completed, mode=self._mode)
         if self._service:
             if self._mode == "training":
                 if completed:
@@ -329,7 +327,14 @@ class BaseGameWidget(QWidget):
                             "Could not abort %s tutorial run: %s", self._game_name, exc
                         )
         self._service = None
+        self._set_drag_locked(False)
         QTimer.singleShot(0, self, lambda: self.session_done.emit(completed))
+
+    def _set_drag_locked(self, locked: bool) -> None:
+        """Lock or unlock window dragging and resizing."""
+        win = self.window()
+        if hasattr(win, "_drag_locked"):
+            win._drag_locked = locked
 
     def closeEvent(self, event) -> None:
         if self._service:
@@ -340,6 +345,7 @@ class BaseGameWidget(QWidget):
             except Exception as exc:
                 logger.warning("closeEvent abort failed for %s: %s", self._game_name, exc)
             self._service = None
+        self._set_drag_locked(False)
         super().closeEvent(event)
 
     def keyPressEvent(self, event) -> None:

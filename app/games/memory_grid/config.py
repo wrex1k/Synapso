@@ -8,11 +8,3 @@ LEVEL_PARAMS: dict[int, dict] = {
     5: {"grid_size": 7, "pattern_min": 11, "pattern_max": 15, "display_ms": 2200, "response_ms": 5400, "cluster_factor": 0.55},
     6: {"grid_size": 8, "pattern_min": 13, "pattern_max": 18, "display_ms": 2400, "response_ms": 5800, "cluster_factor": 0.60},
 }
-
-RT_PENALTY_THRESHOLD_PER_LEVEL: dict[int, int] = {
-    level: params["response_ms"] for level, params in LEVEL_PARAMS.items()
-}
-
-
-def get_rt_penalty_thresholds() -> dict[int, int]:
-    return dict(RT_PENALTY_THRESHOLD_PER_LEVEL)

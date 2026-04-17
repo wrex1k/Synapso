@@ -4,10 +4,11 @@ import re
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, QUrl, QSize
+from PySide6.QtGui import QIcon, QPixmap, QDesktopServices
 from PySide6.QtWidgets import QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QTextEdit, QWidget, QScrollArea, QStackedWidget
 
-from app.ui.styles.about import ABOUT_STYLES
+
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -103,7 +104,6 @@ class AboutView(QWidget):
     def __init__(self, user_id: str, parent=None):
         super().__init__(parent)
         self.setObjectName("aboutView")
-        self.setStyleSheet(ABOUT_STYLES)
         self.user_id = user_id
         self._build_ui()
         self._retranslate_ui()
@@ -137,6 +137,7 @@ class AboutView(QWidget):
         right_col_layout.setContentsMargins(0, 0, 0, 0)
         right_col_layout.setSpacing(20)
         right_col_layout.addWidget(self._build_built_with_card())
+        right_col_layout.addWidget(self._build_sponsor_card())
         right_col_layout.addWidget(self._build_report_card())
         right_col_layout.addStretch()
 
@@ -154,7 +155,7 @@ class AboutView(QWidget):
         card.setMinimumWidth(360)
 
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setContentsMargins(28, 28, 28, 28)
         layout.setSpacing(20)
 
         self._intro_title_lbl = QLabel("")
@@ -179,7 +180,7 @@ class AboutView(QWidget):
         card.setMinimumWidth(360)
 
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setContentsMargins(28, 28, 28, 28)
         layout.setSpacing(14)
 
         all_changelogs = _parse_all_changelogs()
@@ -303,7 +304,7 @@ class AboutView(QWidget):
         card.setMinimumWidth(360)
 
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setContentsMargins(28, 28, 28, 28)
         layout.setSpacing(12)
 
         self._report_card_title_lbl = QLabel("")
@@ -317,7 +318,7 @@ class AboutView(QWidget):
 
         self._report_editor = QTextEdit()
         self._report_editor.setObjectName("reportEditor")
-        self._report_editor.setFixedHeight(120)
+        self._report_editor.setFixedHeight(80)
         layout.addWidget(self._report_editor)
 
         btn_row = QWidget()
@@ -367,7 +368,7 @@ class AboutView(QWidget):
         card.setMinimumWidth(360)
 
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setContentsMargins(28, 28, 28, 28)
         layout.setSpacing(14)
 
         self._built_with_title_lbl = QLabel("")
@@ -399,6 +400,49 @@ class AboutView(QWidget):
 
         return card
 
+    def _build_sponsor_card(self) -> QWidget:
+        card = QWidget()
+        card.setObjectName("aboutCard")
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        card.setMinimumWidth(360)
+
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(28, 28, 28, 28)
+        layout.setSpacing(12)
+
+        self._sponsor_title_lbl = QLabel("")
+        self._sponsor_title_lbl.setObjectName("aboutCardTitle")
+        layout.addWidget(self._sponsor_title_lbl)
+
+        self._sponsor_desc_lbl = QLabel("")
+        self._sponsor_desc_lbl.setObjectName("aboutMetaText")
+        self._sponsor_desc_lbl.setWordWrap(True)
+        layout.addWidget(self._sponsor_desc_lbl)
+
+        btn_row = QHBoxLayout()
+        btn_row.setSpacing(10)
+        btn_row.setContentsMargins(0, 0, 0, 0)
+
+        kofi_btn = QPushButton(" Ko-fi")
+        kofi_btn.setObjectName("kofiButton")
+        kofi_btn.setIcon(QIcon(QPixmap(":/images/graphics/kofiLogo.png").scaled(18, 18, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)))
+        kofi_btn.setIconSize(QSize(18, 18))
+        kofi_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        kofi_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        kofi_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://ko-fi.com/wrexik")))
+
+        github_btn = QPushButton("GitHub")
+        github_btn.setObjectName("githubSponsorButton")
+        github_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        github_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        github_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://github.com/wrex1k/Synapso")))
+
+        btn_row.addWidget(kofi_btn)
+        btn_row.addWidget(github_btn)
+        layout.addLayout(btn_row)
+
+        return card
+
     def _rebuild_changelog(self) -> None:
         old = self._left_col_layout.itemAt(1).widget()
         if old is not None:
@@ -420,14 +464,18 @@ class AboutView(QWidget):
                 "<b>Synapso</b> is a cognitive training app designed to improve memory, attention, focus, "
                 "and mental flexibility through interactive brain games.<br><br>"
                 "<b>Games:</b><br>"
+                "\u2022 <b>Stroop Test</b> \u2014 Enhance focus and cognitive control<br>"
                 "\u2022 <b>Memory Grid</b> \u2014 Train working memory with pattern recall<br>"
-                "\u2022 <b>Mental Rotation</b> \u2014 Improve spatial reasoning<br>"
-                "\u2022 <b>Stroop Test</b> \u2014 Enhance focus and cognitive control<br><br>"
+                "\u2022 <b>Mental Rotation</b> \u2014 Improve spatial reasoning<br><br>"
                 "Track your performance, monitor progress, and train your brain consistently.",
             )
         )
         self._changelog_title_lbl.setText(translate("AboutView", "Changelog"))
         self._built_with_title_lbl.setText(translate("AboutView", "Built with"))
+        self._sponsor_title_lbl.setText(translate("AboutView", "Support the project"))
+        self._sponsor_desc_lbl.setText(
+            translate("AboutView", "If you like Synapso, consider supporting the project.")
+        )
         self._report_card_title_lbl.setText(translate("AboutView", "Report a bug"))
         self._report_hint_lbl.setText(
             translate("AboutView", "Describe the issue and include steps to reproduce.")

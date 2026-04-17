@@ -33,7 +33,6 @@ class NavbarWidget(QWidget):
 
         self.navbarLayout.addStretch(1)
 
-        # profile pill
         self.profileWidget = QWidget(self)
         self.profileWidget.setObjectName("profileWidget")
         self.profileWidget.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
@@ -89,4 +88,4 @@ class NavbarWidget(QWidget):
         return super().eventFilter(obj, event)
 
     def setName(self, username: str):
-        self.usernameLabel.setText(username or "—") 
+        self.usernameLabel.setText(username or "Player") 

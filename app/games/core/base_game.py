@@ -10,12 +10,25 @@ GAME_ID_MAP = {
     "mental_rotation": 3,
 }
 
+GAME_SLUGS = ["stroop", "memory_grid", "mental_rotation"]
+
+GAME_LABELS = {
+    "stroop": "Stroop Test",
+    "memory_grid": "Memory Grid",
+    "mental_rotation": "Mental Rotation",
+}
+
+GAME_ID_TO_SLUG = {value: key for key, value in GAME_ID_MAP.items()}
+
 NUM_TRIALS_PER_RUN = 20
 MIN_LEVEL = 1
 MAX_LEVEL = 6
 
+
 @dataclass
 class TrialResult:
+    """Container for trial result data including stimulus, response, and scoring information."""
+
     stimulus_params: dict
     response: str | None
     reaction_time_ms: float
@@ -28,6 +41,8 @@ class TrialResult:
 
 
 class BaseGame(ABC):
+    """Abstract base class for cognitive game implementations with adaptive difficulty."""
+
     _LEVEL_UP_STREAK: int = 3
     _LEVEL_DOWN_STREAK: int = 2
 
@@ -40,6 +55,7 @@ class BaseGame(ABC):
         min_level: int = 1,
         max_level: int = 1,
     ):
+        """Initialize game state with difficulty parameters and user context."""
         self.game_slug = game_slug
         self.user_id = user_id
         self.total_trials = total_trials
@@ -56,11 +72,11 @@ class BaseGame(ABC):
 
     @abstractmethod
     def start_trial(self) -> dict:
-        """Return stimulus parameters for the next trial."""
+        """Generate and return stimulus parameters for the next trial."""
 
     @abstractmethod
     def get_correct_answer(self, trial_params: dict) -> str:
-        """Return the expected answer for the given trial parameters."""
+        """Return the correct answer for the given trial parameters."""
 
     @abstractmethod
     def evaluate_trial(
@@ -69,9 +85,10 @@ class BaseGame(ABC):
         response: str | None,
         reaction_time_ms: float,
     ) -> TrialResult:
-        """Evaluate trial and return result with game-specific payloads."""
+        """Evaluate trial response and return structured result with correctness and payloads."""
 
     def begin_run(self) -> None:
+        """Reset game state and prepare for a new run."""
         self.level = self.initial_level
         self.current_trial_index = 0
         self.trials = []
@@ -80,6 +97,7 @@ class BaseGame(ABC):
         self._incorrect_streak = 0
 
     def get_progress(self) -> dict:
+        """Return current trial progress and difficulty level."""
         return {
             "current_trial": self.current_trial_index,
             "total_trials": self.total_trials,
@@ -87,6 +105,7 @@ class BaseGame(ABC):
         }
 
     def end_run(self) -> dict:
+        """Compute and return summary statistics for the completed run."""
         if not self.trials:
             return {
                 "avg_reaction_time_ms": None,
@@ -107,23 +126,12 @@ class BaseGame(ABC):
             "total_trials": len(self.trials),
         }
 
-    def _is_trial_correct_for_streak(self, trial: TrialResult) -> bool:
-        """Return whether *trial* counts as 'correct' for level-adjustment purposes."""
-        return trial.is_correct
-
     def _adjust_level(self) -> None:
-        """3-up / 2-down staircase adaptive algorithm.
-
-        Level increases after *_LEVEL_UP_STREAK* consecutive correct trials.
-        Level decreases after *_LEVEL_DOWN_STREAK* consecutive incorrect trials.
-        Streaks reset whenever the level changes so the player must prove
-        ability at the new level before any further adjustment.
-        """
         if not self.trials:
             return
 
-        last = self.trials[-1]
-        if self._is_trial_correct_for_streak(last):
+        last_trial = self.trials[-1]
+        if last_trial.is_correct:
             self._correct_streak += 1
             self._incorrect_streak = 0
         else:

@@ -7,8 +7,11 @@ from app.ui.styles.tutorial import TUTORIAL_STYLESHEET
 from app.ui.styles.forgot_password import FORGOT_PASSWORD_STYLES
 from app.ui.styles.profile import PROFILE_STYLES
 from app.ui.styles.settings import SETTINGS_STYLES
+from app.ui.styles.dashboard import DASHBOARD_STYLES
+from app.ui.styles.about import ABOUT_STYLES
+from app.ui.styles.statistics import STATISTICS_STYLES
 
-from app.ui.styles.fonts import get_full_fonts
+from app.ui.styles.fonts import get_full_fonts, scale_font_sizes
 
 GLOBAL_STYLES = f"""
     * {{
@@ -273,7 +276,7 @@ CLOSE_BTN_STYLES = f"""
 """
 
 def get_full_stylesheet():
-    return (
+    raw = (
         get_full_fonts()
         + BASE_STYLES
         + GLOBAL_STYLES
@@ -295,4 +298,8 @@ def get_full_stylesheet():
         + PROFILE_STYLES
         + SETTINGS_STYLES
         + CLOSE_BTN_STYLES
+        + DASHBOARD_STYLES
+        + ABOUT_STYLES
+        + STATISTICS_STYLES
     )
+    return scale_font_sizes(raw)

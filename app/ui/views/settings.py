@@ -1,10 +1,11 @@
-"""SettingsView: Application settings for language and theme."""
+"""SettingsView: Application settings for language."""
 
 from __future__ import annotations
 
+from PySide6.QtCore import QEvent, Qt
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget
 
-from app.ui.styles.settings import SETTINGS_STYLES
+from app.service.auth_service import sync_user_language
 from app.utils.settings import get_language, set_language
 from app.utils.ui_helpers import build_header
 from translations.translation import get_translation_manager, translate
@@ -18,7 +19,6 @@ class SettingsView(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("settingsView")
-        self.setStyleSheet(SETTINGS_STYLES)
         self._build_ui()
         self._sync_language_buttons()
         self._retranslate_ui()
@@ -39,11 +39,9 @@ class SettingsView(QWidget):
         cards_layout.setContentsMargins(0, 0, 0, 0)
 
         self._language_card = self._build_language_card()
-        self._theme_card = self._build_theme_card()
 
-        cards_layout.addWidget(self._language_card)
-        cards_layout.addWidget(self._theme_card)
-        cards_layout.addStretch()
+        cards_layout.addWidget(self._language_card, 1)
+        cards_layout.addStretch(2)
         root.addLayout(cards_layout)
 
         root.addStretch()
@@ -51,7 +49,7 @@ class SettingsView(QWidget):
     def _build_language_card(self) -> QWidget:
         card = QWidget()
         card.setObjectName("settingsCard")
-        card.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         layout = QVBoxLayout(card)
         layout.setContentsMargins(28, 28, 28, 28)
@@ -88,53 +86,12 @@ class SettingsView(QWidget):
 
         return card
 
-    def _build_theme_card(self) -> QWidget:
-        card = QWidget()
-        card.setObjectName("settingsCard")
-        card.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-
-        layout = QVBoxLayout(card)
-        layout.setContentsMargins(28, 28, 28, 28)
-        layout.setSpacing(12)
-
-        self._theme_title_lbl = QLabel("")
-        self._theme_title_lbl.setObjectName("settingsCardTitle")
-        layout.addWidget(self._theme_title_lbl)
-
-        self._theme_desc_lbl = QLabel("")
-        self._theme_desc_lbl.setObjectName("settingsCardDescription")
-        layout.addWidget(self._theme_desc_lbl)
-
-        layout.addStretch()
-
-        btn_row = QHBoxLayout()
-        btn_row.setSpacing(12)
-        btn_row.setContentsMargins(0, 0, 0, 0)
-
-        self._theme_dark_btn = QPushButton("")
-        self._theme_dark_btn.setObjectName("themeBtn")
-        self._theme_dark_btn.setProperty("active", "true")
-
-        self._theme_light_btn = QPushButton("")
-        self._theme_light_btn.setObjectName("themeBtn")
-        self._theme_light_btn.setProperty("active", "false")
-        self._theme_light_btn.setEnabled(False)
-
-        btn_row.addWidget(self._theme_dark_btn)
-        btn_row.addWidget(self._theme_light_btn)
-        btn_row.addStretch()
-        layout.addLayout(btn_row)
-
-        return card
-
     def _change_language(self, lang: str) -> None:
         set_language(lang)
         get_translation_manager().switch_language(lang)
         self._sync_language_buttons()
         self._retranslate_ui()
         logger.info("Language changed to %s", lang)
-
-        from app.service.auth_service import sync_user_language
 
         def _on_sync_finished(_result) -> None:
             logger.debug("sync-language-thread finished")
@@ -170,15 +127,7 @@ class SettingsView(QWidget):
             translate("SettingsView", "Select your preferred language")
         )
 
-        self._theme_title_lbl.setText(translate("SettingsView", "Theme"))
-        self._theme_desc_lbl.setText(
-            translate("SettingsView", "Choose the application appearance")
-        )
-        self._theme_dark_btn.setText(translate("SettingsView", "Dark"))
-        self._theme_light_btn.setText(translate("SettingsView", "Light"))
-
     def changeEvent(self, event):
-        from PySide6.QtCore import QEvent
         if event.type() == QEvent.Type.LanguageChange:
             self._sync_language_buttons()
             self._retranslate_ui()

@@ -255,10 +255,6 @@ GAMES_STYLES = f"""
 
 """
 
-def get_stroop_label_style(color: str, size: int, weight: int = 700) -> str:
-    return f"color: {color}; font-size: {size}px; font-weight: {weight}; background: transparent;"
-
-
 def format_hud_progress(label: str, current: str, total: str, primary_color: str = OFF_WHITE, secondary_color: str = GRAY) -> str:
     return (
         f'<span style="color:{primary_color};">{label}</span>&nbsp;&nbsp;'
@@ -296,14 +292,3 @@ def get_memory_grid_phase_style(color: str, size: int, weight: int = 600) -> str
 
 def get_memory_grid_counter_style(color: str = OFF_WHITE, size: int = 22, weight: int = 500) -> str:
     return f"color: {color}; font-size: {size}px; font-weight: {weight}; background: transparent;"
-
-
-def get_memory_grid_cell_style(state: str) -> str:
-    color = MEMORY_GRID_CELL_COLORS.get(state, MEMORY_GRID_CELL_COLORS["off"])
-    return (
-        f"QPushButton {{"
-        f"background-color: {color};"
-        f"border: none;"
-        f"border-radius: 16px;"
-        f"}}"
-    )

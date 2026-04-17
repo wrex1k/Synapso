@@ -1,8 +1,4 @@
-"""ForgotPassword view manages the multi-step password reset UI, including email submission, OTP verification, and password update.
-It provides signals for user actions that the ForgotPasswordController connects to, and methods to update the
-UI based on the controller's responses (e.g. showing success/error states and navigating between steps)."""
 
-import re
 
 from PySide6.QtCore import QEasingCurve, QEvent, QPoint, QPropertyAnimation, QRegularExpression, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QCursor, QFont, QIcon, QRegularExpressionValidator
@@ -52,7 +48,6 @@ class ForgotPassword(QWidget):
         mainLayout = QHBoxLayout(self)
         mainLayout.setContentsMargins(0, 0, 0, 0)
 
-        # back button
         self.backButton = BackButton(self)
         mainLayout.addWidget(self.backButton)
 
@@ -60,7 +55,6 @@ class ForgotPassword(QWidget):
         rootLayout = QVBoxLayout(contentWidget)
         rootLayout.setContentsMargins(0, 200, 120, 0)
 
-        # main frame
         frame = QFrame(contentWidget)
         frame.setObjectName("frame")
         frame.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -77,7 +71,6 @@ class ForgotPassword(QWidget):
         titleLayout.setSpacing(8)
         titleLayout.setContentsMargins(0, 0, 0, 0)
 
-        # title
         self.titleLeft = QLabel("", titleFrame)
         self.titleLeft.setObjectName("titleLeft")
         self.titleLeft.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom)
@@ -96,7 +89,6 @@ class ForgotPassword(QWidget):
 
         self.titleFrame = titleFrame
 
-        # info
         self.descLabel = QLabel("", frame)
         self.descLabel.setObjectName("descLabel")
         self.descLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -301,68 +293,61 @@ class ForgotPassword(QWidget):
         self.approveButton.clicked.connect(self.handle_verify_otp)
         self.updateButton.clicked.connect(self.handle_update_password)
 
-    # step 1 (email) → Step 2 (otp)
+    # step 1 (email) -> Step 2 (otp)
     def _show_email_step(self):
-        self.current_step = "email"
-        self.descLabel.setText(translate("ForgotPassword", "Enter your email address and we'll send you a code to reset your password."))
-
+        self.setUpdatesEnabled(False)
+        
         self.emailStep.setVisible(True)
         self.otpStep.setVisible(False)
         self.passwordStep.setVisible(False)
-
+        
+        self.current_step = "email"
+        self.descLabel.setText(translate("ForgotPassword", "Enter your email address and we'll send you a code to reset your password."))
         self.state = "idle"
         update_button_state(self.sendButton, "idle", idle_text=translate("ForgotPassword", "Send reset email"), loading_text=translate("ForgotPassword", "Sending…"))
+        
+        self.setUpdatesEnabled(True)
         self.emailEdit.setFocus()
 
-    # step 2 (otp) → Step 3 (password)
-    def _show_otp_step(self):
-        self.current_step = "otp"
-        self.descLabel.setText(translate("ForgotPassword", "Check your email. You received a code."))
-
+    # step 2 (otp) -> Step 3 (password)
+    def _show_otp_step(self, reset_timer=True):
+        self.setUpdatesEnabled(False)
+        
         self.emailStep.setVisible(False)
         self.otpStep.setVisible(True)
         self.passwordStep.setVisible(False)
-
-        self.state = "idle"
-        update_button_state(self.approveButton, "idle", idle_text=translate("ForgotPassword", "Approve Code"), loading_text=translate("ForgotPassword", "Verifying…"))
-
-        self.resend_timer_seconds = 60
-        self.resendButton.setEnabled(False)
-        self.resendButton.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
-        self.timer.start(1000)
-        self._update_timer()
-
-        for edit in self.otpInputs:
-            edit.clear()
-        self.otpInputs[0].setFocus()
-
-    # switching when timers is active
-    def _show_otp_step_resume(self):
+        
         self.current_step = "otp"
         self.descLabel.setText(translate("ForgotPassword", "Check your email. You received a code."))
-
-        self.emailStep.setVisible(False)
-        self.otpStep.setVisible(True)
-        self.passwordStep.setVisible(False)
-
         self.state = "idle"
         update_button_state(self.approveButton, "idle", idle_text=translate("ForgotPassword", "Approve Code"), loading_text=translate("ForgotPassword", "Verifying…"))
 
-        for edit in self.otpInputs:
-            edit.clear()
+        if reset_timer:
+            self.resend_timer_seconds = 60
+            self.resendButton.setEnabled(False)
+            self.resendButton.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
+            self.timer.start(1000)
+            self._update_timer()
+            for edit in self.otpInputs:
+                edit.clear()
+        
+        self.setUpdatesEnabled(True)
         self.otpInputs[0].setFocus()
 
-    # step 3 (password) → done
+    # step 3 (password) -> done
     def _show_password_step(self):
-        self.current_step = "password"
-        self.descLabel.setText(translate("ForgotPassword", "Enter your new password"))
-
+        self.setUpdatesEnabled(False)
+        
         self.emailStep.setVisible(False)
         self.otpStep.setVisible(False)
         self.passwordStep.setVisible(True)
-
+        
+        self.current_step = "password"
+        self.descLabel.setText(translate("ForgotPassword", "Enter your new password"))
         self.state = "idle"
         update_button_state(self.updateButton, "idle", idle_text=translate("ForgotPassword", "Update Password"), loading_text=translate("ForgotPassword", "Updating…"))
+        
+        self.setUpdatesEnabled(True)
         self.passwordField.line_edit.setFocus()
 
     def _on_otp_text_changed(self, text: str, index: int):
@@ -405,7 +390,7 @@ class ForgotPassword(QWidget):
 
         if self.timer.isActive():
             if self._last_sent_email and email.lower() == self._last_sent_email.lower():
-                self._show_otp_step_resume()
+                self._show_otp_step(reset_timer=False)
                 return
             else:
                 self.show_email_error(translate("ForgotPassword", "Please wait before sending another reset request"))
@@ -601,10 +586,10 @@ class ForgotPassword(QWidget):
     def _on_back_clicked(self):
         if self.current_step == "password":
             if self.timer.isActive():
-                self._show_otp_step_resume()
+                self._show_otp_step(reset_timer=False)
             else:
                 email = self.emailEdit.text().strip()
-                self._show_otp_step()
+                self._show_otp_step(reset_timer=True)
                 self.resend_code_back_signal.emit(email)
         elif self.current_step == "otp":
             self._show_email_step()

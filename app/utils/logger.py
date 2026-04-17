@@ -5,18 +5,17 @@ import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-
 _current_user_id: str | None = None
 
-
 def set_user_context(user_id: str | None) -> None:
+    """Set the current user ID for log context."""
     global _current_user_id
     _current_user_id = user_id
 
 
 def get_user_context() -> str | None:
+    """Return the current user ID for log context."""
     return _current_user_id
-
 
 _SENSITIVE_PATTERNS = [
     (re.compile(r'(access_token["\s:=]+)[^\s,\}\"]{8,}', re.IGNORECASE), r'\1[REDACTED]'),
@@ -31,12 +30,14 @@ _SENSITIVE_PATTERNS = [
 
 
 def sanitize(text: str) -> str:
+    """Redact sensitive tokens and secrets from log text."""
     for pattern, replacement in _SENSITIVE_PATTERNS:
         text = pattern.sub(replacement, text)
     return text
 
 
 def _get_log_dir() -> str:
+    """Resolve the log directory path based on platform and environment."""
     env_dir = os.getenv("LOG_DIR")
     if env_dir:
         return env_dir
@@ -53,6 +54,7 @@ def _get_log_dir() -> str:
 
 class _SafeRotatingFileHandler(RotatingFileHandler):
     def doRollover(self):
+        """Perform log file rollover, recovering gracefully from PermissionError."""
         if self.stream:
             self.stream.close()
             self.stream = None
@@ -67,6 +69,7 @@ class _SafeRotatingFileHandler(RotatingFileHandler):
 
 class SanitizeFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
+        """Sanitize sensitive data from log record messages."""
         if record.args:
             try:
                 formatted = record.msg % record.args
@@ -81,6 +84,7 @@ class SanitizeFilter(logging.Filter):
 
 class _ContextFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
+        """Inject user_id into the log record before formatting."""
         record.user_id = _current_user_id or "-"
         return super().format(record)
 
@@ -96,6 +100,7 @@ class _ColorContextFormatter(_ContextFormatter):
     RESET = "\033[0m"
 
     def format(self, record: logging.LogRecord) -> str:
+        """Format log record with ANSI color codes based on severity level."""
         msg = super().format(record)
         color = self.COLORS.get(record.levelno, "")
         return f"{color}{msg}{self.RESET}" if color else msg
@@ -107,10 +112,12 @@ class _LevelListFilter(logging.Filter):
         self.allowed_levels = allowed_levels
 
     def filter(self, record: logging.LogRecord) -> bool:
+        """Allow only log records whose level is in the allowed set."""
         return record.levelno in self.allowed_levels
 
 
 def _parse_log_levels_env() -> set[int] | None:
+    """Parse the LOG_LEVELS environment variable into a set of level ints."""
     raw = os.getenv("LOG_LEVELS", "").strip()
     if not raw:
         return None
@@ -123,6 +130,7 @@ def _parse_log_levels_env() -> set[int] | None:
 
 
 def _enable_windows_ansi() -> None:
+    """Enable ANSI escape code processing on Windows consoles."""
     if sys.platform == "win32":
         try:
             os.system("")
@@ -134,6 +142,7 @@ _initialized = False
 
 
 def setup_logging() -> None:
+    """Configure root logger with file and console handlers."""
     global _initialized
     if _initialized:
         return
@@ -190,9 +199,11 @@ def setup_logging() -> None:
 
 
 def get_logger(name: str = "synapso") -> logging.Logger:
+    """Return a named logger, ensuring logging is initialized."""
     setup_logging()
     return logging.getLogger(name)
 
 
 def get_log_dir() -> str:
+    """Return the resolved log directory path."""
     return _get_log_dir()

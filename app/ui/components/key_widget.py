@@ -19,6 +19,3 @@ class KeyWidget(QWidget):
         self.label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
         self.label.setObjectName("keyLabel")
         layout.addWidget(self.label)
-
-    def set_text(self, text: str) -> None:
-        self.label.setText(text)

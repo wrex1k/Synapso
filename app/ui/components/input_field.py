@@ -46,7 +46,6 @@ class InputField(QWidget):
         if is_password:
             self.line_edit.setEchoMode(QLineEdit.EchoMode.Password)
 
-        # password strength bar
         self.password_strength = password_strength
         if self.password_strength:
             self.progressBar = QProgressBar(self)
@@ -61,11 +60,6 @@ class InputField(QWidget):
 
         if self.password_strength:
             field_layout.addWidget(self.progressBar)
-
-    def append_stylesheet(self, stylesheet: str) -> None:
-        current_stylesheet = self.styleSheet()
-        new_stylesheet = current_stylesheet + "\n" + stylesheet
-        self.setStyleSheet(new_stylesheet)
 
     def text(self) -> str:
         return self.line_edit.text()

@@ -1,56 +1,31 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
-from enum import Enum, auto
 from app.games.core.base_game import BaseGame
-
-class TutorialPhase(Enum):
-    WARMUP = auto()
-    CONGRUENT_CHECK = auto()
-    INCONGRUENT_TEST = auto()
-    SPEED_CHECK = auto()
-    PASSED = auto()
-    FAILED = auto()
-
-@dataclass
-class PhaseResult:
-    phase: TutorialPhase
-    trials_in_phase: int
-    correct_in_phase: int
-    passed: bool
-    note: str = ""
-
-@dataclass(frozen=True)
-class PhaseRequirements:
-    warmup_required_correct: int = 3
-    warmup_max_trials: int = 8
-    congruent_required_streak: int = 3
-    congruent_max_trials: int = 10
-    incongruent_min_trials: int = 6
-    incongruent_required_accuracy: float = 0.65
-    incongruent_max_trials: int = 14
-    speed_required_streak: int = 3
-    speed_max_rt_ratio: float = 0.7
-    speed_max_trials: int = 10
+from app.models.tutorial import PhaseRequirements, PhaseResult, TutorialPhase
 
 class TutorialRunner:
+    """Four-phase tutorial runner for Stroop game with warmup, congruent, incongruent, and speed phases."""
+
     def __init__(self, game: BaseGame, requirements: PhaseRequirements | None = None):
+        """Initialize tutorial runner with game instance and phase requirements."""
         self.game = game
         self.req = requirements or PhaseRequirements()
         self.phase: TutorialPhase = TutorialPhase.WARMUP
         self.phase_results: list[PhaseResult] = []
         self._phase_trials: list = []
-        self._failed_reason: str = ""
         self._phase_peak_within: float = 0.0
 
     @property
     def passed(self) -> bool:
+        """Return True if tutorial has been passed."""
         return self.phase == TutorialPhase.PASSED
 
     @property
     def failed(self) -> bool:
+        """Return True if tutorial has failed."""
         return self.phase == TutorialPhase.FAILED
 
     def configure(self) -> None:
+        """Configure game for tutorial mode and enter warmup phase."""
         self.game.total_trials = 50
         self.game.level = self.game.min_level
         self.game.initial_level = self.game.min_level
@@ -58,11 +33,13 @@ class TutorialRunner:
         self._enter_phase(TutorialPhase.WARMUP)
 
     def next_trial_override(self) -> dict | None:
+        """Return forced trial parameters during incongruent phase or None."""
         if self.phase == TutorialPhase.INCONGRUENT_TEST:
             return self._force_incongruent_stimulus()
         return None
 
     def check_after_trial(self) -> bool:
+        """Check phase completion criteria after trial and advance if passed."""
         if self.phase in (TutorialPhase.PASSED, TutorialPhase.FAILED):
             return self.passed
         latest = self.game.trials[-1] if self.game.trials else None
@@ -79,27 +56,8 @@ class TutorialRunner:
             return self._check_speed()
         return False
 
-    def get_progress_text(self) -> str:
-        pt = self._phase_trials
-        if self.phase == TutorialPhase.WARMUP:
-            correct = sum(1 for t in pt if t.is_correct)
-            return f"Warm-up: {correct}/{self.req.warmup_required_correct}"
-        if self.phase == TutorialPhase.CONGRUENT_CHECK:
-            return f"Congruent streak: {self._trailing_streak(pt)}/{self.req.congruent_required_streak}"
-        if self.phase == TutorialPhase.INCONGRUENT_TEST:
-            window = pt[-self.req.incongruent_min_trials:]
-            correct = sum(1 for t in window if t.is_correct)
-            pct = int(100 * correct / len(window)) if window else 0
-            return f"Incongruent: {pct}% over {len(window)} trials"
-        if self.phase == TutorialPhase.SPEED_CHECK:
-            return f"Speed streak: {self._fast_correct_streak(pt)}/{self.req.speed_required_streak}"
-        if self.phase == TutorialPhase.PASSED:
-            return "✓ Tutorial passed!"
-        if self.phase == TutorialPhase.FAILED:
-            return f"✗ Failed: {self._failed_reason}"
-        return ""
-
     def get_progress_pct(self) -> int:
+        """Return tutorial progress as percentage."""
         if self.phase == TutorialPhase.PASSED:
             return 100
         base_map = {
@@ -125,6 +83,7 @@ class TutorialRunner:
         return int(base + within * 25)
 
     def get_phase_summary(self) -> list[dict]:
+        """Return summary of all completed phases."""
         return [
             {
                 "phase": r.phase.name,
@@ -137,6 +96,7 @@ class TutorialRunner:
         ]
 
     def _check_warmup(self) -> bool:
+        """Check warmup phase completion criteria."""
         pt = self._phase_trials
         correct = sum(1 for t in pt if t.is_correct)
         if correct >= self.req.warmup_required_correct:
@@ -147,6 +107,7 @@ class TutorialRunner:
         return False
 
     def _check_congruent(self) -> bool:
+        """Check congruent phase completion criteria."""
         pt = self._phase_trials
         streak = self._trailing_streak(pt)
         if streak >= self.req.congruent_required_streak:
@@ -157,6 +118,7 @@ class TutorialRunner:
         return False
 
     def _check_incongruent(self) -> bool:
+        """Check incongruent test phase completion criteria."""
         pt = self._phase_trials
         n = len(pt)
         if n < self.req.incongruent_min_trials:
@@ -171,6 +133,7 @@ class TutorialRunner:
         return False
 
     def _check_speed(self) -> bool:
+        """Check speed phase completion criteria."""
         pt = self._phase_trials
         streak = self._fast_correct_streak(pt)
         if streak >= self.req.speed_required_streak:
@@ -182,11 +145,13 @@ class TutorialRunner:
         return False
 
     def _enter_phase(self, phase: TutorialPhase) -> None:
+        """Enter new phase and reset trial tracking."""
         self.phase = phase
         self._phase_trials = []
         self._phase_peak_within = 0.0
 
     def _complete_phase(self, passed: bool, note: str = "") -> None:
+        """Record phase result and add to history."""
         self.phase_results.append(
             PhaseResult(
                 phase=self.phase,
@@ -198,12 +163,13 @@ class TutorialRunner:
         )
 
     def _fail(self, reason: str) -> None:
-        self._failed_reason = reason
+        """Mark tutorial as failed with reason."""
         self._complete_phase(False, reason)
         self._enter_phase(TutorialPhase.FAILED)
 
     @staticmethod
     def _trailing_streak(trials) -> int:
+        """Calculate consecutive correct trials from end of list."""
         streak = 0
         for t in reversed(trials):
             if t.is_correct:
@@ -213,6 +179,7 @@ class TutorialRunner:
         return streak
 
     def _fast_correct_streak(self, trials) -> int:
+        """Calculate consecutive fast correct trials from end of list."""
         streak = 0
         for t in reversed(trials):
             if not t.is_correct:
@@ -224,6 +191,7 @@ class TutorialRunner:
         return streak
 
     def _force_incongruent_stimulus(self) -> dict:
+        """Force generation of incongruent trial during incongruent phase."""
         start_with_type = getattr(self.game, "start_trial_with_type", None)
         if callable(start_with_type):
             return start_with_type("incongruent")

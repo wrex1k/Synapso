@@ -5,6 +5,10 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QPushButton, QSizePolicy, QVBoxLayout, QWidget
 
 from app.ui.styles.colors import *
+from app.utils.scaling import get_dpi_scale
+
+
+_BASE_ICON = 24
 
 
 class SidebarWidget(QWidget):
@@ -18,7 +22,6 @@ class SidebarWidget(QWidget):
         self.mainLayout.setContentsMargins(0, 30, 0, 20)
         self.mainLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # primary group
         self.primarySidebarWidget = QWidget(self)
         self.primarySidebarWidget.setObjectName("primarySidebarWidget")
         self.primaryLayout = QVBoxLayout(self.primarySidebarWidget)
@@ -33,7 +36,6 @@ class SidebarWidget(QWidget):
         self.primaryLayout.addWidget(self.gamesButton)
         self.primaryLayout.addWidget(self.statisticsButton)
 
-        # secondary group
         self.secondarySidebarWidget = QWidget(self)
         self.secondarySidebarWidget.setObjectName("secondarySidebarWidget")
         self.secondaryLayout = QVBoxLayout(self.secondarySidebarWidget)
@@ -46,17 +48,26 @@ class SidebarWidget(QWidget):
         self.secondaryLayout.addWidget(self.settingsButton)
         self.secondaryLayout.addWidget(self.infoButton)
 
-        # logout button
         self.logoutButton = QPushButton(self)
         self.logoutButton.setObjectName("logoutButton")
         self.logoutButton.setText("")
         self.logoutButton.setIcon(QIcon(":/images/icons/logout.png"))
         self.logoutButton.setIconSize(QSize(24, 24))
 
-        # assemble
         self.mainLayout.addWidget(self.primarySidebarWidget)
         self.mainLayout.addWidget(self.secondarySidebarWidget)
         self.mainLayout.addWidget(self.logoutButton)
+
+        self._all_buttons = [
+            self.dashboardButton, self.gamesButton, self.statisticsButton,
+            self.settingsButton, self.infoButton, self.logoutButton,
+        ]
+
+    def update_icon_sizes(self) -> None:
+        s = max(20, int(_BASE_ICON * get_dpi_scale()))
+        size = QSize(s, s)
+        for btn in self._all_buttons:
+            btn.setIconSize(size)
 
     def _nav_button(self, parent: QWidget, name: str) -> QPushButton:
         b = QPushButton(parent)

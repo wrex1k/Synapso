@@ -17,11 +17,3 @@ LEVEL_PARAMS: dict[int, dict] = {
     5: {"angle_min": 135, "angle_max": 165, "shape_ids": ["T1", "T2", "T3", "T4", "T5", "T6"], "display_ms": 1400, "mirror_prob": 0.50},
     6: {"angle_min": 165, "angle_max": 180, "shape_ids": ["T1", "T2", "T3", "T4", "T5", "T6"], "display_ms": 1300, "mirror_prob": 0.60},
 }
-
-RT_PENALTY_THRESHOLD_PER_LEVEL: dict[int, int] = {
-    level: int(params["display_ms"]) for level, params in LEVEL_PARAMS.items()
-}
-
-
-def get_rt_penalty_thresholds() -> dict[int, int]:
-    return dict(RT_PENALTY_THRESHOLD_PER_LEVEL)

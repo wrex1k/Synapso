@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time as _time
+
 from PySide6.QtCharts import QChart, QChartView, QLineSeries, QScatterSeries, QValueAxis
 from PySide6.QtCore import QMargins, QPointF, Qt, QEvent, QTimer, Signal
 from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPen
@@ -8,8 +10,7 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QSizePol
 from app.models.user import User
 from app.controller.dashboard_controller import DashboardController
 from app.ui.styles.colors import PRIMARY_LIGHT, DASHBOARD_PINK_DOT, DASHBOARD_YELLOW_DOT, DASHBOARD_GRAPH_COLOR, GRAY, GAME_COLORS
-from app.ui.styles.dashboard import DASHBOARD_STYLES
-from app.ui.styles.fonts import DASHBOARD_FONT_STYLES, get_general_sans
+from app.ui.styles.fonts import get_general_sans
 from app.utils.ui_helpers import build_header
 from translations.translation import translate
 
@@ -39,7 +40,7 @@ def _setup_chart() -> QChart:
 def _value_axis(label: str = "", tick_count: int = 6) -> QValueAxis:
     axis = QValueAxis()
     axis.setLabelsColor(QColor(GRAY))
-    axis.setLabelsFont(QFont("General Sans", 9))
+    axis.setLabelsFont(get_general_sans(9))
     axis.setGridLineColor(QColor(255, 255, 255, 12))
     axis.setLinePenColor(QColor(255, 255, 255, 18))
     axis.setTickCount(max(2, tick_count))
@@ -48,7 +49,7 @@ def _value_axis(label: str = "", tick_count: int = 6) -> QValueAxis:
     if label:
         axis.setTitleText(label)
         axis.setTitleBrush(QColor(GRAY))
-        axis.setTitleFont(QFont("General Sans", 10))
+        axis.setTitleFont(get_general_sans(10))
 
     return axis
 
@@ -60,7 +61,6 @@ class DashboardView(QWidget):
         super().__init__(parent)
 
         self.setObjectName("dashboardView")
-        self.setStyleSheet(DASHBOARD_FONT_STYLES + DASHBOARD_STYLES)
 
         self._user = user
         self._controller = DashboardController(user, self)
@@ -85,6 +85,8 @@ class DashboardView(QWidget):
         self._highlights_title_lbl: QLabel | None = None
         self._highlights_subtitle_lbl: QLabel | None = None
         self._continue_play_btn: QPushButton | None = None
+
+        self._last_load_time: float = 0.0
 
         self._refresh_timer = QTimer(self)
         self._refresh_timer.setInterval(60_000)
@@ -138,6 +140,7 @@ class DashboardView(QWidget):
         )
         self._welcome_title_lbl.setObjectName("dashboardHeroTitle")
         self._welcome_title_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self._current_username = username
 
         self._welcome_subtitle_lbl = QLabel(
             translate("DashboardView", "Are you ready for another training session?")
@@ -154,13 +157,13 @@ class DashboardView(QWidget):
         stats_row.setContentsMargins(0, 8, 0, 0)
         stats_row.setSpacing(0)
 
-        stats_row.addWidget(self._build_inline_stat(translate("DashboardView", "Daily streak"), "—", "daily_streak"))
+        stats_row.addWidget(self._build_inline_stat(translate("DashboardView", "Daily streak"), " ", "daily_streak"))
         stats_row.addStretch()
-        stats_row.addWidget(self._build_inline_stat(translate("DashboardView", "Total Games"), "—", "total_games"))
+        stats_row.addWidget(self._build_inline_stat(translate("DashboardView", "Total Games"), "0", "total_games"))
         stats_row.addStretch()
-        stats_row.addWidget(self._build_inline_stat(translate("DashboardView", "Time played"), "—", "time_played"))
+        stats_row.addWidget(self._build_inline_stat(translate("DashboardView", "Time played"), "0 min", "time_played"))
         stats_row.addStretch()
-        stats_row.addWidget(self._build_inline_stat(translate("DashboardView", "Favorite game"), "—", "favorite_game"))
+        stats_row.addWidget(self._build_inline_stat(translate("DashboardView", "Favorite game"), "No data", "favorite_game"))
 
         layout.addWidget(self._welcome_title_lbl)
         layout.addWidget(self._welcome_subtitle_lbl)
@@ -186,7 +189,7 @@ class DashboardView(QWidget):
         self._goal_title_lbl = QLabel(translate("DashboardView", "Daily Goal"))
         self._goal_title_lbl.setObjectName("dashboardCardTitle")
 
-        self._goal_progress_value = QLabel("—")
+        self._goal_progress_value = QLabel("")
         self._goal_progress_value.setObjectName("dashboardGoalValue")
 
         self._goal_hint = QLabel("")
@@ -243,10 +246,10 @@ class DashboardView(QWidget):
         self._latest_training_title_lbl = QLabel(translate("DashboardView", "Latest Training"))
         self._latest_training_title_lbl.setObjectName("dashboardCardTitle")
 
-        self._continue_labels["game_name"] = QLabel("—")
+        self._continue_labels["game_name"] = QLabel(translate("DashboardView", "No data"))
         self._continue_labels["game_name"].setObjectName("dashboardHighlightValue")
 
-        self._continue_labels["info"] = QLabel("—")
+        self._continue_labels["info"] = QLabel(translate("DashboardView", "No data"))
         self._continue_labels["info"].setObjectName("dashboardMutedText")
 
         self._continue_play_btn = QPushButton(translate("DashboardView", "Play again"))
@@ -305,10 +308,10 @@ class DashboardView(QWidget):
         self._highlights_subtitle_lbl = QLabel(translate("DashboardView", "from favorite game"))
         self._highlights_subtitle_lbl.setObjectName("dashboardCardSubtitle")
 
-        w1, value1 = self._build_badge_row(translate("DashboardView", "Accuracy"), "—", DASHBOARD_PINK_DOT)
+        w1, value1 = self._build_badge_row(translate("DashboardView", "Accuracy"), "0%", DASHBOARD_PINK_DOT)
         self._highlight_refs["best_accuracy"] = value1
 
-        w2, value2 = self._build_badge_row(translate("DashboardView", "Reaction time"), "—", DASHBOARD_YELLOW_DOT)
+        w2, value2 = self._build_badge_row(translate("DashboardView", "Reaction time"), "0 ms", DASHBOARD_YELLOW_DOT)
         self._highlight_refs["fastest_reaction"] = value2
 
         layout.addWidget(self._highlights_title_lbl)
@@ -399,13 +402,18 @@ class DashboardView(QWidget):
 
         return tile
 
+    _MIN_RELOAD_INTERVAL = 30.0
+
     def showEvent(self, event) -> None:
         super().showEvent(event)
 
+        now = _time.monotonic()
         if not self._controller.loaded_once:
             self._controller.mark_loaded_once()
+            self._last_load_time = now
             self._controller.load()
-        elif not self._controller.is_loading():
+        elif not self._controller.is_loading() and (now - self._last_load_time) >= self._MIN_RELOAD_INTERVAL:
+            self._last_load_time = now
             self._controller.load()
             self._update_welcome_title()
 
@@ -502,7 +510,7 @@ class DashboardView(QWidget):
         self._welcome_refs["favorite_game"].setText(model["favorite_game"])
 
     def _populate_activity(self) -> None:
-        model = self._controller.get_activity_model()
+        model = self._controller.get_goal_model()
 
         self._goal_progress_value.setText(model["goal_progress"])
         self._goal_hint.setText(model["goal_hint"])
@@ -532,8 +540,8 @@ class DashboardView(QWidget):
                 item["game"],
                 item["date"],
                 item["pi"],
-                item.get("reaction", "—"),
-                item.get("accuracy", "—"),
+                item.get("reaction", "0 ms"),
+                item.get("accuracy", "0%"),
             )
             tile.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
             tile.setMinimumWidth(220)
@@ -545,8 +553,15 @@ class DashboardView(QWidget):
         if self._trend_chart_layout is None:
             return
 
-        self._clear_layout(self._trend_chart_layout)
-        self._chart_refs.clear()
+        container = self._trend_chart_layout.parentWidget()
+        if container is not None:
+            container.setUpdatesEnabled(False)
+        try:
+            self._clear_layout(self._trend_chart_layout)
+            self._chart_refs.clear()
+        finally:
+            if container is not None:
+                container.setUpdatesEnabled(True)
 
         model = self._controller.get_trend_chart_model()
         values = model["values"]
@@ -636,9 +651,17 @@ class DashboardView(QWidget):
 
             _reposition_labels()
 
-        # Create labels after the chart is first laid out …
-        QTimer.singleShot(0, _add_point_labels)
-        # … and reposition them every time the plot area changes (resize, DPI, re-render).
+        # Create labels after the chart is first laid out.
+        # Guard against the view being destroyed before the timer fires
+        # (can happen during rapid page navigation).
+        def _safe_add_point_labels() -> None:
+            try:
+                _add_point_labels()
+            except RuntimeError:
+                pass  # C++ object deleted before timer fired
+
+        QTimer.singleShot(0, _safe_add_point_labels)
+        # Reposition labels every time the plot area changes (resize, DPI, re-render).
         chart.plotAreaChanged.connect(lambda _rect: _reposition_labels())
 
     def _populate_highlights(self) -> None:
@@ -667,3 +690,12 @@ class DashboardView(QWidget):
             widget = item.widget()
             if widget is not None:
                 widget.setParent(None)
+    
+    def update_welcome_message(self, username: str) -> None:
+        """Update the welcome message when username changes."""
+        self._current_username = username or translate("DashboardView", "Player")
+        if self._welcome_title_lbl:
+            self._welcome_title_lbl.setText(
+                f"{translate('DashboardView', 'Welcome back,')} "
+                f"<span style='color: {PRIMARY_LIGHT};'>{self._current_username}</span>"
+            )

@@ -2,24 +2,8 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPainter, QPainterPath, QPixmap
 from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
-"""Provide UI helper utilities, such as:
-- _get_button_original_text: internal helper to cache the original text of a button
-- update_button_state: set button state and text for idle/loading/error
-- reset_button: restore a button to its original text and enabled state
-- draw_background: draw a custom background image in a widget's paintEvent
-- image_to_rounded: convert a widget's pixmap to a rounded avatar-style QPixmap
-"""
-
-# internal helper to get and cache the original text of a button for error display
-def _get_button_original_text(button: QPushButton) -> str:
-    original = button.property("original_text")
-    if original is None:
-        original = button.text()
-        button.setProperty("original_text", original)
-    return original
-
-# update button state with predefined styles for idle, loading and error states
 def update_button_state(button, state: str, *, idle_text: str, error_text: str | None = None, auto_reset_ms: int | None = 2000, loading_text: str = "Loading…",):
+    """Update a button's text, enabled state and style for idle/loading/error states."""
     button.setProperty("state", state)
 
     if state == "idle":
@@ -46,22 +30,16 @@ def update_button_state(button, state: str, *, idle_text: str, error_text: str |
 
     button.style().polish(button)
 
-# reset button to primary state
-def reset_button(button: QPushButton):
-    original_text = _get_button_original_text(button)
-    button.setEnabled(True)
-    button.setText(original_text)
-
-# draw a custom background image for a widget in its paintEvent
 def draw_background(widget: QWidget, event):
+    """Paint the application background image onto a widget."""
     painter = QPainter(widget)
     pixmap = QPixmap(":/images/graphics/background.png")
     painter.drawPixmap(widget.rect(), pixmap)
     painter.end()
 
 
-# convert the pixmap of a QLabel to a rounded version, keeping aspect ratio and filling the label
 def image_to_rounded(widget: QWidget):
+    """Clip the pixmap of a QLabel into a circular shape."""
     original_pixmap = widget.pixmap()
     if not original_pixmap:
         return
@@ -93,6 +71,7 @@ def image_to_rounded(widget: QWidget):
     widget.setPixmap(rounded)
     
 def build_header(title: str, subtitle: str):
+    """Build a header widget with a title and subtitle label."""
     container = QWidget()
     layout = QVBoxLayout(container)
     layout.setContentsMargins(0, 0, 0, 0)

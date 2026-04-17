@@ -984,8 +984,8 @@
     </message>
     <message>
         <location filename="../app/ui/views/about.py" line="422"/>
-        <source>&lt;b&gt;Synapso&lt;/b&gt; is a cognitive training app designed to improve memory, attention, focus, and mental flexibility through interactive brain games.&lt;br&gt;&lt;br&gt;&lt;b&gt;Games:&lt;/b&gt;&lt;br&gt;• &lt;b&gt;Memory Grid&lt;/b&gt; — Train working memory with pattern recall&lt;br&gt;• &lt;b&gt;Mental Rotation&lt;/b&gt; — Improve spatial reasoning&lt;br&gt;• &lt;b&gt;Stroop Test&lt;/b&gt; — Enhance focus and cognitive control&lt;br&gt;&lt;br&gt;Track your performance, monitor progress, and train your brain consistently.</source>
-        <translation>&lt;b&gt;Synapso&lt;/b&gt; je aplikácia na kognitívny tréning navrhnutá na zlepšenie pamäti, pozornosti, sústredenia a mentálnej flexibility prostredníctvom interaktívnych hier.&lt;br&gt;&lt;br&gt;&lt;b&gt;Hry:&lt;/b&gt;&lt;br&gt;• &lt;b&gt;Memory Grid&lt;/b&gt; — Trénuj pracovnú pamäť pomocou zapamätávania si vzorov&lt;br&gt;• &lt;b&gt;Mental Rotation&lt;/b&gt; — Zlepši priestorové myslenie&lt;br&gt;• &lt;b&gt;Stroop Test&lt;/b&gt; — Posilni sústredenie a kognitívnu kontrolu&lt;br&gt;&lt;br&gt;Sleduj svoj výkon, monitoruj pokrok a trénuj mozog pravidelne.</translation>
+        <source>&lt;b&gt;Synapso&lt;/b&gt; is a cognitive training app designed to improve memory, attention, focus, and mental flexibility through interactive brain games.&lt;br&gt;&lt;br&gt;&lt;b&gt;Games:&lt;/b&gt;&lt;br&gt;• &lt;b&gt;Stroop Test&lt;/b&gt; — Enhance focus and cognitive control&lt;br&gt;• &lt;b&gt;Memory Grid&lt;/b&gt; — Train working memory with pattern recall&lt;br&gt;• &lt;b&gt;Mental Rotation&lt;/b&gt; — Improve spatial reasoning&lt;br&gt;&lt;br&gt;Track your performance, monitor progress, and train your brain consistently.</source>
+        <translation>&lt;b&gt;Synapso&lt;/b&gt; je aplikácia na kognitívny tréning navrhnutá na zlepšenie pamäti, pozornosti, sústredenia a mentálnej flexibility prostredníctvom interaktívnych hier.&lt;br&gt;&lt;br&gt;&lt;b&gt;Hry:&lt;/b&gt;&lt;br&gt;• &lt;b&gt;Stroop Test&lt;/b&gt; — Posilni sústredenie a kognitívnu kontrolu&lt;br&gt;• &lt;b&gt;Memory Grid&lt;/b&gt; — Trénuj pracovnú pamäť pomocou zapamätávania si vzorov&lt;br&gt;• &lt;b&gt;Mental Rotation&lt;/b&gt; — Zlepši priestorové myslenie&lt;br&gt;&lt;br&gt;Sleduj svoj výkon, monitoruj pokrok a trénuj mozog pravidelne.</translation>
     </message>
     <message>
         <location filename="../app/ui/views/about.py" line="434"/>
@@ -996,6 +996,16 @@
         <location filename="../app/ui/views/about.py" line="435"/>
         <source>Built with</source>
         <translation>Vytvorené s pomocou</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/about.py" line="436"/>
+        <source>Support the project</source>
+        <translation>Podpor projekt</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/about.py" line="436"/>
+        <source>If you like Synapso, consider supporting the project.</source>
+        <translation>Ak sa ti Synapso páči, zváž podporu projektu.</translation>
     </message>
     <message>
         <location filename="../app/ui/views/about.py" line="436"/>
@@ -1413,12 +1423,12 @@ Všetky tvoje údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
     </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="790"/>
-        <source>Start a session to begin today’s goal</source>
+        <source>Start a session to begin today's goal</source>
         <translation>Začni hru, aby si odštartoval dnešný cieľ</translation>
     </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="794"/>
-        <source>{count} more session(s) to reach today’s goal</source>
+        <source>{count} more session(s) to reach today's goal</source>
         <translation>Ešte {count} hier do splnenia dnešného cieľa</translation>
     </message>
     <message>
@@ -1502,6 +1512,10 @@ Všetky tvoje údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
         <source>{count} days</source>
         <translation>{count} dní</translation>
     </message>
+    <message>
+        <source>No data</source>
+        <translation>Žiadne údaje</translation>
+    </message>
 </context>
 <context>
     <name>StatisticsView</name>
@@ -1534,6 +1548,14 @@ Všetky tvoje údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
         <location filename="../app/ui/views/statistics.py" line="388"/>
         <source>Quick Insights</source>
         <translation>Rýchly prehľad</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="199"/>
+        <location filename="../app/ui/views/statistics.py" line="369"/>
+        <location filename="../app/ui/views/statistics.py" line="382"/>
+        <location filename="../app/ui/views/statistics.py" line="397"/>
+        <source>No data</source>
+        <translation>Žiadne údaje</translation>
     </message>
     <message>
         <location filename="../app/ui/views/statistics.py" line="391"/>

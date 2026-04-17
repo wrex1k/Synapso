@@ -22,11 +22,13 @@ Features:
 
 class FramelessWindowMixin:
     def __init__(self, *args, **kwargs):
+        """Initialize frameless window with drag, resize and rounded corner support."""
         super().__init__(*args, **kwargs)
 
         self._drag_pos = None
         self._resizing = False
         self._resize_direction = None
+        self._drag_locked = False
         self._corner_radius = 20
         self._resize_margin = 15
         self._start_geometry = None
@@ -38,11 +40,8 @@ class FramelessWindowMixin:
 
         self.setMouseTracking(True)
 
-    def set_corner_radius(self, radius: int):
-        self._corner_radius = radius
-        self._apply_rounded_corners(force=True)
-
     def _raw_apply_rounded_corners(self):
+        """Apply a rounded-corner mask to the window region."""
         if self.isMaximized() or self.isFullScreen():
             self.clearMask()
             return
@@ -60,6 +59,7 @@ class FramelessWindowMixin:
         self.setMask(region)
 
     def _apply_rounded_corners(self, force: bool = False):
+        """Apply rounded corners with throttling to limit mask updates."""
         now = time.monotonic()
 
         if force or (now - self._last_mask_update) >= self._mask_update_interval:
@@ -67,6 +67,7 @@ class FramelessWindowMixin:
             self._last_mask_update = now
 
     def _is_in_corner(self, pos: QPoint) -> str | None:
+        """Return the corner name if pos is within the resize margin, else None."""
         x, y = pos.x(), pos.y()
         w, h = self.width(), self.height()
         m = self._resize_margin
@@ -83,6 +84,7 @@ class FramelessWindowMixin:
         return None
 
     def _update_cursor(self, in_corner: bool):
+        """Set or restore the override cursor based on corner hover state."""
         if in_corner:
             if not self._cursor_active:
                 QApplication.setOverrideCursor(self._red_cursor)
@@ -93,14 +95,20 @@ class FramelessWindowMixin:
                 self._cursor_active = False
 
     def resizeEvent(self, event):
+        """Reapply rounded corners on window resize."""
         super().resizeEvent(event)
         self._apply_rounded_corners()
 
     def showEvent(self, event):
+        """Force rounded corners when the window is shown."""
         super().showEvent(event)
         self._apply_rounded_corners(force=True)
 
     def mousePressEvent(self, event):
+        """Start drag or corner-resize on left mouse button press."""
+        if self._drag_locked:
+            event.accept()
+            return
         if event.button() == Qt.MouseButton.LeftButton:
             corner = self._is_in_corner(event.pos())
 
@@ -119,6 +127,7 @@ class FramelessWindowMixin:
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        """Handle window dragging, corner resizing and cursor updates."""
         if event.buttons() & Qt.MouseButton.LeftButton and self._drag_pos:
             if self._resizing:
                 global_pos = event.globalPosition().toPoint()
@@ -164,6 +173,7 @@ class FramelessWindowMixin:
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        """End drag or resize on left mouse button release."""
         if event.button() == Qt.MouseButton.LeftButton:
             self._drag_pos = None
             self._resizing = False
@@ -178,5 +188,6 @@ class FramelessWindowMixin:
         super().mouseReleaseEvent(event)
 
     def leaveEvent(self, event):
+        """Restore the default cursor when the mouse leaves the window."""
         self._update_cursor(False)
         super().leaveEvent(event)

@@ -3,7 +3,7 @@ from __future__ import annotations
 from PySide6.QtCore import QBuffer, QByteArray, QEvent, QIODevice, QSize, Qt, Signal, QTimer
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import QDialog, QFileDialog, QFrame, QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSizePolicy, QVBoxLayout, QWidget
-from datetime import datetime
+from datetime import datetime, date
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -151,7 +151,7 @@ class ProfileView(QWidget):
         text_col.setSpacing(4)
         text_col.setContentsMargins(0, 0, 0, 0)
 
-        self._username_preview_lbl = QLabel(self._user.username or "—")
+        self._username_preview_lbl = QLabel(self._user.username or "Player")
         self._username_preview_lbl.setObjectName("profileUsernameLabel")
 
         self._handle_preview_lbl = QLabel(
@@ -330,7 +330,7 @@ class ProfileView(QWidget):
         return self._username_input
 
     def _build_email_value(self) -> QWidget:
-        self._email_value_lbl = QLabel(getattr(self._user, "email", None) or "—")
+        self._email_value_lbl = QLabel(getattr(self._user, "email", None) or "No data")
         self._email_value_lbl.setObjectName("profileReadonlyValue")
         self._email_value_lbl.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         return self._email_value_lbl
@@ -341,12 +341,11 @@ class ProfileView(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
 
-        import datetime
-        today = datetime.date.today()
+        today = date.today()
         try:
-            self._max_birthdate = datetime.date(today.year - 15, today.month, today.day)
+            self._max_birthdate = date(today.year - 15, today.month, today.day)
         except ValueError:
-            self._max_birthdate = datetime.date(today.year - 15, 2, 28)
+            self._max_birthdate = date(today.year - 15, 2, 28)
 
         self._months = [
             translate("ProfileView", "January"),
@@ -426,7 +425,6 @@ class ProfileView(QWidget):
         if bd:
             try:
                 if isinstance(bd, str):
-                    from datetime import date
                     bd = date.fromisoformat(bd)
                 if bd > self._max_birthdate:
                     bd = self._max_birthdate
@@ -442,7 +440,6 @@ class ProfileView(QWidget):
         self._sync_preview()
 
     def _get_current_birthday(self):
-        from datetime import date
         try:
             year_text = self.yearBox.currentText()
             month_index = self.birthMonthBox.currentIndex()
@@ -542,7 +539,12 @@ class ProfileView(QWidget):
 
     def _sync_preview(self):
         username = self._username_input.text().strip()
-        self._username_preview_lbl.setText(username or "—")
+        self._username_preview_lbl.setText(username or "Player")
+        self._handle_preview_lbl.setText(f"@{username.lower()}" if username else "")
+    
+    def update_username_preview(self, username: str):
+        """Update username preview in hero card after successful save."""
+        self._username_preview_lbl.setText(username or "Player")
         self._handle_preview_lbl.setText(f"@{username.lower()}" if username else "")
 
     def _on_avatar_clicked(self):

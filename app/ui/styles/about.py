@@ -77,8 +77,35 @@ ABOUT_STYLES = f"""
         color: rgba(255, 255, 255, 0.42);
     }}
 
+    QPushButton#kofiButton {{
+        background-color: rgba(255, 94, 91, 0.12);
+        color: #FF5E5B;
+        border: none;
+        border-radius: 15px;
+        padding: 10px 0px;
+        font-weight: 600;
+        font-size: 13px;
+    }}
+
+    QPushButton#kofiButton:hover {{
+        background-color: rgba(255, 94, 91, 0.20);
+    }}
+
+    QPushButton#githubSponsorButton {{
+        background-color: {PRIMARY};
+        color: {OFF_WHITE};
+        border: none;
+        border-radius: 15px;
+        padding: 10px 0px;
+        font-weight: 600;
+        font-size: 13px;
+    }}
+
+    QPushButton#githubSponsorButton:hover {{
+        background-color: {HOVER_PRIMARY};
+    }}
+
     QComboBox#changelogCombo {{
-        color: {FONT_PRIMARY};
         background-color: {BACKGROUND_GLASS};
         border: 1px solid rgba(62, 172, 145, 0.25);
         border-radius: 10px;
@@ -87,36 +114,35 @@ ABOUT_STYLES = f"""
 
     QComboBox#changelogCombo::drop-down {{
         border: none;
-        border-radius: 5px;
     }}
 
     QComboBox#changelogCombo QAbstractItemView {{
         background-color: {BACKGROUND_GLASS};
-        color: {OFF_WHITE};
-        border: none;
+        border: 1px solid {BORDER_LIGHTGREY};
         border-radius: 10px;
-        selection-background-color: #22756F;
+        padding: 4px;
         outline: none;
     }}
 
     QComboBox#changelogCombo QAbstractItemView::item {{
-        border-radius: 5px;
-        padding-left: 3px;
+        background-color: transparent;
+        padding: 4px 8px;
+        color: {OFF_WHITE};
+        border-radius: 6px;
     }}
 
     QComboBox#changelogCombo QAbstractItemView::item:selected {{
-        border: none;
-        border-radius: 5px;
+        background-color: rgba(62, 172, 145, 0.15);
+        color: {OFF_WHITE};
     }}
 
     QComboBox#changelogCombo QAbstractItemView::item:hover {{
-        border: none;
-        border-radius: 5px;
-        background-color: {PRIMARY};
+        background-color: rgba(62, 172, 145, 0.10);
+        color: {OFF_WHITE};
     }}
 
     QLabel#changelogBullet {{
-        color: {FONT_PRIMARY};
+        color: {OFF_WHITE};
     }}
 
     QScrollArea#changelogScroll {{

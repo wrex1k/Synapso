@@ -1,4 +1,4 @@
-"""Main application widget managing navigation, pages and user profile display."""
+"""Main application widget managing navigation and user profile."""
 
 from __future__ import annotations
 
@@ -18,7 +18,6 @@ from app.ui.views.about import AboutView
 from app.ui.views.settings import SettingsView
 from app.utils.ui_helpers import draw_background
 from app.utils.logger import get_logger
-from app.utils.breadcrumbs import add_breadcrumb
 from app.utils.crash_handler import set_active_view
 from app.service.activity_service import flush_heartbeat
 
@@ -131,20 +130,13 @@ class AppWidget(QWidget):
             self.contentWidget.addWidget(page)
             if name == "games":
                 page.launch_game_requested.connect(self._show_fullscreen_game)
-                if "dashboard" in self._page_instances:
-                    dashboard = self._page_instances["dashboard"]
-                    try:
-                        dashboard.continue_game_requested.connect(lambda slug, g=page: g._launch_play(slug))
-                    except Exception:
-                        logger.exception("Failed to connect dashboard continue signal to games launcher")
             elif name == "dashboard":
-                if "games" in self._page_instances:
-                    games = self._page_instances["games"]
-                    try:
-                        page.continue_game_requested.connect(lambda slug, g=games: g._launch_play(slug))
-                    except Exception:
-                        logger.exception("Failed to connect dashboard continue signal to games launcher")
+                page.continue_game_requested.connect(self._on_continue_game)
         return self._page_instances[name]
+
+    def _on_continue_game(self, slug: str) -> None:
+        games = self._get_or_create_page("games")
+        games._launch_play(slug)
 
     def _connect_signals(self):
         self.logoutButton.clicked.connect(self._on_logout_clicked)
@@ -152,16 +144,25 @@ class AppWidget(QWidget):
         for name, btn in self.pages.items():
             btn.clicked.connect(lambda _, n=name: self.on_page_clicked(n))
         self.profile_page.avatar_upload_succeeded.connect(self._on_avatar_updated)
+        self.profile_controller.username_changed.connect(self._on_username_changed)
 
     def _on_avatar_updated(self, data: bytes) -> None:
+        self.navbarWidget.set_avatar_bytes(data)
         games = self._page_instances.get("games")
         if games:
             games.refresh_user_avatar(self._user.avatar_path, data)
+    
+    def _on_username_changed(self, username: str) -> None:
+        """Update username across all views when changed."""
+        self.navbarWidget.setName(username)
+        self.profile_page.update_username_preview(username)
+        dashboard = self._page_instances.get("dashboard")
+        if dashboard:
+            dashboard.update_welcome_message(username)
 
     def on_page_clicked(self, page_name: str):
         logger.info("User navigated to %s", page_name)
         set_active_view(page_name)
-        add_breadcrumb("nav", f"Navigated to {page_name}")
         for name, button in self.pages.items():
             selected = (name == page_name)
             suffix = "selected" if selected else "unselected"
@@ -181,7 +182,6 @@ class AppWidget(QWidget):
     def _go_to_profile(self):
         logger.info("User opened profile")
         set_active_view("profile")
-        add_breadcrumb("nav", "Opened profile")
         for name, button in self.pages.items():
             icon = QIcon(f":/images/icons/{name}-unselected.png")
             if icon.isNull():
@@ -195,7 +195,6 @@ class AppWidget(QWidget):
 
     def _on_logout_clicked(self, checked: bool = False):
         logger.info("User initiated logout")
-        add_breadcrumb("auth", "Logout initiated")
         self.logoutButton.setEnabled(False)
         self.logout_requested.emit()
 
@@ -204,7 +203,6 @@ class AppWidget(QWidget):
 
     def _show_fullscreen_game(self, widget):
         logger.info("Game session started: %s", widget.__class__.__name__)
-        add_breadcrumb("game", "Game session started", widget=widget.__class__.__name__)
         set_active_view(f"game:{widget.__class__.__name__}")
         flush_heartbeat()
         widget.session_done.connect(self._hide_fullscreen_game)
@@ -226,7 +224,6 @@ class AppWidget(QWidget):
         self._root_stack.insertWidget(1, QWidget())
 
     def cleanup(self) -> None:
-        """Stop background workers (realtime subscriptions) from the previous session before logout/re-login."""
         games_view = self._page_instances.get("games")
         if games_view is not None and hasattr(games_view, "_stop_all_realtime"):
             games_view._stop_all_realtime()

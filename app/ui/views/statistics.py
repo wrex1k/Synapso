@@ -1,19 +1,20 @@
-"""StatisticsView: Non-scrollable game analytics overview."""
+"""Statistics view displaying game performance metrics and charts."""
 
 from __future__ import annotations
 
+import time as _time
+
 from PySide6.QtCore import QEvent, QMargins, QPointF, Qt, QThread
-from PySide6.QtGui import QBrush, QColor, QCursor, QFont, QPainter, QPen
+from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 from PySide6.QtCharts import QBarCategoryAxis, QBarSeries, QBarSet, QChart, QChartView, QLineSeries, QValueAxis
 
+from app.controller.statistics_controller import StatisticsController
 from app.core.registry import registry
-from app.games.core.base_game import GAME_ID_MAP
-from app.repository.activity_repository import get_time_played
-from app.repository.run_repository import fetch_user_run_history
-from app.repository.stats_repository import fetch_all_user_stats, fetch_player_game_stats
+from app.games.core.base_game import GAME_SLUGS, GAME_LABELS, GAME_ID_TO_SLUG
 from app.ui.styles.colors import GAME_COLORS
-from app.ui.styles.statistics import STATISTICS_STYLES
+
+from app.utils.formatters import format_float, format_int, format_milliseconds, format_percentage
 from app.utils.logger import get_logger
 from app.utils.ui_helpers import build_header
 from translations.translation import translate
@@ -21,33 +22,6 @@ from translations.translation import translate
 logger = get_logger(__name__)
 
 _TEXT_GRAY = "#A9A9A9"
-
-_GAME_SLUGS = ["stroop", "memory_grid", "mental_rotation"]
-_GAME_LABELS = {
-    "stroop": "Stroop Test",
-    "memory_grid": "Memory Grid",
-    "mental_rotation": "Mental Rotation",
-}
-
-
-# formate float
-def _fmt_float(v: float | None, decimals: int = 2) -> str:
-    return f"{v:.{decimals}f}" if v is not None else "—"
-
-
-def _fmt_int(v: int | None) -> str:
-    return str(v) if v is not None else "—"
-
-
-def _fmt_pct(v: float | None) -> str:
-    if v is None:
-        return "—"
-    pct = v * 100 if v <= 1.0 else v
-    return f"{pct:.0f}%"
-
-
-def _fmt_ms(v: float | None) -> str:
-    return f"{int(v)} ms" if v is not None else "—"
 
 def _make_divider() -> QFrame:
     line = QFrame()
@@ -117,17 +91,14 @@ class StatisticsView(QWidget):
     def __init__(self, user_id: str, parent=None):
         super().__init__(parent)
         self.setObjectName("statisticsView")
-        self.setStyleSheet(STATISTICS_STYLES)
 
         self._user_id = user_id
         self._chart_refs: list = []
-        self._threads: list[QThread] = []
-        self._fetch_op = registry.operation("statistics-fetch")
+        self._last_load_time: float = 0.0
 
-        self._time_played: int = 0
-        self._all_stats: dict = {"games": []}
-        self._per_game: dict[str, dict | None] = {}
-        self._run_histories: dict[str, list] = {}
+        # Use controller to manage data and loading
+        self._controller = StatisticsController(user_id, self)
+        self._controller.data_changed.connect(self._on_data_changed)
 
         self._build_ui()
 
@@ -161,46 +132,6 @@ class StatisticsView(QWidget):
         content_row.addLayout(right_col, 1)
 
         root.addLayout(content_row, 1)
-
-    def _build_summary_row(self) -> QWidget:
-        wrapper = QWidget()
-        layout = QHBoxLayout(wrapper)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(16)
-
-        cards = []
-
-        for title, value, subtitle, attr in cards:
-            lbl = QLabel(value)
-            lbl.setObjectName("statOverviewValue")
-            setattr(self, attr, lbl)
-            layout.addWidget(self._build_summary_card(title, lbl, subtitle))
-
-        return wrapper
-
-    def _build_summary_card(self, title_text: str, value_lbl: QLabel, subtitle_text: str) -> QWidget:
-        card = QWidget()
-        card.setObjectName("statOverviewCard")
-        card.setMinimumHeight(112)
-        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-
-        layout = QVBoxLayout(card)
-        layout.setContentsMargins(28, 28, 28, 28)
-        layout.setSpacing(6)
-
-        title = QLabel(title_text)
-        title.setObjectName("statOverviewLabel")
-
-        subtitle = QLabel(subtitle_text)
-        subtitle.setObjectName("statOverviewSubtext")
-        subtitle.setWordWrap(True)
-
-        layout.addWidget(title)
-        layout.addWidget(value_lbl)
-        layout.addWidget(subtitle)
-        layout.addStretch()
-
-        return card
 
     def _build_trend_card(self) -> QWidget:
         card = QWidget()
@@ -237,7 +168,7 @@ class StatisticsView(QWidget):
         row.setContentsMargins(0, 0, 0, 0)
 
         self._game_cards: dict[str, dict] = {}
-        for slug in _GAME_SLUGS:
+        for slug in GAME_SLUGS:
             card_widget, labels = self._build_game_card(slug)
             self._game_cards[slug] = labels
             row.addWidget(card_widget, 1)
@@ -265,7 +196,7 @@ class StatisticsView(QWidget):
         ]
 
         for label_text, attr, key_attr in insight_rows:
-            val_lbl = QLabel("—")
+            val_lbl = QLabel(translate("StatisticsView", "No data"))
             val_lbl.setObjectName("statGameMetricValue")
             setattr(self, attr, val_lbl)
             lbl = QLabel(translate("StatisticsView", label_text))
@@ -306,7 +237,7 @@ class StatisticsView(QWidget):
 
     def _build_game_card(self, slug: str) -> tuple[QWidget, dict]:
         color_hex = GAME_COLORS[slug]
-        title_text = _GAME_LABELS[slug]
+        title_text = GAME_LABELS[slug]
 
         card = QWidget()
         card.setObjectName("statGameCard")
@@ -343,7 +274,7 @@ class StatisticsView(QWidget):
 
         labels: dict[str, QLabel] = {}
         for label_text, key in metric_defs:
-            val_lbl = QLabel("—")
+            val_lbl = QLabel("0")
             val_lbl.setObjectName("statGameMetricValue")
             labels[key] = val_lbl
             lbl = QLabel(translate("StatisticsView", label_text))
@@ -366,9 +297,13 @@ class StatisticsView(QWidget):
 
         return row_widget
 
+    _MIN_RELOAD_INTERVAL = 30.0 
     def showEvent(self, event):
         super().showEvent(event)
-        self._load_data()
+        now = _time.monotonic()
+        if not self._controller.is_loading() and (now - self._last_load_time) >= self._MIN_RELOAD_INTERVAL:
+            self._last_load_time = now
+            self._controller.load()
 
     def changeEvent(self, event) -> None:
         super().changeEvent(event)
@@ -400,49 +335,8 @@ class StatisticsView(QWidget):
         self._populate_comparison_chart()
         self._populate_insights()
 
-    def _keep_thread(self, thread: QThread) -> None:
-        self._threads.append(thread)
-        thread.finished.connect(lambda t=thread: self._threads.remove(t) if t in self._threads else None)
-
-    def _load_data(self):
-        self._fetch_op.start(
-            registry.run_thread,
-            self._fetch_all,
-            self._on_data_loaded,
-            name="stats-fetch",
-        )
-
-    def _fetch_all(self) -> dict:
-        time_played = 0
-        try:
-            time_played = get_time_played(self._user_id) or 0
-        except Exception:
-            pass
-
-        all_stats = fetch_all_user_stats(self._user_id)
-
-        per_game = {}
-        histories = {}
-        for slug in _GAME_SLUGS:
-            per_game[slug] = fetch_player_game_stats(self._user_id, slug)
-            histories[slug] = fetch_user_run_history(self._user_id, slug, limit=20)
-
-        return {
-            "time_played": time_played,
-            "all_stats": all_stats,
-            "per_game": per_game,
-            "histories": histories,
-        }
-
-    def _on_data_loaded(self, result: dict | None) -> None:
-        if not result:
-            return
-
-        self._time_played = result["time_played"]
-        self._all_stats = result["all_stats"]
-        self._per_game = result["per_game"]
-        self._run_histories = result["histories"]
-
+    def _on_data_changed(self) -> None:
+        """Handle data changes and update UI."""
         self._chart_refs.clear()
         self._populate_game_cards()
         self._populate_insights()
@@ -451,18 +345,17 @@ class StatisticsView(QWidget):
 
     def _populate_game_cards(self) -> None:
         for slug, labels in self._game_cards.items():
-            stats = self._per_game.get(slug)
-            if stats is None:
+            stats = self._controller._data.per_game.get(slug)
+            if not stats:
                 continue
-            labels["runs"].setText(_fmt_int(stats.get("total_runs")))
-            labels["elo_rating"].setText(_fmt_int(stats.get("elo_rating")))
-            labels["best_pi"].setText(_fmt_float(stats.get("best_pi_run")))
-            labels["avg_acc"].setText(_fmt_pct(stats.get("avg_accuracy")))
-            labels["avg_rt"].setText(_fmt_ms(stats.get("avg_reaction_time_ms")))
+            labels["runs"].setText(format_int(stats.get("total_runs")))
+            labels["elo_rating"].setText(format_int(stats.get("elo_rating")))
+            labels["best_pi"].setText(format_float(stats.get("best_pi_run")))
+            labels["avg_acc"].setText(format_percentage(stats.get("avg_accuracy")))
+            labels["avg_rt"].setText(format_milliseconds(stats.get("avg_reaction_time_ms")))
 
     def _populate_insights(self) -> None:
-        games_data = self._all_stats.get("games", [])
-        id_to_slug = {v: k for k, v in GAME_ID_MAP.items()}
+        games_data = self._controller._data.all_stats.get("games", [])
 
         best_game_row = max(
             (g for g in games_data if g.get("elo_rating") is not None),
@@ -470,10 +363,10 @@ class StatisticsView(QWidget):
             default=None,
         )
         if best_game_row:
-            slug = id_to_slug.get(best_game_row["game_id"], "")
-            self._ins_best_game.setText(_GAME_LABELS.get(slug, slug))
+            slug = GAME_ID_TO_SLUG.get(best_game_row["game_id"], "")
+            self._ins_best_game.setText(GAME_LABELS.get(slug, slug))
         else:
-            self._ins_best_game.setText("—")
+            self._ins_best_game.setText(translate("StatisticsView", "No data"))
 
         best_acc = max((game.get("avg_accuracy") or 0.0 for game in games_data), default=0.0)
         rt_values = [
@@ -486,7 +379,7 @@ class StatisticsView(QWidget):
         rt_score = max(0.0, 1.0 - (best_rt / _RT_REF)) if best_rt is not None else 0.0
 
         if best_acc == 0.0 and rt_score == 0.0:
-            self._ins_best_metric.setText("—")
+            self._ins_best_metric.setText(translate("StatisticsView", "No data"))
         elif best_acc >= rt_score:
             self._ins_best_metric.setText(translate("StatisticsView", "Accuracy"))
         else:
@@ -498,16 +391,23 @@ class StatisticsView(QWidget):
             default=None,
         )
         if worst_game_row and worst_game_row != best_game_row:
-            slug = id_to_slug.get(worst_game_row["game_id"], "")
-            self._ins_worst_metric.setText(_GAME_LABELS.get(slug, slug))
+            slug = GAME_ID_TO_SLUG.get(worst_game_row["game_id"], "")
+            self._ins_worst_metric.setText(GAME_LABELS.get(slug, slug))
         else:
-            self._ins_worst_metric.setText("—")
+            self._ins_worst_metric.setText(translate("StatisticsView", "No data"))
 
     def _populate_trend_chart(self) -> None:
-        while self._trend_chart_layout.count():
-            item = self._trend_chart_layout.takeAt(0)
-            if item.widget():
-                item.widget().setParent(None)
+        placeholder = self._trend_chart_placeholder
+        if placeholder is not None:
+            placeholder.setUpdatesEnabled(False)
+        try:
+            while self._trend_chart_layout.count():
+                item = self._trend_chart_layout.takeAt(0)
+                if item.widget():
+                    item.widget().setParent(None)
+        finally:
+            if placeholder is not None:
+                placeholder.setUpdatesEnabled(True)
 
         chart = _setup_chart()
         all_series = []
@@ -515,15 +415,18 @@ class StatisticsView(QWidget):
         max_x = 0
         all_vals: list[float] = []
 
-        for slug in _GAME_SLUGS:
-            history = self._run_histories.get(slug, [])
+        # Get histories from controller
+        histories = self._controller._data.histories
+
+        for slug in GAME_SLUGS:
+            history = histories.get(slug, [])
             pi_values = [r["pi_run"] for r in history if r.get("pi_run") is not None]
             if not pi_values:
                 continue
             has_data = True
 
             series = QLineSeries()
-            series.setName(_GAME_LABELS[slug])
+            series.setName(GAME_LABELS[slug])
             pen = QPen(QColor(GAME_COLORS[slug]), 2.6)
             pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
@@ -579,12 +482,25 @@ class StatisticsView(QWidget):
             self._trend_chart_layout.addWidget(lbl)
 
     def _populate_comparison_chart(self) -> None:
-        while self._comparison_layout.count():
-            item = self._comparison_layout.takeAt(0)
-            if item.widget():
-                item.widget().setParent(None)
+        placeholder = self._comparison_placeholder
+        if placeholder is not None:
+            placeholder.setUpdatesEnabled(False)
+        try:
+            while self._comparison_layout.count():
+                item = self._comparison_layout.takeAt(0)
+                if item.widget():
+                    item.widget().setParent(None)
+        finally:
+            if placeholder is not None:
+                placeholder.setUpdatesEnabled(True)
 
-        slugs_with_data = [s for s in _GAME_SLUGS if self._per_game.get(s) is not None]
+        # Get data for all games that have stats
+        slugs_with_data = []
+        for s in GAME_SLUGS:
+            stats = self._controller._data.per_game.get(s)
+            if stats and stats.get("total_runs") is not None:
+                slugs_with_data.append(s)
+        
         if not slugs_with_data:
             lbl = QLabel(translate("StatisticsView", "No data yet"))
             lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -598,7 +514,9 @@ class StatisticsView(QWidget):
         labels = []
 
         for slug in slugs_with_data:
-            stats = self._per_game[slug]
+            stats = self._controller._data.per_game.get(slug)
+            if not stats:
+                continue
             acc = stats.get("avg_accuracy")
             accuracy_vals.append(round((acc * 100) if acc is not None else 0, 1))
             qual = stats.get("avg_quality")
@@ -609,7 +527,7 @@ class StatisticsView(QWidget):
             if cons is not None and 0 < cons <= 1:
                 cons = cons * 100
             consistency_vals.append(round(cons if cons is not None else 0, 1))
-            labels.append(_GAME_LABELS[slug].replace(" ", "\n"))
+            labels.append(GAME_LABELS[slug].replace(" ", "\n"))
 
         chart = _setup_chart()
 

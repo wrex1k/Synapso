@@ -1,22 +1,12 @@
 import re
 import datetime
 from app.utils.logger import get_logger
-logger = get_logger(__name__)
 from translations.translation import translate
 
-"""
-This module provides common validation functions for user input, such as:
-- validate_email: checks if an email address is in a valid format,
-- validate_otp: checks if an OTP code is a 6-digit numeric string
-- validate_passwords_match: checks if two password fields match,
-- validate_password: checks if a password meets strength requirements (length, character types)
-- validate_username: checks if a username is valid (length, allowed characters)
-- validate_birthdate: checks if a birthdate is valid and within an acceptable age range
-"""
+logger = get_logger(__name__) 
 
-
-# validate email
 def validate_email(email: str) -> str | None:
+    """Return an error message if the email is empty or malformed, else None."""
     email = (email or "").strip()
     if not email:
         logger.error("Email is empty")
@@ -29,23 +19,23 @@ def validate_email(email: str) -> str | None:
     return None
 
 
-# validate OTP code (6-digit numeric)
 def validate_otp(otp: str) -> str | None:
+    """Return an error message if the OTP is not a 6-digit code, else None."""
     otp = (otp or "").strip()
     if len(otp) != 6 or not otp.isdigit():
         logger.error("Invalid OTP code format: %s", otp)
         return translate("Validator", "Invalid verification code")
     return None
 
-# validate password match
 def validate_passwords_match(password: str, confirm_password: str) -> str | None:
+    """Return an error message if the passwords differ, else None."""
     if (password or "").strip() != (confirm_password or "").strip():
         logger.error("Passwords do not match")
         return translate("Validator", "Passwords do not match")
     return None
 
-# validate password strength
 def validate_password(password: str, *, min_len: int = 8, max_len: int = 72) -> str | None:
+    """Return an error message if the password is weak or out of length range, else None."""
     password = (password or "").strip()
 
     if len(password) < min_len:
@@ -62,8 +52,8 @@ def validate_password(password: str, *, min_len: int = 8, max_len: int = 72) -> 
         return translate("Validator", "Password must include at least one number")
     return None
 
-# validate username
 def validate_username(username: str, min_len: int = 3, max_len: int = 30) -> str | None:
+    """Return an error message if the username is invalid, else None."""
     username = (username or "").strip()
     if not username:
         logger.error("Username is empty")
@@ -77,8 +67,8 @@ def validate_username(username: str, min_len: int = 3, max_len: int = 30) -> str
         return translate("Validator", "Username can only contain letters, numbers, and underscores")
     return None
 
-# validate birthdate and age range
 def validate_birthdate(birthdate: datetime.date, *, min_years: int = 15, max_years: int = 120) -> str | None:
+    """Return an error message if the birthdate is missing or out of age range, else None."""
     if not birthdate:
         logger.error("Birthdate is empty")
         return translate("Validator", "Please enter a valid birth date")

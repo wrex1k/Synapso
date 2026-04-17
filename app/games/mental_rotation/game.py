@@ -3,12 +3,14 @@ from __future__ import annotations
 import random
 from enum import Enum, auto
 
-from app.games.core.base_game import BaseGame, TrialResult
+from app.games.core.base_game import BaseGame, TrialResult, MIN_LEVEL, MAX_LEVEL
 from app.games.mental_rotation.config import LEVEL_PARAMS, SHAPES
-from app.games.core.base_game import MIN_LEVEL, MAX_LEVEL
 
 class MentalRotationGame(BaseGame):
+    """Mental rotation game with shape mirroring detection and adaptive difficulty."""
+
     def __init__(self, user_id: str):
+        """Initialize Mental Rotation game with shape tracking and difficulty parameters."""
         super().__init__(
             game_slug="mental_rotation",
             user_id=user_id,
@@ -19,17 +21,21 @@ class MentalRotationGame(BaseGame):
         self._last_mirrored_history: list[bool] = []
 
     def _level_params(self) -> dict:
+        """Return configuration parameters for current difficulty level."""
         return LEVEL_PARAMS.get(self.level, LEVEL_PARAMS[MIN_LEVEL])
 
     def begin_run(self) -> None:
+        """Reset run state and clear shape tracking."""
         super().begin_run()
         self._last_shape_id = None
         self._last_mirrored_history = []
 
     def create_tutorial_runner(self) -> "MentalRotationTutorialRunner":
+        """Create and return tutorial runner instance for this game."""
         return MentalRotationTutorialRunner(self)
 
     def start_trial(self) -> dict:
+        """Generate next trial with random shape, rotation, and mirroring."""
         level_params = self._level_params()
 
         shape_ids = level_params["shape_ids"]
@@ -67,6 +73,7 @@ class MentalRotationGame(BaseGame):
         }
 
     def get_correct_answer(self, trial_params: dict) -> str:
+        """Return the correct key response for given trial."""
         return str(trial_params.get("correct_key", "f")).lower()
 
     def evaluate_trial(
@@ -75,6 +82,7 @@ class MentalRotationGame(BaseGame):
         response: str | None,
         reaction_time_ms: float,
     ) -> TrialResult:
+        """Evaluate trial and return result with shape, rotation, and mirror information."""
         response_key = response.lower() if isinstance(response, str) else None
         correct_key = self.get_correct_answer(trial_params)
         is_correct = response_key == correct_key
@@ -115,6 +123,8 @@ class MentalRotationGame(BaseGame):
 
 
 class _MRPhase(Enum):
+    """Mental Rotation tutorial phase enumeration."""
+
     WARMUP = auto()
     ROTATION_CHECK = auto()
     MIRROR_TEST = auto()
@@ -124,6 +134,8 @@ class _MRPhase(Enum):
 
 
 class MentalRotationTutorialRunner:
+    """Four-phase tutorial runner with warmup, rotation, mirror, and speed phases."""
+
     _WARMUP_REQUIRED_CORRECT = 3
     _WARMUP_MAX_TRIALS = 10
     _ROTATION_REQUIRED_STREAK = 2
@@ -132,38 +144,41 @@ class MentalRotationTutorialRunner:
     _MIRROR_REQUIRED_ACCURACY = 0.60
     _MIRROR_MAX_TRIALS = 16
     _SPEED_REQUIRED_STREAK = 2
-    _SPEED_MAX_RT_RATIO = 0.85   # respond within 85% of stimulus window
+    _SPEED_MAX_RT_RATIO = 0.85
     _SPEED_MAX_TRIALS = 12
 
-    _LEVEL_WARMUP    = 1   # 10% mirror, 15-45°,  2000 ms
-    _LEVEL_ROTATION  = 2   # 20% mirror, 45-75°,  1800 ms
-    _LEVEL_MIRROR    = 2   # 20% mirror, 45-75°,  1800 ms
-    _LEVEL_SPEED     = 2   # 20% mirror, 45-75°,  1800 ms
+    _LEVEL_WARMUP    = 1
+    _LEVEL_ROTATION  = 2
+    _LEVEL_MIRROR    = 2
+    _LEVEL_SPEED     = 2
 
     def __init__(self, game: MentalRotationGame):
+        """Initialize tutorial runner with game instance and phase tracking."""
         self.game = game
         self._phase = _MRPhase.WARMUP
         self._phase_trials: list = []
-        self._failed_reason: str = ""
 
     @property
     def passed(self) -> bool:
+        """Return True if tutorial has been passed."""
         return self._phase == _MRPhase.PASSED
 
     @property
     def failed(self) -> bool:
+        """Return True if tutorial has failed."""
         return self._phase == _MRPhase.FAILED
 
     def configure(self):
+        """Configure game for tutorial mode and start warmup phase."""
         self.game.total_trials = 10**9
         self._phase = _MRPhase.WARMUP
         self._phase_trials = []
-        self._failed_reason = ""
         self.game.level = self._LEVEL_WARMUP
         self.game.initial_level = self._LEVEL_WARMUP
         self.game.begin_run()
 
     def check_after_trial(self) -> bool:
+        """Check phase completion criteria after trial and advance if passed."""
         if self._phase in (_MRPhase.PASSED, _MRPhase.FAILED):
             return self.passed
         latest = self.game.trials[-1] if self.game.trials else None
@@ -180,27 +195,8 @@ class MentalRotationTutorialRunner:
             return self._check_speed()
         return False
 
-    def get_progress_text(self) -> str:
-        pt = self._phase_trials
-        if self._phase == _MRPhase.WARMUP:
-            correct = sum(1 for t in pt if t.is_correct)
-            return f"Warm-up: {correct}/{self._WARMUP_REQUIRED_CORRECT}"
-        if self._phase == _MRPhase.ROTATION_CHECK:
-            return f"Rotation streak: {self._trailing_streak(pt)}/{self._ROTATION_REQUIRED_STREAK}"
-        if self._phase == _MRPhase.MIRROR_TEST:
-            n = len(pt)
-            correct = sum(1 for t in pt if t.is_correct)
-            pct = int(100 * correct / n) if n else 0
-            return f"Mirror: {pct}% ({n}/{self._MIRROR_MIN_TRIALS} trials)"
-        if self._phase == _MRPhase.SPEED_CHECK:
-            return f"Speed streak: {self._fast_correct_streak(pt)}/{self._SPEED_REQUIRED_STREAK}"
-        if self._phase == _MRPhase.PASSED:
-            return "\u2713 Tutorial passed!"
-        if self._phase == _MRPhase.FAILED:
-            return f"\u2717 Failed: {self._failed_reason}"
-        return ""
-
     def get_progress_pct(self) -> int:
+        """Return tutorial progress as percentage."""
         if self._phase == _MRPhase.PASSED:
             return 100
         base_map = {
@@ -224,6 +220,7 @@ class MentalRotationTutorialRunner:
         return int(base + within * 25)
 
     def _check_warmup(self) -> bool:
+        """Check warmup phase completion criteria."""
         pt = self._phase_trials
         correct = sum(1 for t in pt if t.is_correct)
         if correct >= self._WARMUP_REQUIRED_CORRECT:
@@ -233,6 +230,7 @@ class MentalRotationTutorialRunner:
         return False
 
     def _check_rotation(self) -> bool:
+        """Check rotation phase completion criteria."""
         pt = self._phase_trials
         streak = self._trailing_streak(pt)
         if streak >= self._ROTATION_REQUIRED_STREAK:
@@ -242,6 +240,7 @@ class MentalRotationTutorialRunner:
         return False
 
     def _check_mirror(self) -> bool:
+        """Check mirror test phase completion criteria."""
         pt = self._phase_trials
         n = len(pt)
         if n < self._MIRROR_MIN_TRIALS:
@@ -255,6 +254,7 @@ class MentalRotationTutorialRunner:
         return False
 
     def _check_speed(self) -> bool:
+        """Check speed phase completion criteria."""
         pt = self._phase_trials
         streak = self._fast_correct_streak(pt)
         if streak >= self._SPEED_REQUIRED_STREAK:
@@ -266,18 +266,20 @@ class MentalRotationTutorialRunner:
         return False
 
     def _enter_phase(self, phase: _MRPhase, level: int) -> None:
+        """Enter new phase and reset trial tracking."""
         self._phase = phase
         self._phase_trials = []
         self.game.level = level
         self.game.initial_level = level
 
     def _fail(self, reason: str) -> None:
-        self._failed_reason = reason
+        """Mark tutorial as failed."""
         self._phase = _MRPhase.FAILED
         self._phase_trials = []
 
     @staticmethod
     def _trailing_streak(trials) -> int:
+        """Calculate consecutive correct trials from end of list."""
         streak = 0
         for t in reversed(trials):
             if t.is_correct:
@@ -287,6 +289,7 @@ class MentalRotationTutorialRunner:
         return streak
 
     def _fast_correct_streak(self, trials) -> int:
+        """Calculate consecutive fast correct trials from end of list."""
         streak = 0
         for t in reversed(trials):
             if not t.is_correct:

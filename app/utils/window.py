@@ -1,14 +1,7 @@
 from PySide6.QtWidgets import QApplication, QWidget
 
-"""Provide main window utilities, such as:
-- window_resize: resize and center the main window
-- set_central_widget: safely replace the central widget preserving size
-"""
-
-
-# resize current window with and center it
-
 def window_resize(window: QWidget, new_width: int, new_height: int):
+    """Resize and center a window on its current screen."""
     screen = window.screen() or QApplication.primaryScreen()
     if screen is None:
         window.resize(new_width, new_height)
@@ -22,9 +15,8 @@ def window_resize(window: QWidget, new_width: int, new_height: int):
     window.resize(new_width, new_height)
     window.move(x, y)
 
-
-# safely swap the central widget of the main window, preserving size if possible
 def set_central_widget(window, widget: QWidget):
+    """Replace the central widget of a window, cleaning up the old one."""
     old = window.centralWidget()
 
     if old is not None:

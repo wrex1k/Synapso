@@ -3,14 +3,8 @@ from PySide6.QtGui import QColor, QCursor, QPainter, QPixmap
 
 from app.ui.styles.colors import PRIMARY, CURSOR_COLOR
 
-"""
-Provide cursor customization utilities, such as:
-- create_custom_cursor: create a small custom cursor pixmap and return a QCursor
-- change_cursor_to_red: create and apply a red cursor pixmap for special states
-"""
-
-# creates a custom cursor dot that is used troughout the application
 def create_custom_cursor():
+    """Create a custom circular cursor used throughout the application."""
     cursor_size = 16
     pixmap = QPixmap(cursor_size, cursor_size)
     pixmap.fill(Qt.GlobalColor.transparent)

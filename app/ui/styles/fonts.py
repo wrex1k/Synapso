@@ -1,6 +1,9 @@
 from PySide6.QtGui import QFont, QFontDatabase
 
+import re
+
 from app.ui.styles.colors import GRAY
+from app.utils.scaling import scale_font, get_dpi_scale
 
 # font family
 GENERAL_SANS = "General Sans"
@@ -70,7 +73,7 @@ def load_fonts() -> None:
     font_db.addApplicationFont(":/font/general-sans/GeneralSans-Light.otf")
 
 def get_general_sans(size: int = SIZE_NORMAL, weight: QFont.Weight = WEIGHT_REGULAR) -> QFont:
-    font = QFont(GENERAL_SANS, size)
+    font = QFont(GENERAL_SANS, scale_font(size))
     font.setWeight(weight)
     return font
 
@@ -385,6 +388,11 @@ GAMES_FONT_STYLES = f"""
         font-weight: {WEIGHT_MEDIUM};
     }}
 
+    QLabel#leaderboardRowStatus {{
+        font-size: {SIZE_XXSMALL}px;
+        font-weight: {WEIGHT_REGULAR};
+    }}
+
     QLabel#leaderboardRowValue {{
         font-size: {SIZE_SMALL}px;
         font-weight: {WEIGHT_SEMIBOLD};
@@ -695,6 +703,19 @@ FORGOT_PASSWORD_INLINE_FONT_STYLES = f"""
         font-weight: {WEIGHT_BOLD};
     }}
 """
+
+
+def scale_font_sizes(css: str) -> str:
+    """Dynamically scale all font-size values in a CSS string."""
+    factor = get_dpi_scale()
+    if 0.99 < factor < 1.01:
+        return css
+
+    def _replace(m):
+        original = float(m.group(1))
+        return f"font-size: {int(original * factor)}px"
+
+    return re.sub(r'font-size:\s*(\d+(?:\.\d+)?)px', _replace, css)
 
 
 def get_full_fonts() -> str:

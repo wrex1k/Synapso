@@ -37,27 +37,4 @@ SETTINGS_STYLES = f"""
         background-color: {FONT_PRIMARY};
         color: {OFF_WHITE};
     }}
-
-    QPushButton#themeBtn {{
-        background-color: transparent;
-        border: 1px solid {FONT_PRIMARY};
-        color: {FONT_PRIMARY};
-        border-radius: 6px;
-        padding: 6px 18px;
-    }}
-
-    QPushButton#themeBtn:hover {{
-        background-color: {FONT_PRIMARY};
-        color: {OFF_WHITE};
-    }}
-
-    QPushButton#themeBtn[active="true"] {{
-        background-color: {FONT_PRIMARY};
-        color: {OFF_WHITE};
-    }}
-
-    QPushButton#themeBtn:disabled {{
-        border-color: {DARK_GRAY};
-        color: {DARK_GRAY};
-    }}
 """
