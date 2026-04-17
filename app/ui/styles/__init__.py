@@ -1,16 +1,17 @@
 from .colors import *
 from .base import *
 from .login import LOGIN_STYLES
-from .register_auth import REGISTER_AUTH_STYLES
-from .register_personal import REGISTER_PERSONAL_STYLES
+from .register import REGISTER_STYLES
+from .games import GAMES_STYLES
+from .tutorial import TUTORIAL_STYLESHEET
+from .forgot_password import FORGOT_PASSWORD_STYLES
 
 __all__ = [
     # Colors
     "PRIMARY",
-    "PRIMARY_HOVER",
+    "HOVER_PRIMARY",
     "PRIMARY_DARK",
     "PRIMARY_LIGHT",
-    "WHITE",
     "OFF_WHITE",
     "LIGHT_GRAY",
     "GRAY",
@@ -30,6 +31,8 @@ __all__ = [
     "get_full_stylesheet",
     # View specific styles
     "LOGIN_STYLES",
-    "REGISTER_AUTH_STYLES",
-    "REGISTER_PERSONAL_STYLES",
+    "REGISTER_STYLES",
+    "GAMES_STYLES",
+    "TUTORIAL_STYLESHEET",
+    "FORGOT_PASSWORD_STYLES",
 ]

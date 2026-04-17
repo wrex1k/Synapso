@@ -1,34 +1,35 @@
 from app.ui.styles.colors import *
 
 LOGIN_STYLES = f"""
-
-    #titleLabelLeft {{
+    QLabel#titleLabelLeft {{
         color: {OFF_WHITE};
     }}
 
-    #titleLabelRight {{
+    QLabel#titleLabelRight {{
         color: {PRIMARY_LIGHT};
-        font-weight: 600;
     }}
 
-    #forgotPasswordLink {{
+    QPushButton#forgotPasswordLink {{
         border: none;
         background-color: transparent;
         color: {GRAY};
+        text-align: left;
+        padding: 0;
     }}
 
-    #forgotPasswordLink:hover {{
+    QPushButton#forgotPasswordLink:hover {{
         color: {PRIMARY};
     }}
 
-    #startRegistration,
-    #startRegistrationLabel {{
+    QPushButton#startRegistration,
+    QPushButton#startRegistrationLabel {{
         border: none;
+        background-color: transparent;
         color: {GRAY};
+        padding: 0;
     }}
 
-    #startRegistration:hover {{
+    QPushButton#startRegistration:hover {{
         color: {PRIMARY};
     }}
-
 """

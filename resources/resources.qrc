@@ -13,9 +13,12 @@
       <file>images/icons/games-selected.png</file>
       <file>images/icons/games.png</file>
       
-      <!-- Leaderboard -->
-      <file>images/icons/leaderboard-selected.png</file>
-      <file>images/icons/leaderboard.png</file>
+      <!-- Tutorials -->
+      <file>images/icons/info-tutorial.png</file>
+      
+      <!-- Statistics -->
+      <file>images/icons/statistics-selected.png</file>
+      <file>images/icons/statistics.png</file>
       
       <!-- Info -->
       <file>images/icons/info.png</file>
@@ -32,14 +35,11 @@
       <file>images/icons/search.png</file>
       <file>images/icons/back.png</file>
       <file>images/icons/bell.png</file>
+      <file>images/icons/arrow-down.png</file>
+      <file>images/icons/arrow-left.png</file>
+      <file>images/icons/arrow-right.png</file>
 
-      <!-- fonts -->
-      <file>font/ClashGrotesk_Complete/Fonts/OTF/ClashGrotesk-Regular.otf</file>
-      <file>font/ClashGrotesk_Complete/Fonts/OTF/ClashGrotesk-Bold.otf</file>
-      <file>font/ClashGrotesk_Complete/Fonts/OTF/ClashGrotesk-Medium.otf</file>
-      <file>font/ClashGrotesk_Complete/Fonts/OTF/ClashGrotesk-Semibold.otf</file>
-      <file>font/ClashGrotesk_Complete/Fonts/OTF/ClashGrotesk-Light.otf</file>
-      <file>font/ClashGrotesk_Complete/Fonts/OTF/ClashGrotesk-Extralight.otf</file>
+      <!-- Fonts -->
       <file>font/general-sans/GeneralSans-Bold.otf</file>
       <file>font/general-sans/GeneralSans-BoldItalic.otf</file>
       <file>font/general-sans/GeneralSans-Extralight.otf</file>

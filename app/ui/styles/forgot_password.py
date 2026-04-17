@@ -2,12 +2,11 @@ from app.ui.styles.colors import *
 
 FORGOT_PASSWORD_STYLES = f"""
     #titleLeft {{
-        color: {WHITE};
+        color: {OFF_WHITE};
     }}
 
     #titleRight {{
         color: {PRIMARY_LIGHT};
-        font-weight: 600;
     }}
 
     #descLabel {{
@@ -19,7 +18,6 @@ FORGOT_PASSWORD_STYLES = f"""
     #approveButton {{
         height: 20px;
         border: none;
-        outline: none;
         background-color: {PRIMARY};
         padding: 10px 15px;
         color: {OFF_WHITE};
@@ -30,7 +28,7 @@ FORGOT_PASSWORD_STYLES = f"""
     #updateButton:hover,
     #verifyButton:hover,
     #approveButton:hover {{
-        background-color: {PRIMARY_HOVER};
+        background-color: {HOVER_PRIMARY};
     }}
 
     #updateButton:disabled,
@@ -42,7 +40,6 @@ FORGOT_PASSWORD_STYLES = f"""
 
     #resendButton {{
         border: none;
-        outline: none;
         background-color: transparent;
         color: {PRIMARY_LIGHT};
         padding: 5px 10px;
@@ -66,7 +63,6 @@ FORGOT_PASSWORD_STYLES = f"""
         border: none;
         border-bottom: 2px solid {GRAY};
         color: {OFF_WHITE};
-        font-weight: bold;
     }}
 
     QLineEdit[objectName^="otpEdit"]:focus {{
@@ -74,7 +70,7 @@ FORGOT_PASSWORD_STYLES = f"""
     }}
 
     QLineEdit[objectName^="otpEdit"]:hover {{
-        color: {PRIMARY_HOVER};
-        border-color: {PRIMARY_HOVER};
+        color: {HOVER_PRIMARY};
+        border-color: {HOVER_PRIMARY};
     }}
 """

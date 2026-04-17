@@ -1,13 +1,8 @@
 from PySide6.QtGui import QFont, QFontDatabase
-
-"""
-This module handles loading and providing access to custom fonts used in the application.
-Centralized font management with predefined sizes and styles.
-"""
+from numpy.ma import size
 
 # Font families
 GENERAL_SANS = "General Sans"
-CLASH_GROTESK = "ClashGrotesk"
 
 # Font weights
 WEIGHT_LIGHT = QFont.Weight.Light
@@ -16,126 +11,121 @@ WEIGHT_MEDIUM = QFont.Weight.Medium
 WEIGHT_SEMIBOLD = QFont.Weight.DemiBold
 WEIGHT_BOLD = QFont.Weight.Bold
 
-# Font sizes (most used)
-SIZE_SMALL = 13
-SIZE_NORMAL = 14
-SIZE_MEDIUM = 15
-SIZE_LARGE = 16
-SIZE_XLARGE = 32
-SIZE_TITLE = 35
-SIZE_HEADER = 48
-SIZE_HEADER_LARGE = 52
-SIZE_HUGE = 72
+# Shared font sizes
+SIZE_TINY = 13
+SIZE_XSMALL = 14
+SIZE_SMALL = 15
+SIZE_NORMAL = 16
+SIZE_MEDIUM = 17
+SIZE_LARGE = 18
+SIZE_TITLE = 32
 
-def load_fonts():
+SIZE_HEADER_SMALL = 42
+SIZE_HEADER_LARGE = 84
+LOGIN_HEADER_SMALL = 56
+LOGIN_HEADER_LARGE = 92
+
+SIZE_TUTORIAL_TITLE = 37
+SIZE_TUTORIAL_SUBTITLE = 26
+SIZE_TUTORIAL_INTRO = 24
+SIZE_TUTORIAL_HOW = 24
+SIZE_TUTORIAL_BASE_TEXT = 24
+SIZE_TUTORIAL_KEY_CHIP = 24
+SIZE_TUTORIAL_TIP = 24
+SIZE_TUTORIAL_STEP_TITLE = 24
+SIZE_TUTORIAL_STEP_COUNTER = 19
+SIZE_TUTORIAL_ADVICE = 23
+SIZE_TUTORIAL_STIMUL = 79
+SIZE_TUTORIAL_ANSWER_LABEL = 21
+SIZE_TUTORIAL_ANSWER_TEXT = 21
+SIZE_TUTORIAL_NEXT_BUTTON = 18
+
+
+def load_fonts() -> None:
     font_db = QFontDatabase()
-    # General Sans fonts
     font_db.addApplicationFont(":/font/general-sans/GeneralSans-Regular.otf")
     font_db.addApplicationFont(":/font/general-sans/GeneralSans-Bold.otf")
     font_db.addApplicationFont(":/font/general-sans/GeneralSans-Medium.otf")
     font_db.addApplicationFont(":/font/general-sans/GeneralSans-Light.otf")
-    # ClashGrotesk fonts
-    font_db.addApplicationFont(":/font/ClashGrotesk_Complete/Fonts/OTF/ClashGrotesk-Regular.otf")
-    font_db.addApplicationFont(":/font/ClashGrotesk_Complete/Fonts/OTF/ClashGrotesk-Bold.otf")
-    font_db.addApplicationFont(":/font/ClashGrotesk_Complete/Fonts/OTF/ClashGrotesk-Medium.otf")
-    font_db.addApplicationFont(":/font/ClashGrotesk_Complete/Fonts/OTF/ClashGrotesk-Semibold.otf")
 
-# Predefined font objects
-def get_general_sans(size=SIZE_NORMAL, weight=WEIGHT_REGULAR):
+def get_general_sans(size: int = SIZE_NORMAL, weight: QFont.Weight = WEIGHT_REGULAR) -> QFont:
     font = QFont(GENERAL_SANS, size)
     font.setWeight(weight)
     return font
 
-def get_clash_grotesk(size=SIZE_NORMAL, weight=WEIGHT_REGULAR):
-    font = QFont(CLASH_GROTESK, size)
-    font.setWeight(weight)
-    return font
+FONT_TITLE_LEFT = get_general_sans(SIZE_HEADER_SMALL)
+FONT_TITLE_RIGHT = get_general_sans(SIZE_HEADER_LARGE, WEIGHT_SEMIBOLD)
+FONT_LABEL = get_general_sans(SIZE_MEDIUM)
+FONT_INPUT = get_general_sans(SIZE_NORMAL)
+FONT_BUTTON = get_general_sans(SIZE_NORMAL)
+FONT_INFO = get_general_sans(SIZE_MEDIUM)
+FONT_NAVBAR = get_general_sans(SIZE_TITLE, WEIGHT_BOLD)
 
-# Common font presets
-FONT_TITLE_LEFT = get_general_sans(SIZE_HEADER)  # 48px
-FONT_TITLE_RIGHT = get_clash_grotesk(SIZE_HEADER_LARGE, WEIGHT_SEMIBOLD)  # 52px, semibold
-FONT_LABEL = get_general_sans(SIZE_MEDIUM)  # 15px
-FONT_INPUT = get_general_sans(SIZE_NORMAL)  # 14px
-FONT_BUTTON = get_general_sans(SIZE_NORMAL)  # 14px
-FONT_INFO = get_general_sans(SIZE_MEDIUM)  # 15px
-FONT_OTP = get_general_sans(SIZE_XLARGE, WEIGHT_BOLD)  # 32px, bold
-FONT_NAVBAR = get_general_sans(SIZE_TITLE, WEIGHT_MEDIUM)  # 35px, medium
-
-# Font size stylesheet
-FONT_SIZE_STYLESHEET = f"""
-    /* Font size classes */
-    .font-small {{
-        font-size: {SIZE_SMALL}px;
+# base.py
+BASE_FONT_STYLES = f"""
+    * {{
+        font-family: \"General Sans\";
+        font-weight: 400;
     }}
 
-    .font-normal {{
-        font-size: {SIZE_NORMAL}px;
-    }}
-
-    .font-medium {{
-        font-size: {SIZE_MEDIUM}px;
-    }}
-
-    .font-large {{
-        font-size: {SIZE_LARGE}px;
-    }}
-
-    .font-xlarge {{
-        font-size: {SIZE_XLARGE}px;
-    }}
-
-    .font-title {{
-        font-size: {SIZE_TITLE}px;
-    }}
-
-    .font-header {{
-        font-size: {SIZE_HEADER}px;
-    }}
-
-    .font-header-large {{
-        font-size: {SIZE_HEADER_LARGE}px;
-    }}
-
-    .font-huge {{
-        font-size: {SIZE_HUGE}px;
-    }}
-
-    /* Specific component fonts */
-    #titleLabelLeft {{
-        font-size: {SIZE_HEADER}px;
-    }}
-
-    #titleLabelRight {{
-        font-size: {SIZE_HUGE}pt;
+    QLabel#titleLabel {{
+        font-size: {SIZE_HEADER_SMALL}px;
         font-weight: 600;
     }}
 
-    #titleLabel {{
-        font-size: {SIZE_TITLE}px;
+    #usernameLabel {{
+        font-size: {SIZE_XSMALL}px;
     }}
 
-    #descLabel, #info, #uploadRestriction {{
+    QLabel#profilePicture {{
         font-size: {SIZE_MEDIUM}px;
-    }}
-
-    #forgotPasswordLink, #startRegistration, #startRegistrationLabel {{
-        font-size: {SIZE_MEDIUM}px;
-    }}
-
-    QLineEdit#inputEdit {{
-        font-size: {SIZE_NORMAL}px;
-    }}
-
-    QPushButton {{
-        font-size: {SIZE_NORMAL}px;
     }}
 
     QLabel#inputLabel {{
         font-size: {SIZE_MEDIUM}px;
     }}
 
-    #profilePicture, #birthMonth, #day, #year {{
+    QLineEdit#inputEdit {{
+        font-size: {SIZE_SMALL}px;
+    }}
+
+    QPushButton#primaryButton {{
+        font-size: {SIZE_SMALL}px;
+    }}
+
+    QPushButton#back {{
+        font-size: {SIZE_SMALL}px;
+    }}
+
+    QPushButton#back:hover {{
         font-size: {SIZE_LARGE}px;
+    }}
+"""
+
+# login.py
+LOGIN_FONT_STYLES = f"""
+    QLabel#titleLabelLeft {{
+        font-size: {LOGIN_HEADER_SMALL}px;
+    }}
+
+    QLabel#titleLabelRight {{
+        font-size: {LOGIN_HEADER_LARGE}px;
+        font-weight: 600;
+    }}
+
+    #forgotPasswordLink, #startRegistration, #startRegistrationLabel {{
+        font-size: {SIZE_MEDIUM}px;
+    }}
+"""
+
+# register.py
+REGISTER_FONT_STYLES = f"""
+    #info, #uploadRestriction {{
+        font-size: {SIZE_MEDIUM}px;
+    }}
+
+    #birthMonth, #day, #year {{
+        font-size: {SIZE_MEDIUM}px;
     }}
 
     #birthMonthBox, #dayBox, #yearBox {{
@@ -143,23 +133,234 @@ FONT_SIZE_STYLESHEET = f"""
     }}
 
     #uploadImageButton {{
-        font-size: {SIZE_NORMAL}px;
+        font-size: {SIZE_XSMALL}px;
+    }}
+"""
+
+# forgot_password.py
+FORGOT_PASSWORD_FONT_STYLES = f"""
+    #descLabel {{
+        font-size: {SIZE_MEDIUM}px;
     }}
 
     #resendButton {{
         font-size: {SIZE_NORMAL}px;
     }}
 
-    #titleRight {{
-        font-size: {SIZE_HEADER_LARGE}px;
-        font-weight: 600;
+    #titleLeft {{
+        font-size: {SIZE_HEADER_SMALL}px;
     }}
 
-    #titleLeft {{
-        font-size: {SIZE_HEADER}px;
+    #titleRight {{
+        font-size: {SIZE_HEADER_SMALL}px;
+        font-weight: 600;
     }}
 
     #updateButton, #verifyButton, #approveButton {{
         font-size: {SIZE_NORMAL}px;
     }}
 """
+
+# games.py
+GAMES_FONT_STYLES = f"""
+    QLabel#gameTitle {{
+        font-size: 22px;
+        font-weight: 600;
+    }}
+
+    QLabel#gameDescription {{
+        font-size: 15px;
+    }}
+
+    QLabel#switcherTitle {{
+        font-size: 14px;
+        font-weight: 500;
+    }}
+
+    QLabel#infoCardTitle {{
+        font-size: 20px;
+        font-weight: 500;
+    }}
+
+    QLabel#infoCardDescription {{
+        font-size: 15px;
+        font-weight: 500;
+    }}
+
+    QLabel#rtCardTitle,
+    QLabel#accCardTitle,
+    QLabel#piCardTitle {{
+        font-size: 20px;
+        font-weight: 500;
+    }}
+
+    QLabel#rtCardValue,
+    QLabel#accCardValue,
+    QLabel#piCardValue {{
+        font-size: 22px;
+        font-weight: 500;
+    }}
+
+    QLabel#rtCardGlobal,
+    QLabel#accCardGlobal,
+    QLabel#piCardGlobal {{
+        font-size: 17px;
+        font-weight: 400;
+    }}
+
+    QLabel#activityCardTitle {{
+        font-size: 20px;
+        font-weight: 500;
+    }}
+
+    QLabel#activityCardDescription {{
+        font-size: 14px;
+    }}
+
+    QLabel#activityPPRowNumber,
+    QLabel#activityGTRowNumber,
+    QLabel#activityTWRowNumber,
+    QLabel#activityTGRowNumber {{
+        font-size: 16px;
+    }}
+
+    QLabel#activityPPRowTitle,
+    QLabel#activityGTRowTitle,
+    QLabel#activityTWRowTitle,
+    QLabel#activityTGRowTitle {{
+        font-size: 15px;
+        font-weight: 500;
+    }}
+
+    QPushButton#tutorialButton,
+    QPushButton#playButton {{
+        font-size: 14px;
+        font-weight: 500;
+    }}
+
+    QLabel#leaderboardCardTitle {{
+        font-size: 20px;
+        font-weight: 500;
+    }}
+
+    QLabel#leaderboardRowTitle {{
+        font-size: 14px;
+        font-weight: 500;
+    }}
+
+    QLabel#leaderboardRowValue {{
+        font-size: 15px;
+        font-weight: 600;
+    }}
+
+    QLabel#userRankLabel {{
+        font-size: 15px;
+        font-weight: 500;
+    }}
+"""
+
+# tutorial.py
+TUTORIAL_FONT_STYLES = f"""
+    QLabel#stroopTutorialTitle {{
+        font-size: {SIZE_TUTORIAL_TITLE}px;
+        font-weight: 500;
+    }}
+
+    QLabel#stroopTutorialSubtitle {{
+        font-size: {SIZE_TUTORIAL_SUBTITLE}px;
+        font-weight: 400;
+    }}
+
+    QLabel#stroopTutorialHow {{
+        font-size: {SIZE_TUTORIAL_HOW}px;
+        font-weight: 500;
+    }}
+
+    QLabel#stroopTutorialIntro {{
+        font-size: {SIZE_TUTORIAL_INTRO}px;
+        font-weight: 400;
+    }}
+
+    QLabel#tutorialBaseText {{
+        font-size: {SIZE_TUTORIAL_BASE_TEXT}px;
+        font-weight: 400;
+    }}
+
+    QWidget#keyWidget[compact=\"true\"] QLabel#keyLabel {{
+        font-size: {SIZE_TUTORIAL_KEY_CHIP}px;
+        font-weight: 600;
+    }}
+
+    QLabel#stroopTutorialTip {{
+        font-size: {SIZE_TUTORIAL_TIP}px;
+        font-weight: 400;
+    }}
+
+    QLabel#practiceTutorialTitle {{
+        font-size: {SIZE_TUTORIAL_STEP_TITLE}px;
+        font-weight: 500;
+    }}
+
+    QLabel#practiceTutorialStep {{
+        font-size: {SIZE_TUTORIAL_STEP_COUNTER}px;
+        font-weight: 400;
+    }}
+
+    QLabel#practiceTutorialAdvice {{
+        font-size: {SIZE_TUTORIAL_ADVICE}px;
+        font-weight: 400;
+    }}
+
+    QLabel#practiceTutorialStimul {{
+        font-size: {SIZE_TUTORIAL_STIMUL}px;
+        font-weight: 700;
+    }}
+
+    QLabel#practiceTutorialAnswerLabel {{
+        font-size: {SIZE_TUTORIAL_ANSWER_LABEL}px;
+        font-weight: 400;
+    }}
+
+    QLabel#practiceTutorialAnswerText {{
+        font-size: {SIZE_TUTORIAL_ANSWER_TEXT}px;
+        font-weight: 400;
+    }}
+
+    QPushButton#practiceTutorialButton {{
+        font-size: {SIZE_TUTORIAL_NEXT_BUTTON}px;
+        font-weight: 400;
+    }}
+
+    QPushButton#tutorialButton {{
+        font-size: {SIZE_TINY}px;
+        font-weight: 500;
+    }}
+
+    QPushButton#transparentButton {{
+        font-size: {SIZE_SMALL}px;
+        font-weight: 500;
+    }}
+"""
+
+# forgot_password.py (inline widgets)
+FORGOT_PASSWORD_INLINE_FONT_STYLES = """
+    #titleRight {
+        font-weight: 600;
+    }
+
+    QLineEdit[objectName^=\"otpEdit\"] {
+        font-weight: 700;
+    }
+"""
+
+
+def get_full_fonts() -> str:
+    return (
+        BASE_FONT_STYLES
+        + LOGIN_FONT_STYLES
+        + REGISTER_FONT_STYLES
+        + FORGOT_PASSWORD_FONT_STYLES
+        + GAMES_FONT_STYLES
+        + TUTORIAL_FONT_STYLES
+        + FORGOT_PASSWORD_INLINE_FONT_STYLES
+    )

@@ -1,32 +1,23 @@
 from app.ui.styles.colors import *
 
-REGISTER_PERSONAL_STYLES = f"""
-    #titleLabel {{
-    }}
-
-    #profilePicture,
-    #birthMonth,
-    #day,
-    #year {{
-    }}
-
+REGISTER_STYLES = f"""
     #info,
     #uploadRestriction {{
         color: {GRAY};
     }}
 
     #uploadImageButton {{
-       height: 20px;
+       height: 15px;
        color: {OFF_WHITE};
        background-color: transparent;
-       border: 1px solid {GRAY};
-       border-radius: 10px;
-       padding: 5px 10px;
+       border: 1px solid {BORDER_LIGHTGREY};
+       border-radius: 15px;
+       padding: 10px 15px;
     }}
 
     #uploadImageButton:hover {{
         background-color: {DARK_MID};
-        border-color: {PRIMARY_HOVER};
+        border-color: {HOVER_PRIMARY};
     }}
 
     #birthMonthBox,
@@ -36,14 +27,14 @@ REGISTER_PERSONAL_STYLES = f"""
         color: {OFF_WHITE};
         background-color: transparent;
         border: 1px solid {BORDER_PRIMARY};
-        border-radius: 10px;
-        padding: 5px 20px 5px 10px;
+        border-radius: 20px;
+        padding: 10px 15px;
     }}
 
     #birthMonthBox:hover,
     #dayBox:hover,
     #yearBox:hover {{
-        border-color: {PRIMARY_HOVER};
+        border-color: {HOVER_PRIMARY};
     }}
 
     #birthMonthBox::drop-down,
@@ -60,7 +51,6 @@ REGISTER_PERSONAL_STYLES = f"""
         background-color: transparent;
         selection-background-color: #22756F;
         margin-top: 5px;
-        outline: none;
     }}
 
     #birthMonthBox QAbstractItemView::item:hover,
@@ -68,6 +58,5 @@ REGISTER_PERSONAL_STYLES = f"""
     #yearBox QAbstractItemView::item:hover {{
             background-color: #1B5E56;
             color: #FFFFFF;
-            outline: none;
     }}
 """

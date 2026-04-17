@@ -2,10 +2,10 @@
 __pycache__/
 *.pyc
 
-# Environment
+# Environment variables
 .env
 
-# IDE/editor configs
+# IDE / editor configs
 .vscode/
 .idea/
 
@@ -13,11 +13,18 @@ __pycache__/
 venv/
 env/
 
-# Working files
-
+# Logs
 logs/
 *.log
 
 tools/
 
 resources_rc.py
+# Project tools / scripts
+tools/
+
+# Tests
+tests/
+
+# Ignore all __init__.py
+**/__init__.py

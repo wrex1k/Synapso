@@ -15,7 +15,7 @@ class SidebarWidget(QWidget):
 
         self.mainLayout = QVBoxLayout(self)
         self.mainLayout.setSpacing(30)
-        self.mainLayout.setContentsMargins(0, 40, 0, 20)
+        self.mainLayout.setContentsMargins(0, 30, 0, 20)
         self.mainLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # primary group
@@ -27,11 +27,11 @@ class SidebarWidget(QWidget):
 
         self.dashboardButton = self._nav_button(self.primarySidebarWidget, "dashboard")
         self.gamesButton = self._nav_button(self.primarySidebarWidget, "games")
-        self.leaderboardButton = self._nav_button(self.primarySidebarWidget, "leaderboard")
+        self.statisticsButton = self._nav_button(self.primarySidebarWidget, "statistics")
 
         self.primaryLayout.addWidget(self.dashboardButton)
         self.primaryLayout.addWidget(self.gamesButton)
-        self.primaryLayout.addWidget(self.leaderboardButton)
+        self.primaryLayout.addWidget(self.statisticsButton)
 
         # secondary group
         self.secondarySidebarWidget = QWidget(self)
@@ -57,39 +57,6 @@ class SidebarWidget(QWidget):
         self.mainLayout.addWidget(self.primarySidebarWidget)
         self.mainLayout.addWidget(self.secondarySidebarWidget)
         self.mainLayout.addWidget(self.logoutButton)
-
-        # component-local QSS for sidebar and buttons
-        qss =  f"""
-            QPushButton {{
-                border-radius: 27px;
-                padding: 15px;
-                outline: none;
-            }}
-
-            QPushButton[selected="false"]:hover {{
-                background-color: {BUTTON_FALSE_HOVER};
-            }}
-
-            QPushButton[selected="true"] {{
-                background-color: white;
-            }}
-
-            QPushButton[selected="true"]:hover {{
-                background-color: white;
-            }}
-
-            #primarySidebarWidget,
-            #secondarySidebarWidget,
-            #logoutButton {{
-                background-color: {BACKGORUND_SIDEBAR};
-                border-radius: 27px;
-            }}
-
-            #logoutButton:hover {{
-                background-color: {DARK};
-            }}
-            """
-        self.setStyleSheet(qss)
 
     def _nav_button(self, parent: QWidget, name: str) -> QPushButton:
         b = QPushButton(parent)

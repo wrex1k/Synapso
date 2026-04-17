@@ -1,7 +1,7 @@
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QCursor, QPainter, QPixmap
 
-from app.ui.styles.colors import PRIMARY, WHITE
+from app.ui.styles.colors import PRIMARY, CURSOR_COLOR
 
 """
 Provide cursor customization utilities, such as:
@@ -17,7 +17,7 @@ def create_custom_cursor():
     
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    painter.setBrush(QColor(WHITE))
+    painter.setBrush(QColor(CURSOR_COLOR))
     painter.setPen(QColor(PRIMARY))
     
     dot_radius = 5
@@ -27,12 +27,3 @@ def create_custom_cursor():
     painter.end()
     
     return QCursor(pixmap, center, center)
-
-def change_cursor_to_red():
-    cursor_size = 16
-    pixmap = QPixmap(cursor_size, cursor_size)
-    pixmap.fill(Qt.GlobalColor.transparent)
-
-    painter = QPainter(pixmap)
-    painter.setBrush(QColor("#FF0000"))
-    

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QFont, QPixmap
+from PySide6.QtGui import QPixmap
 from app.ui.styles.fonts import FONT_NAVBAR
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QWidget
 
@@ -19,25 +19,13 @@ class NavbarWidget(QWidget):
         self.setObjectName("navbarWidget")
 
         self.navbarLayout = QHBoxLayout(self)
-        self.navbarLayout.setContentsMargins(20, 10, 10, 10)
         self.navbarLayout.setSpacing(12)
 
         self.logoWidget = QWidget(self)
-        self.logoWidget.setObjectName("logoWidget")
         self.logoLayout = QHBoxLayout(self.logoWidget)
-        self.logoLayout.setObjectName("logoLayout")
         self.logoLayout.setContentsMargins(0, 0, 0, 0)
-        self.logoLayout.setSpacing(10)
-
-        self.logoLabel = QLabel(self.logoWidget)
-        self.logoLabel.setObjectName("logoLabel")
-        self.logoLabel.setFixedSize(QSize(35, 35))
-        self.logoLabel.setPixmap(QPixmap(":/images/graphics/logo.png"))
-        self.logoLabel.setScaledContents(True)
-        self.logoLayout.addWidget(self.logoLabel)
-
         self.titleLabel = QLabel("Synapso", self.logoWidget)
-        self.titleLabel.setObjectName("titleLabel")
+        self.titleLabel.setObjectName("titleNavbarLabel")
         self.titleLabel.setFont(FONT_NAVBAR)
         self.logoLayout.addWidget(self.titleLabel)
 
@@ -78,28 +66,3 @@ class NavbarWidget(QWidget):
             self.avatarIcon.setPixmap(pixmap)
             self.avatarIcon.setScaledContents(True)
             image_to_rounded(self.avatarIcon)
-
-
-        qss = f"""
-            #titleLabel {{
-                font: 27pt;
-                color: {TITLE_LABEL};
-                font-weight: 500;
-            }}
-
-            #profileWidget {{
-                background-color: {PROFILE_WIDGET};
-                border: none;
-                border-radius: 26px;
-            }}
-
-            #profileWidget:hover {{
-                background-color: {PROFILE_WIDGET_HOVER};
-            }}
-
-            QLabel#usernameLabel {{
-                color: {WHITE};
-                font-size: 14px;
-            }}
-        """
-        self.setStyleSheet(qss)

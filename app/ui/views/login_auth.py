@@ -132,12 +132,12 @@ class LoginAuth(QWidget):
         layout.setSpacing(30)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.titleLabelLeft = QLabel("welcome to", frame)
+        self.titleLabelLeft = QLabel(frame)
         self.titleLabelLeft.setObjectName("titleLabelLeft")
         self.titleLabelLeft.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
         self.titleLabelLeft.setMaximumSize(QSize(16777215, 100))
 
-        self.titleLabelRight = QLabel("Synapso", frame)
+        self.titleLabelRight = QLabel(frame)
         self.titleLabelRight.setObjectName("titleLabelRight")
         self.titleLabelRight.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
         self.titleLabelRight.setMaximumSize(QSize(16777215, 100))
@@ -275,18 +275,16 @@ class LoginAuth(QWidget):
     def _start_welcome_animation(self):
         left_final_pos = self.titleLabelLeft.pos()
         right_final_pos = self.titleLabelRight.pos()
-
         offset = 120
+        welcome_start_pos = QPoint(left_final_pos.x() - offset, left_final_pos.y())
+        logo_start_pos = QPoint(right_final_pos.x() + offset, right_final_pos.y())
 
-        welcomeStartPos = QPoint(left_final_pos.x() - offset, left_final_pos.y())
-        logoStartPos = QPoint(right_final_pos.x() + offset, right_final_pos.y())
-
-        self.titleLabelLeft.move(welcomeStartPos)
-        self.titleLabelRight.move(logoStartPos)
+        self.titleLabelLeft.move(welcome_start_pos)
+        self.titleLabelRight.move(logo_start_pos)
 
         self.welcomePosAnim = QPropertyAnimation(self.titleLabelLeft, b"pos")
         self.welcomePosAnim.setDuration(1000)
-        self.welcomePosAnim.setStartValue(welcomeStartPos)
+        self.welcomePosAnim.setStartValue(welcome_start_pos)
         self.welcomePosAnim.setEndValue(left_final_pos)
         self.welcomePosAnim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
@@ -298,7 +296,7 @@ class LoginAuth(QWidget):
 
         self.logoPosAnim = QPropertyAnimation(self.titleLabelRight, b"pos")
         self.logoPosAnim.setDuration(1200)
-        self.logoPosAnim.setStartValue(logoStartPos)
+        self.logoPosAnim.setStartValue(logo_start_pos)
         self.logoPosAnim.setEndValue(right_final_pos)
         self.logoPosAnim.setEasingCurve(QEasingCurve.Type.OutElastic)
 
@@ -320,7 +318,6 @@ class LoginAuth(QWidget):
         self.switchAnim.setEndValue(1.0)
         self.switchAnim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
-        # Pohyb štartuje ihneď, fade in s oneskorením — žiadne clipping
         self.welcomePosAnim.start()
         QTimer.singleShot(120, self.welcomeOpacityAnim.start)
 
