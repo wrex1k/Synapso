@@ -5,15 +5,14 @@ from PySide6.QtCore import QElapsedTimer, Qt, QTimer, Signal
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QProgressBar, QVBoxLayout, QWidget
 
+from app.utils.logger import logger
 from app.core.registry import registry
 from app.service.game_service import GameService
 from app.utils.ui_helpers import draw_background
-from app.utils.logger import get_logger
 from app.ui.styles.colors import FONT_PRIMARY, OFF_WHITE, PRIMARY_LIGHT, INCORRECT_COLOR
 from app.ui.styles.fonts import GENERAL_SANS
 from app.ui.styles.games import format_hud_infinite, format_hud_progress
 
-logger = get_logger(__name__)
 
 _FONT_CACHE: dict[tuple[int, bool], pygame.font.Font] = {}
 
@@ -293,6 +292,8 @@ class BaseGameWidget(QWidget):
                 if completed:
                     try:
                         self._service.finish_run(stage="tutorial", status="completed")
+                        if self._runner is not None:
+                            self._service.complete_tutorial(self._runner)
                     except Exception as exc:
                         logger.warning(
                             "Could not save %s tutorial run: %s", self._game_name, exc

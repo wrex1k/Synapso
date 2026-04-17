@@ -7,9 +7,9 @@ from PySide6.QtCore import QRunnable, QThreadPool
 
 from app.models.user import User
 from app.service.activity_service import stop_heartbeat
-from app.repository.supabase_client import get_client, clear_current_session
+from app.repository.supabase_client import get_client, get_service_client, clear_current_session
 from app.repository.user_repository import fetch_user
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 
 
 """
@@ -21,7 +21,6 @@ user sign-up, sign-in, session management, and logout by interacting with the Su
 # the service name used for keyring storage
 SERVICE_NAME = os.getenv("SERVICE_NAME", "synapso")
 
-logger = get_logger(__name__)
 
 # thread pool for keyring operations
 _thread_pool = QThreadPool.globalInstance()
@@ -353,3 +352,38 @@ def get_auth_email() -> str | None:
     except Exception as e:
         logger.warning("Failed to fetch email from auth: %s", e)
     return None
+
+# change password with current password, if successful update the password in Supabase and return success, otherwise return error message
+def change_password(current_password: str, new_password: str) -> tuple[bool, str | None]:
+    try:
+        email = get_auth_email()
+        if not email:
+            return (False, "Could not retrieve current session email")
+
+        try:
+            get_client().auth.sign_in_with_password({"email": email, "password": current_password})
+        except Exception:
+            return (False, "wrong_current_password")
+
+        get_client().auth.update_user({"password": new_password})
+        return (True, None)
+
+    except Exception as e:
+        logger.exception("change_password failed: %s", e)
+        msg = str(e).lower()
+        if "new password should be different" in msg:
+            return (False, "password_same_as_old")
+        return (False, str(e))
+
+
+def delete_account(user_id: str) -> tuple[bool, str | None]:
+    try:
+        service = get_service_client()
+        if service is None:
+            return (False, "Service client unavailable — check SUPABASE_SERVICE_KEY")
+        service.auth.admin.delete_user(user_id)
+        sign_out()
+        return (True, None)
+    except Exception as e:
+        logger.exception("delete_account failed: %s", e)
+        return (False, str(e))

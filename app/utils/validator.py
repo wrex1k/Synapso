@@ -1,6 +1,6 @@
 import re
 import datetime
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 from translations.translation import translate
 
 """
@@ -13,7 +13,6 @@ This module provides common validation functions for user input, such as:
 - validate_birthdate: checks if a birthdate is valid and within an acceptable age range
 """
 
-logger = get_logger(__name__)
 
 # validate email
 def validate_email(email: str) -> str | None:

@@ -3,7 +3,7 @@ from datetime import datetime
 from PySide6.QtCore import QTimer
 
 from app.repository.activity_repository import send_heartbeat
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 
 """
 ActivityService manages the user activity heartbeats to update the last seen attribute in the database.
@@ -13,7 +13,6 @@ _heartbeat_timer: QTimer | None = None
 _current_user_id: str | None = None
 _last_tick: datetime | None = None
 
-logger = get_logger(__name__)
 
 
 def _tick(user_id: str):

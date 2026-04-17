@@ -8,10 +8,9 @@ from PySide6.QtWidgets import (
 )
 
 from app.utils.ui_helpers import draw_background
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 from translations.translation import translate
 
-logger = get_logger(__name__)
 
 
 class BaseTutorialWidget(QWidget):
@@ -245,6 +244,11 @@ class BaseTutorialWidget(QWidget):
         self._tutorial_index = 0
         self._update_tutorial_state()
         self._main_stack.setCurrentIndex(1)
+
+    def set_allow_gameplay_tutorial(self, allow: bool) -> None:
+        """Switch the last tutorial action between Start and Back."""
+        self._allow_gameplay_tutorial = allow
+        self._update_tutorial_state()
 
     def _update_tutorial_state(self):
         total = len(self._tutorial_steps)

@@ -8,13 +8,13 @@ from email_validator import validate_email, EmailNotValidError
 from PySide6.QtCore import QObject, Slot
 
 from app.core.registry import registry
-from app.service.auth_service import sign_in
-from app.utils.logger import get_logger
-from app.utils.validator import validate_password
-from app.ui.views.login_auth import LoginAuth
-from translations.translation import get_error_message
+from app.utils.logger import logger
 
-logger = get_logger(__name__)
+from app.service.auth_service import sign_in
+from app.utils.validator import validate_password
+from translations.translation import get_error_message
+from app.ui.views.login_auth import LoginAuth
+
 
 
 # pylint: disable=too-few-public-methods

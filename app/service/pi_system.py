@@ -5,13 +5,12 @@ from datetime import datetime, timezone
 import statistics
 import math
 
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 from app.games.stroop.config import get_rt_penalty_thresholds as get_stroop_rt_thresholds
 from app.games.memory_grid.config import get_rt_penalty_thresholds as get_memory_grid_rt_thresholds
 from app.games.mental_rotation.config import get_rt_penalty_thresholds as get_mental_rotation_rt_thresholds
 from app.service.pi_adapters import compute_trial_accuracy
 
-logger = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -143,13 +142,10 @@ def load_baseline_on_startup(game_slug: str = "stroop") -> None:
 
 def load_game_pi_stats(game_slug: str) -> None:
     """
-    Načíta mean a std pi_run_normalized_raw z DB pre daný game_slug.
-    Uloží do _GAME_PI_STATS[game_slug].
-    Volaj raz pri štarte vedľa load_baseline_on_startup().
-    Ak je v DB menej ako 10 runov, použi hardcoded fallback stats.
+    Load population mean and stddev of pi_run for the specified game.
     """
     try:
-        from app.repository.game_repository import fetch_pi_run_values
+        from app.repository.run_repository import fetch_pi_run_values
 
         pi_values = fetch_pi_run_values(game_slug)
 
@@ -189,7 +185,7 @@ def get_global_baseline(game_slug: str = "stroop") -> float:
 
 def _fetch_baseline_from_db(game_slug: str = "stroop") -> float:
     try:
-        from app.repository.game_repository import fetch_pi_normalized_raw_values
+        from app.repository.run_repository import fetch_pi_normalized_raw_values
 
         pi_values = fetch_pi_normalized_raw_values(game_slug)
 

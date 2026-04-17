@@ -6,12 +6,11 @@ from typing import Callable
 
 from PySide6.QtCore import QObject
 
+from app.utils.logger import logger
 from app.service.auth_service import sign_out
 from app.ui.views.login_auth import LoginAuth
 from app.ui.views.register_personal import RegisterPersonal
-from app.utils.logger import get_logger
 
-logger = get_logger(__name__)
 
 
 class LogoutController(QObject):

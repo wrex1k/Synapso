@@ -6,10 +6,10 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVB
 
 from app.ui.styles.settings import SETTINGS_STYLES
 from app.utils.settings import get_language, set_language
+from app.utils.ui_helpers import build_header
 from translations.translation import get_translation_manager, translate
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 
-logger = get_logger(__name__)
 
 
 class SettingsView(QWidget):
@@ -24,25 +24,16 @@ class SettingsView(QWidget):
     def _build_ui(self):
         root = QVBoxLayout(self)
         root.setContentsMargins(25, 30, 25, 80)
-        root.setSpacing(40)
+        root.setSpacing(28)
 
-        title_widget = QWidget()
-        title_widget.setObjectName("titleWidget")
-        title_col = QVBoxLayout(title_widget)
-        title_col.setSpacing(0)
-        title_col.setContentsMargins(0, 0, 0, 0)
-
-        self._page_title_lbl = QLabel("")
-        self._page_title_lbl.setObjectName("gameTitle")
-        self._page_subtitle_lbl = QLabel("")
-        self._page_subtitle_lbl.setObjectName("gameDescription")
-
-        title_col.addWidget(self._page_title_lbl)
-        title_col.addWidget(self._page_subtitle_lbl)
-        root.addWidget(title_widget)
-
+        header, self._page_title_lbl, self._page_subtitle_lbl = build_header(
+            "Settings",
+            "Customize your application preferences"
+        )
+        root.addWidget(header)
+        
         cards_layout = QHBoxLayout()
-        cards_layout.setSpacing(24)
+        cards_layout.setSpacing(20)
         cards_layout.setContentsMargins(0, 0, 0, 0)
 
         self._language_card = self._build_language_card()
@@ -78,12 +69,12 @@ class SettingsView(QWidget):
         btn_row.setSpacing(12)
         btn_row.setContentsMargins(0, 0, 0, 0)
 
-        self._lang_sk_btn = QPushButton("SK")
+        self._lang_sk_btn = QPushButton("sk")
         self._lang_sk_btn.setObjectName("langBtn")
         self._lang_sk_btn.setProperty("active", "false")
         self._lang_sk_btn.clicked.connect(lambda: self._change_language("sk"))
 
-        self._lang_en_btn = QPushButton("EN")
+        self._lang_en_btn = QPushButton("en")
         self._lang_en_btn.setObjectName("langBtn")
         self._lang_en_btn.setProperty("active", "false")
         self._lang_en_btn.clicked.connect(lambda: self._change_language("en"))

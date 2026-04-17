@@ -4,9 +4,8 @@ from typing import Callable, Optional
 
 from PySide6.QtCore import QObject, QThread, Qt, Signal, Slot
 
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 
-logger = get_logger(__name__)
 
 
 class _Runner(QObject):

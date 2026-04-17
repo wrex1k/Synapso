@@ -8,13 +8,12 @@ from PySide6.QtWidgets import QGraphicsOpacityEffect, QGridLayout, QHBoxLayout, 
 
 from app.ui.components.back_button import BackButton
 from app.ui.components.input_field import InputField
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 from app.utils.event_filters import context_menu_event_filter, enter_key_event_filter, password_event_filter
 from app.utils.ui_helpers import draw_background, update_button_state
 from app.utils.validator import validate_password, validate_passwords_match
 from translations.translation import translate
 
-logger = get_logger(__name__)
 
 
 class RegisterAuth(QWidget):

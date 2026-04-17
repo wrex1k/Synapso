@@ -7,14 +7,14 @@ from typing import Callable
 
 from PySide6.QtCore import QObject, Signal, QTimer
 
-from translations.translation import get_error_message
 from app.core.registry import registry
+from app.utils.logger import logger
+
+from translations.translation import get_error_message
 from app.service.auth_service import send_password_reset_email, verify_otp_code, update_password_with_token
-from app.utils.logger import get_logger
 from app.ui.views.forgot_password import ForgotPassword
 
 
-logger = get_logger(__name__)
 
 class ForgotPasswordController(QObject):
     """Handle forgot-password interactions across all reset steps."""

@@ -7,11 +7,11 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QTextEdit, QWidget, QScrollArea, QStackedWidget
 
 from app.ui.styles.about import ABOUT_STYLES
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 from app.utils.settings import get_language
+from app.utils.ui_helpers import build_header
 from translations.translation import translate
 
-logger = get_logger(__name__)
 
 BUILT_WITH = [
     ("Python", "3.12"),
@@ -101,9 +101,13 @@ class AboutView(QWidget):
     def _build_ui(self):
         root = QVBoxLayout(self)
         root.setContentsMargins(25, 30, 25, 80)
-        root.setSpacing(40)
+        root.setSpacing(30)
 
-        root.addWidget(self._build_header())
+        header, self._page_title_lbl, self._page_subtitle_lbl = build_header(
+            "About",
+            "Learn more about the application and its development"
+        )
+        root.addWidget(header)
 
         main_row = QHBoxLayout()
         main_row.setSpacing(40)
@@ -133,24 +137,6 @@ class AboutView(QWidget):
         root.addLayout(main_row)
         root.addStretch()
 
-    def _build_header(self) -> QWidget:
-        wrapper = QWidget()
-        wrapper.setObjectName("titleWidget")
-
-        col = QVBoxLayout(wrapper)
-        col.setContentsMargins(0, 0, 0, 0)
-        col.setSpacing(4)
-
-        self._page_title_lbl = QLabel("")
-        self._page_title_lbl.setObjectName("gameTitle")
-
-        self._page_subtitle_lbl = QLabel("")
-        self._page_subtitle_lbl.setObjectName("gameDescription")
-
-        col.addWidget(self._page_title_lbl)
-        col.addWidget(self._page_subtitle_lbl)
-        return wrapper
-
     def _build_about_card(self) -> QWidget:
         card = QWidget()
         card.setObjectName("aboutCard")
@@ -164,6 +150,8 @@ class AboutView(QWidget):
         self._intro_title_lbl = QLabel("")
         self._intro_title_lbl.setObjectName("aboutCardTitle")
         layout.addWidget(self._intro_title_lbl)
+
+        layout.addWidget(self._make_divider())
 
         self._desc_lbl = QLabel("")
         self._desc_lbl.setObjectName("aboutDescriptionText")
@@ -208,7 +196,6 @@ class AboutView(QWidget):
         header_layout.addWidget(version_combo, 0, Qt.AlignmentFlag.AlignVCenter)
 
         layout.addWidget(header_row)
-        layout.addWidget(self._make_divider())
 
         stack = QStackedWidget()
         stack.setMinimumHeight(180)
@@ -376,8 +363,6 @@ class AboutView(QWidget):
         self._built_with_title_lbl = QLabel("")
         self._built_with_title_lbl.setObjectName("aboutCardTitle")
         layout.addWidget(self._built_with_title_lbl)
-
-        layout.addWidget(self._make_divider())
 
         for name, desc in BUILT_WITH:
             row_widget = QWidget()

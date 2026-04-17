@@ -9,6 +9,7 @@ from __future__ import annotations
 from PySide6.QtCore import QObject, Signal, Slot
 
 from app.core.registry import registry
+from app.utils.logger import logger
 
 from app.games.stroop.game import StroopGame
 from app.games.stroop.renderer import StroopRenderer
@@ -17,9 +18,7 @@ from app.games.memory_grid.renderer import MemoryGridRenderer
 from app.games.mental_rotation.game import MentalRotationGame
 from app.games.mental_rotation.renderer import MentalRotationRenderer
 from app.service.game_service import GameService
-from app.utils.logger import get_logger
 
-logger = get_logger(__name__)
 
 
 # Maps game_id strings to factory callables that create fresh game instances.
@@ -60,10 +59,6 @@ class GameController(QObject):
         game = factory(self._user_id)
         return game, GameService(game)
 
-    def is_tutorial_completed(self) -> bool:
-        _, service = self._make_service()
-        return service.is_tutorial_completed()
-
     def is_running(self) -> bool:
         return self._operation.is_running()
 
@@ -90,9 +85,10 @@ class GameController(QObject):
             renderer_cls = _RENDERER_FACTORIES[self._game_id]
             renderer = renderer_cls(game)
             passed = renderer.run_tutorial_trials(runner)
-            
+ 
             if passed:
-                service.start_run(stage="tutorial")
+                service.start_run(stage="tutorial", initialize_game=False)
+                service.finish_run(stage="tutorial", status="completed")
                 service.complete_tutorial(runner)
                 logger.info("Tutorial passed and saved for game: %s", self._game_id)
             else:

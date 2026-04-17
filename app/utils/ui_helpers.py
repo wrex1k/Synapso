@@ -1,6 +1,6 @@
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPainter, QPainterPath, QPixmap
-from PySide6.QtWidgets import QPushButton, QWidget
+from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
 """Provide UI helper utilities, such as:
 - _get_button_original_text: internal helper to cache the original text of a button
@@ -91,3 +91,20 @@ def image_to_rounded(widget: QWidget):
     painter.end()
 
     widget.setPixmap(rounded)
+    
+def build_header(title: str, subtitle: str):
+    container = QWidget()
+    layout = QVBoxLayout(container)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(6)
+
+    page_title_lbl = QLabel(title)
+    page_title_lbl.setObjectName("pageTitleLabel")
+
+    page_subtitle_lbl = QLabel(subtitle)
+    page_subtitle_lbl.setObjectName("pageSubtitleLabel")
+
+    layout.addWidget(page_title_lbl)
+    layout.addWidget(page_subtitle_lbl)
+
+    return container, page_title_lbl, page_subtitle_lbl

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from app.repository.supabase_client import get_client
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 
 """
 ActivityRepository provides functions to manage user activity heartbeats to update last seen attribute:
@@ -9,7 +9,6 @@ ActivityRepository provides functions to manage user activity heartbeats to upda
 - get_user_activity: checks if the user is currently active based on the last seen timestamp.
 """
 
-logger = get_logger(__name__)
 
 def send_heartbeat(user_id: str, elapsed_seconds: int):
     if not user_id:

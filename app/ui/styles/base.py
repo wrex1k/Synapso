@@ -20,11 +20,15 @@ GLOBAL_STYLES = f"""
     }}
 """
 
+BASE_STYLES = f"""
+    QLabel#pageSubtitleLabel {{
+        color: {GRAY};
+    }}
+"""
+
 NAVBAR_STYLES = f"""
     QLabel#titleNavbarLabel {{
-            color: {FONT_PRIMARY};
-            font-size: 38px;
-            font-weight: 600;
+        color: {FONT_PRIMARY};
     }}
 
     QWidget#profileWidget {{
@@ -40,7 +44,6 @@ NAVBAR_STYLES = f"""
 
     QLabel#usernameLabel {{
         color: {OFF_WHITE};
-        font-size: 14px;
         padding-left: 3px;
     }}
 """
@@ -198,9 +201,56 @@ KEY_CHIP_STYLES = f"""
     }}
 """
 
+DIALOG_WINDOW_STYLES = f"""
+    QDialog#deleteConfirmDialog {{
+        background-color: {DARK};
+        border: 1px solid {BORDER_LIGHTGREY};
+        border-radius: 16px;
+    }}
+    
+    QLabel#deleteDialogTitle {{
+        color: {DANGER};
+        font-size: 17px;
+        font-weight: 700;
+    }}
+
+    QLabel#deleteDialogDesc {{
+        color: {GRAY};
+        font-size: 15px;
+    }}
+
+    QPushButton#deleteDialogCancelBtn {{
+        background-color: transparent;
+        color: {GRAY};
+        border: 1px solid {BORDER_LIGHTGREY};
+        border-radius: 12px;
+        padding: 0 16px;
+        font-size: 15px;
+    }}
+    
+    QPushButton#deleteDialogCancelBtn:hover {{
+        background-color: {HOVER_DARK};
+        color: {OFF_WHITE};
+    }}
+
+    QPushButton#deleteDialogConfirmBtn {{
+        background-color: {DANGER_BACKGROUND};
+        color: {DANGER};
+        border: 1px solid {DANGER_BACKGROUND};
+        border-radius: 12px;
+        padding: 0 16px;
+        font-size: 15px;
+    }}
+    
+    QPushButton#deleteDialogConfirmBtn:hover {{
+        background-color: {DANGER_BORDER_HOVER};
+    }}
+"""
+
 def get_full_stylesheet():
     return (
         get_full_fonts()
+        + BASE_STYLES
         + GLOBAL_STYLES
         + NAVBAR_STYLES
         + SIDEBAR_STYLES
@@ -210,6 +260,7 @@ def get_full_stylesheet():
         + PROGRESS_BAR_STYLES
         + BUTTON_TRANSPARENT_STYLES
         + KEY_CHIP_STYLES
+        + DIALOG_WINDOW_STYLES
         + BACK_BUTTON_STYLES
         + GAMES_STYLES
         + TUTORIAL_STYLESHEET

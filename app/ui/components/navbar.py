@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from PySide6.QtCore import QSize, Qt, QEvent, Signal
 from PySide6.QtGui import QPixmap
-from app.ui.styles.fonts import FONT_NAVBAR
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QWidget
 
 from app.repository.user_repository import fetch_avatar
@@ -28,7 +27,6 @@ class NavbarWidget(QWidget):
         self.logoLayout.setContentsMargins(0, 0, 0, 0)
         self.titleLabel = QLabel("Synapso", self.logoWidget)
         self.titleLabel.setObjectName("titleNavbarLabel")
-        self.titleLabel.setFont(FONT_NAVBAR)
         self.logoLayout.addWidget(self.titleLabel)
 
         self.navbarLayout.addWidget(self.logoWidget)
@@ -60,6 +58,10 @@ class NavbarWidget(QWidget):
             avatar_data = fetch_avatar(self._avatar_path)
             if avatar_data:
                 self.set_avatar_bytes(avatar_data)
+            else:
+                self._load_default_avatar()
+        else:
+            self._load_default_avatar()
 
         self.navbarLayout.addWidget(self.profileWidget)
 
@@ -70,7 +72,21 @@ class NavbarWidget(QWidget):
             self.avatarIcon.setScaledContents(True)
             image_to_rounded(self.avatarIcon)
 
+    def _load_default_avatar(self) -> None:
+        default_pix = QPixmap(":/images/graphics/avatar.png")
+        if not default_pix.isNull():
+            self.avatarIcon.setPixmap(default_pix)
+            self.avatarIcon.setScaledContents(True)
+            image_to_rounded(self.avatarIcon)
+        else:
+            default_avatar_data = fetch_avatar("default.webp")
+            if default_avatar_data:
+                self.set_avatar_bytes(default_avatar_data)
+
     def eventFilter(self, obj, event):
         if obj == self.profileWidget and event.type() == QEvent.Type.MouseButtonPress:
             self.profile_clicked.emit()
         return super().eventFilter(obj, event)
+
+    def setName(self, username: str):
+        self.usernameLabel.setText(username or "—") 

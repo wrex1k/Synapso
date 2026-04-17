@@ -7,11 +7,12 @@ from datetime import datetime, timezone
 
 from app.games.core.base_game import BaseGame
 from app.games.core.tutorial import TutorialRunner
-from app.repository.game_repository import abandon_run, create_run, fetch_player_game_stats, get_tutorial_completed, save_run, save_trials, set_tutorial_completed, upsert_player_game_stats
+from app.repository.run_repository import abandon_run, create_run, save_run, save_trials
+from app.repository.tutorial_repository import set_tutorial_completed
+from app.repository.stats_repository import fetch_player_game_stats, upsert_player_game_stats
 from app.service.pi_system import TrialResult as PITrialResult, process_run, calculate_pi_trial_raw
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 
-logger = get_logger(__name__)
 
 
 def _compute_player_stats_update(
@@ -76,10 +77,6 @@ class GameService:
         self.game = game
         self._run_id: str | None = None
         self._run_stage: str = "training"
-
-    def is_tutorial_completed(self) -> bool:
-        """Check whether the tutorial flag is set in DB."""
-        return get_tutorial_completed(self.game.user_id, self.game.game_slug)
 
     def create_tutorial_runner(self) -> TutorialRunner:
         """Create a TutorialRunner for the current game."""

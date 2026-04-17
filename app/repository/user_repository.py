@@ -1,7 +1,7 @@
 from typing import Optional
 
 from app.repository.supabase_client import get_client
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 
 """
 UserRepository provides functions to manage user data: 
@@ -11,7 +11,6 @@ UserRepository provides functions to manage user data:
 - Fetching avatar images from Supabase storage
 """
 
-logger = get_logger(__name__)
 
 
 # upload the avatar image blob to Supabase storage and return the storage path
@@ -96,6 +95,16 @@ def check_username_exists(username: str) -> bool:
     )
 
     return bool(getattr(resp, "data", False))
+
+
+# delete the user record from the database
+def delete_user(user_id: str) -> None:
+    try:
+        get_client().table("users").delete().eq("id", user_id).execute()
+        logger.info("User record deleted (user_id=..%s)", user_id[-10:])
+    except Exception as e:
+        logger.error("Failed to delete user record: %s", e)
+        raise
 
 # fetch the avatar image blob from Supabase storage given the storage path
 def fetch_avatar(avatar_path: str) -> Optional[bytes]:

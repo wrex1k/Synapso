@@ -11,9 +11,8 @@ from typing import Optional
 from PySide6.QtCore import QCoreApplication, QLocale, QTranslator, QT_TRANSLATE_NOOP
 from PySide6.QtWidgets import QApplication
 
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 
-logger = get_logger(__name__)
 
 class TranslationManager:
     """Manages loading and switching UI translations."""

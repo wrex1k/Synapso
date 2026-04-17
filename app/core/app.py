@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QMainWindow
 
 from app.models.user import User
 
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 from app.utils.window import set_central_widget
 from app.service.auth_service import refresh_up
 from app.service.activity_service import start_heartbeat
@@ -24,7 +24,6 @@ from app.controller.logout_controller import LogoutController
 
 from app.utils.frameless_window import FramelessWindowMixin
 
-logger = get_logger(__name__)
 
 class App(FramelessWindowMixin, QMainWindow):
     def __init__(self, *args, **kwargs):

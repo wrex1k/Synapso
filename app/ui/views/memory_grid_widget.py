@@ -6,12 +6,11 @@ from PySide6.QtGui import QImage, QMouseEvent, QPixmap
 from PySide6.QtWidgets import QLabel
 
 from app.core.registry import registry
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 from app.ui.styles.colors import *
 from app.ui.styles.games import get_memory_grid_counter_style, get_memory_grid_phase_style, format_ratio_counter
 from app.ui.views.base_game_widget import BaseGameWidget
 
-logger = get_logger(__name__)
 
 
 _GRID_CELL_OFF = (169, 169, 169)
@@ -310,9 +309,8 @@ class MemoryGridWidget(BaseGameWidget):
                     _svc = self._service
                     _runner = self._runner
 
-                    def _save_tutorial(svc=_svc, r=_runner):
+                    def _save_tutorial(svc=_svc):
                         svc.start_run(stage="tutorial", initialize_game=False)
-                        svc.complete_tutorial(r)
 
                     self._keep_thread(registry.run_thread(_save_tutorial, lambda _: None))
                 self._after_feedback = _RESULT

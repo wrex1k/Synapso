@@ -1,44 +1,62 @@
 from PySide6.QtGui import QFont, QFontDatabase
-from numpy.ma import size
 
-# Font families
+# font family
 GENERAL_SANS = "General Sans"
 
-# Font weights
-WEIGHT_LIGHT = QFont.Weight.Light           # 300
-WEIGHT_REGULAR = QFont.Weight.Normal        # 400
-WEIGHT_MEDIUM = QFont.Weight.Medium         # 500
-WEIGHT_SEMIBOLD = QFont.Weight.DemiBold     # 600
-WEIGHT_BOLD = QFont.Weight.Bold             # 700
+# font weights
+WEIGHT_LIGHT = QFont.Weight.Light
+WEIGHT_REGULAR = QFont.Weight.Normal
+WEIGHT_MEDIUM = QFont.Weight.Medium
+WEIGHT_SEMIBOLD = QFont.Weight.DemiBold
+WEIGHT_BOLD = QFont.Weight.Bold
 
-# Shared font sizes
+# font sizes
+SIZE_XXSMALL = 12
 SIZE_XSMALL = 14
 SIZE_SMALL = 15
+
 SIZE_NORMAL = 16
 SIZE_MEDIUM = 17
+
 SIZE_LARGE = 18
-SIZE_XLARGE = 20
-SIZE_TITLE = 32
+SIZE_XLARGE = 19
 
-SIZE_HEADER_SMALL = 42
-SIZE_HEADER_LARGE = 84
-LOGIN_HEADER_SMALL = 56
-LOGIN_HEADER_LARGE = 92
+# headings
+SIZE_H1 = 26
+SIZE_H2 = 24
+SIZE_H3 = 22
+SIZE_H4 = 21
+SIZE_H5 = 20
 
-SIZE_TUTORIAL_TITLE = 37
-SIZE_TUTORIAL_SUBTITLE = 26
-SIZE_TUTORIAL_INTRO = 24
-SIZE_TUTORIAL_HOW = 24
-SIZE_TUTORIAL_BASE_TEXT = 24
-SIZE_TUTORIAL_KEY_CHIP = 24
-SIZE_TUTORIAL_TIP = 24
-SIZE_TUTORIAL_STEP_TITLE = 24
-SIZE_TUTORIAL_STEP_COUNTER = 19
-SIZE_TUTORIAL_ADVICE = 23
-SIZE_TUTORIAL_STIMUL = 79
-SIZE_TUTORIAL_ANSWER_LABEL = 21
-SIZE_TUTORIAL_ANSWER_TEXT = 21
-SIZE_TUTORIAL_NEXT_BUTTON = 18
+# display
+SIZE_DISPLAY_SM = 28
+SIZE_DISPLAY_MD = 32
+SIZE_DISPLAY_LG = 38
+SIZE_DISPLAY_XL = 42
+SIZE_DISPLAY_XXL = 56
+SIZE_DISPLAY_XXXL = 92
+
+# navbar
+SIZE_NAVBAR_TITLE = SIZE_DISPLAY_LG
+
+# register
+REGISTER_TITLE = SIZE_DISPLAY_XL
+
+# login
+LOGIN_HEADER_LEFT = SIZE_DISPLAY_XXL
+LOGIN_HEADER_RIGHT = SIZE_DISPLAY_XXXL
+
+# forgot password
+FORGOT_HEADER_LEFT = SIZE_DISPLAY_XL
+FORGOT_HEADER_RIGHT = SIZE_DISPLAY_XXL
+
+# tutorial
+SIZE_TUTORIAL_SMALL = 23
+SIZE_TUTORIAL_NORMAL = SIZE_H2
+SIZE_TUTORIAL_LARGE = SIZE_H1
+SIZE_TUTORIAL_XLARGE = 37
+SIZE_TUTORIAL_XXLARGE = SIZE_DISPLAY_XXXL
+SIZE_TUTORIAL_ANSWER_LABEL = SIZE_SMALL
 
 
 def load_fonts() -> None:
@@ -53,28 +71,33 @@ def get_general_sans(size: int = SIZE_NORMAL, weight: QFont.Weight = WEIGHT_REGU
     font.setWeight(weight)
     return font
 
-FONT_TITLE_LEFT = get_general_sans(SIZE_HEADER_SMALL)
-FONT_TITLE_RIGHT = get_general_sans(SIZE_HEADER_LARGE, WEIGHT_SEMIBOLD)
+# default fonts
 FONT_LABEL = get_general_sans(SIZE_MEDIUM)
 FONT_INPUT = get_general_sans(SIZE_NORMAL)
 FONT_BUTTON = get_general_sans(SIZE_NORMAL)
 FONT_INFO = get_general_sans(SIZE_MEDIUM)
-FONT_NAVBAR = get_general_sans(SIZE_TITLE, WEIGHT_BOLD)
+
 
 # base.py
 BASE_FONT_STYLES = f"""
     * {{
-        font-family: \"General Sans\";
+        font-family: "{GENERAL_SANS}";
         font-weight: {WEIGHT_REGULAR};
     }}
     
     QLabel#titleLabel {{
-        font-size: {SIZE_HEADER_SMALL}px;
+        font-size: {REGISTER_TITLE}px;
         font-weight: {WEIGHT_SEMIBOLD};
     }}
 
-    #usernameLabel {{
+    QLabel#pageTitleLabel {{
+        font-size: {SIZE_H2}px;
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    QLabel#pageSubtitleLabel {{
         font-size: {SIZE_SMALL}px;
+        font-weight: {WEIGHT_REGULAR};
     }}
 
     QLabel#inputLabel {{
@@ -98,6 +121,7 @@ BASE_FONT_STYLES = f"""
     }}
 """
 
+
 # login.py
 LOGIN_FONT_STYLES = f"""
     QPushButton#langSkBtn,
@@ -107,11 +131,11 @@ LOGIN_FONT_STYLES = f"""
     }}
 
     QLabel#titleLabelLeft {{
-        font-size: {LOGIN_HEADER_SMALL}px;
+        font-size: {LOGIN_HEADER_LEFT}px;
     }}
 
     QLabel#titleLabelRight {{
-        font-size: {LOGIN_HEADER_LARGE}px;
+        font-size: {LOGIN_HEADER_RIGHT}px;
         font-weight: {WEIGHT_SEMIBOLD};
     }}
 
@@ -119,6 +143,7 @@ LOGIN_FONT_STYLES = f"""
         font-size: {SIZE_MEDIUM}px;
     }}
 """
+
 
 # register.py
 REGISTER_FONT_STYLES = f"""
@@ -143,6 +168,7 @@ REGISTER_FONT_STYLES = f"""
     }}
 """
 
+
 # forgot_password.py
 FORGOT_PASSWORD_FONT_STYLES = f"""
     #descLabel {{
@@ -154,12 +180,12 @@ FORGOT_PASSWORD_FONT_STYLES = f"""
     }}
 
     #titleLeft {{
-        font-size: {SIZE_HEADER_SMALL}px;
+        font-size: {FORGOT_HEADER_LEFT}px;
     }}
 
     #titleRight {{
-        font-size: {SIZE_HEADER_SMALL}px;
-        font-weight: 600;
+        font-size: {FORGOT_HEADER_RIGHT}px;
+        font-weight: {WEIGHT_SEMIBOLD};
     }}
 
     #updateButton, #verifyButton, #approveButton {{
@@ -167,109 +193,208 @@ FORGOT_PASSWORD_FONT_STYLES = f"""
     }}
 """
 
-# games.py
-GAMES_FONT_STYLES = f"""
+
+# navbar.py
+NAVBAR_FONT_STYLES = f"""
+    QLabel#titleNavbarLabel {{
+        font-size: {SIZE_NAVBAR_TITLE}px;
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    #usernameLabel {{
+        font-size: {SIZE_XSMALL}px;
+        font-weight: {WEIGHT_MEDIUM};
+    }}
+"""
+
+# dashboard.py
+DASHBOARD_FONT_STYLES = f"""
     QLabel#gameTitle {{
-        font-size: 22px;
-        font-weight: 600;
+        font-size: {SIZE_H2}px;
+        font-weight: {WEIGHT_SEMIBOLD};
     }}
 
     QLabel#gameDescription {{
-        font-size: 15px;
+        font-size: {SIZE_XSMALL}px;
+    }}
+
+    QLabel#dashboardHeroTitle {{
+        font-size: {SIZE_H5}px;
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    QLabel#dashboardHeroSubtitle {{
+        font-size: {SIZE_H4}px;
+    }}
+
+    QLabel#dashboardInlineStatValue {{
+        font-size: 25px;
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    QLabel#dashboardInlineStatLabel {{
+        font-size: {SIZE_SMALL}px;
+    }}
+
+    QLabel#dashboardCardTitle {{
+        font-size: {SIZE_H5}px;
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    QLabel#dashboardCardSubtitle {{
+        font-size: {SIZE_SMALL}px;
+    }}
+
+    QLabel#dashboardGoalValue {{
+        font-size: {SIZE_H2}px;
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    QLabel#dashboardMutedText,
+    QLabel#dashboardRowSubtitle {{
+        font-size: {SIZE_SMALL}px;
+    }}
+
+    QLabel#dashboardHighlightValue {{
+        font-size: {SIZE_H5}px;
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    QLabel#dashboardMetricLabel {{
+        font-size: {SIZE_SMALL}px;
+        font-weight: {WEIGHT_MEDIUM}
+    }}
+
+    QLabel#dashboardMetricValue,
+    QLabel#dashboardRowTitle,
+    QLabel#dashboardRowValue {{
+        font-size: {SIZE_MEDIUM}px;
+        font-weight: {WEIGHT_MEDIUM}
+    }}
+
+    QLabel#recentGameTitle {{
+        font-size: {SIZE_H4}px;
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    QLabel#recentGameSubtitle {{
+        font-size: {SIZE_SMALL}px;
+    }}
+
+    QLabel#recentGameValue {{
+        font-size: {SIZE_SMALL}px;
+        font-weight: {WEIGHT_MEDIUM};
+    }}
+
+    QPushButton#dashboardPrimaryButton {{
+        font-size: {SIZE_SMALL}px;
+        font-weight: {WEIGHT_MEDIUM}
+    }}
+"""
+
+
+# games.py
+GAMES_FONT_STYLES = f"""
+    QLabel#gameTitle {{
+        font-size: {SIZE_H3}px;
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    QLabel#gameDescription {{
+        font-size: {SIZE_SMALL}px;
     }}
 
     QLabel#switcherTitle {{
-        font-size: 14px;
-        font-weight: 500;
+        font-size: {SIZE_XSMALL}px;
+        font-weight: {WEIGHT_MEDIUM};
     }}
 
     QLabel#infoCardTitle {{
-        font-size: 20px;
-        font-weight: 500;
+        font-size: {SIZE_H3}px;
+        font-weight: {WEIGHT_SEMIBOLD};
     }}
 
     QLabel#infoCardDescription {{
-        font-size: 15px;
-        font-weight: 500;
+        font-size: {SIZE_SMALL}px;
     }}
 
     QLabel#rtCardTitle,
     QLabel#accCardTitle,
     QLabel#piCardTitle {{
-        font-size: 20px;
-        font-weight: 500;
+        font-size: {SIZE_H3}px;
+        font-weight: {WEIGHT_SEMIBOLD};
     }}
 
     QLabel#rtCardValue,
     QLabel#accCardValue,
     QLabel#piCardValue {{
-        font-size: 22px;
-        font-weight: 500;
+        font-size: {SIZE_H3}px;
     }}
 
     QLabel#rtCardGlobal,
     QLabel#accCardGlobal,
     QLabel#piCardGlobal {{
-        font-size: 17px;
-        font-weight: 400;
+        font-size: {SIZE_MEDIUM}px;
+        font-weight: {WEIGHT_REGULAR};
     }}
 
     QLabel#activityCardTitle {{
-        font-size: 20px;
-        font-weight: 500;
+        font-size: {SIZE_H3}px;
+        font-weight: {WEIGHT_SEMIBOLD};
     }}
 
     QLabel#activityCardDescription {{
-        font-size: 15px;
+        font-size: {SIZE_SMALL}px;
     }}
 
     QLabel#activityPPRowNumber,
     QLabel#activityGTRowNumber,
     QLabel#activityTWRowNumber,
     QLabel#activityTGRowNumber {{
-        font-size: 16px;
+        font-size: {SIZE_NORMAL}px;
     }}
 
     QLabel#activityPPRowTitle,
     QLabel#activityGTRowTitle,
     QLabel#activityTWRowTitle,
     QLabel#activityTGRowTitle {{
-        font-size: 15px;
-        font-weight: 500;
+        font-size: {SIZE_SMALL}px;
+        font-weight: {WEIGHT_MEDIUM};
     }}
 
     QPushButton#tutorialButton,
     QPushButton#playButton {{
-        font-size: 14px;
-        font-weight: 500;
+        font-size: {SIZE_XSMALL}px;
+        font-weight: {WEIGHT_MEDIUM};
     }}
 
     QLabel#leaderboardCardTitle {{
-        font-size: 20px;
-        font-weight: 500;
+        font-size: {SIZE_H3}px;
+        font-weight: {WEIGHT_SEMIBOLD};
     }}
 
     QLabel#leaderboardRowTitle {{
-        font-size: 14px;
-        font-weight: 500;
+        font-size: {SIZE_XSMALL}px;
+        font-weight: {WEIGHT_MEDIUM};
     }}
 
     QLabel#leaderboardRowValue {{
-        font-size: 15px;
-        font-weight: 600;
+        font-size: {SIZE_SMALL}px;
+        font-weight: {WEIGHT_SEMIBOLD};
     }}
 
     QLabel#userRankLabel {{
-        font-size: 15px;
-        font-weight: 500;
+        font-size: {SIZE_SMALL}px;
+        font-weight: {WEIGHT_MEDIUM};
     }}
 """
+
 
 # profile.py
 PROFILE_FONT_STYLES = f"""
     QLabel#profileUsernameLabel {{
-        font-size: {SIZE_XLARGE}px;
-        font-weight: 600;
+        font-size: {SIZE_H3}px;
+        font-weight: {WEIGHT_SEMIBOLD};
     }}
 
     QLabel#usernameLabel {{
@@ -278,198 +403,248 @@ PROFILE_FONT_STYLES = f"""
 
     QLabel#profileHandleLabel {{
         font-size: {SIZE_SMALL}px;
-        font-weight: 400;
     }}
 
     QLabel#profileMemberLabel {{
-        font-size: {SIZE_XSMALL}px;
-        font-weight: 400;
+        font-size: {SIZE_SMALL}px;
     }}
 
     QLabel#profileSectionTitle {{
-        font-size: {SIZE_XLARGE}px;
-        font-weight: 600;
+        font-size: {SIZE_H3}px;
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    QLabel#profileInputLabel {{
+        font-size: {SIZE_SMALL}px;
+    }}
+
+    QLineEdit#profileLineEdit,
+    QDateEdit#profileDateEdit {{
+        font-size: {SIZE_SMALL}px;
+    }}
+
+    QWidget#profileView,
+    QFrame#profileHeroCard,
+    QFrame#profileMainCard {{
+        font-size: {SIZE_SMALL}px;
+    }}
+
+    QLabel#profileHeroMetaValue,
+    QLabel#profileHeroMetaSubtext {{
+        font-size: {SIZE_SMALL}px;
+    }}
+
+    QComboBox#profileBirthMonthBox,
+    QComboBox#profileDayBox,
+    QComboBox#profileYearBox {{
+        font-size: {SIZE_NORMAL}px;
+    }}
+
+    QLabel#profileFeedbackLabel {{
+        font-size: {SIZE_SMALL}px;
+    }}
+
+    QPushButton#profilePrimaryButton,
+    QPushButton#profileDangerButton {{
+        font-size: {SIZE_SMALL}px;
+    }}
+
+    QPushButton#profileDangerButton {{
+        font-weight: {WEIGHT_MEDIUM};
+    }}
+        
+    QLabel#profileDangerTitle {{
+        font-size: {SIZE_H5}px;
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    QLabel#profileDangerDescription {{
+        font-size: {SIZE_SMALL}px;
     }}
 
     QLabel#profileInfoKey {{
         font-size: {SIZE_XSMALL}px;
-        font-weight: 400;
     }}
 
     QLabel#profileInfoValue {{
         font-size: {SIZE_SMALL}px;
-        font-weight: 500;
+        font-weight: {WEIGHT_MEDIUM};
+    }}
+
+    QLabel#profileReadonlyValue {{
+        font-size: {SIZE_SMALL}px;
     }}
 """
+
 
 # tutorial.py
 TUTORIAL_FONT_STYLES = f"""
     QLabel#stroopTutorialTitle {{
-        font-size: {SIZE_TUTORIAL_TITLE}px;
-        font-weight: 500;
+        font-size: {SIZE_TUTORIAL_XLARGE}px;
+        font-weight: {WEIGHT_MEDIUM};
     }}
 
     QLabel#stroopTutorialSubtitle {{
-        font-size: {SIZE_TUTORIAL_SUBTITLE}px;
-        font-weight: 400;
+        font-size: {SIZE_TUTORIAL_LARGE}px;
+        font-weight: {WEIGHT_REGULAR};
     }}
 
     QLabel#stroopTutorialHow {{
-        font-size: {SIZE_TUTORIAL_HOW}px;
-        font-weight: 500;
+        font-size: {SIZE_TUTORIAL_NORMAL}px;
+        font-weight: {WEIGHT_MEDIUM};
     }}
 
     QLabel#stroopTutorialIntro {{
-        font-size: {SIZE_TUTORIAL_INTRO}px;
-        font-weight: 400;
+        font-size: {SIZE_TUTORIAL_NORMAL}px;
+        font-weight: {WEIGHT_REGULAR};
     }}
 
     QLabel#tutorialBaseText {{
-        font-size: {SIZE_TUTORIAL_BASE_TEXT}px;
-        font-weight: 400;
+        font-size: {SIZE_TUTORIAL_NORMAL}px;
+        font-weight: {WEIGHT_REGULAR};
     }}
 
-    QWidget#keyWidget[compact=\"true\"] QLabel#keyLabel {{
-        font-size: {SIZE_TUTORIAL_KEY_CHIP}px;
-        font-weight: 600;
+    QWidget#keyWidget[compact="true"] QLabel#keyLabel {{
+        font-size: {SIZE_TUTORIAL_NORMAL}px;
+        font-weight: {WEIGHT_SEMIBOLD};
     }}
 
     QLabel#stroopTutorialTip {{
-        font-size: {SIZE_TUTORIAL_TIP}px;
-        font-weight: 400;
+        font-size: {SIZE_TUTORIAL_NORMAL}px;
+        font-weight: {WEIGHT_REGULAR};
     }}
 
     QLabel#practiceTutorialTitle {{
-        font-size: {SIZE_TUTORIAL_STEP_TITLE}px;
-        font-weight: 500;
+        font-size: {SIZE_TUTORIAL_NORMAL}px;
+        font-weight: {WEIGHT_MEDIUM};
     }}
 
     QLabel#practiceTutorialStep {{
-        font-size: {SIZE_TUTORIAL_STEP_COUNTER}px;
-        font-weight: 400;
+        font-size: {SIZE_XLARGE}px;
+        font-weight: {WEIGHT_REGULAR};
     }}
 
     QLabel#practiceTutorialAdvice {{
-        font-size: {SIZE_TUTORIAL_ADVICE}px;
-        font-weight: 400;
+        font-size: {SIZE_TUTORIAL_SMALL}px;
+        font-weight: {WEIGHT_REGULAR};
     }}
 
     QLabel#practiceTutorialStimul {{
-        font-size: {SIZE_TUTORIAL_STIMUL}px;
-        font-weight: 700;
+        font-size: {SIZE_TUTORIAL_XXLARGE}px;
+        font-weight: {WEIGHT_BOLD};
     }}
 
     QLabel#practiceTutorialAnswerLabel {{
         font-size: {SIZE_TUTORIAL_ANSWER_LABEL}px;
-        font-weight: 400;
+        font-weight: {WEIGHT_REGULAR};
     }}
 
     QLabel#practiceTutorialAnswerText {{
-        font-size: {SIZE_TUTORIAL_ANSWER_TEXT}px;
-        font-weight: 400;
+        font-size: {SIZE_H4}px;
+        font-weight: {WEIGHT_REGULAR};
     }}
 
     QPushButton#practiceTutorialButton {{
-        font-size: {SIZE_TUTORIAL_NEXT_BUTTON}px;
-        font-weight: 400;
+        font-size: {SIZE_LARGE}px;
+        font-weight: {WEIGHT_REGULAR};
     }}
 
     QPushButton#tutorialButton {{
         font-size: {SIZE_XSMALL}px;
-        font-weight: 500;
+        font-weight: {WEIGHT_MEDIUM};
     }}
 
     QPushButton#transparentButton {{
         font-size: {SIZE_SMALL}px;
-        font-weight: 500;
+        font-weight: {WEIGHT_MEDIUM};
     }}
 """
+
 
 # about.py
 ABOUT_FONT_STYLES = f"""
     QLabel#aboutCardTitle {{
-        font-size: 22px;
-        font-weight: 600;
+        font-size: {SIZE_H3}px;
+        font-weight: {WEIGHT_SEMIBOLD};
     }}
 
     QLabel#aboutSectionTitle {{
-        font-size: 20px;
-        font-weight: 500;
+        font-size: {SIZE_H5}px;
+        font-weight: {WEIGHT_MEDIUM};
     }}
 
     QLabel#aboutDescriptionText {{
-        font-size: 15px;
-        font-weight: 400;
+        font-size: {SIZE_SMALL}px;
+        font-weight: {WEIGHT_REGULAR};
     }}
 
     QLabel#aboutMetaText {{
-        font-size: 14px;
-        font-weight: 400;
+        font-size: {SIZE_XSMALL}px;
+        font-weight: {WEIGHT_REGULAR};
     }}
 
     QTextEdit#reportEditor {{
-        font-size: 14px;
-        font-weight: 400;
+        font-size: {SIZE_XSMALL}px;
+        font-weight: {WEIGHT_REGULAR};
     }}
 
     QPushButton#reportSendButton {{
-        font-size: 14px;
-        font-weight: 500;
+        font-size: {SIZE_XSMALL}px;
+        font-weight: {WEIGHT_MEDIUM};
     }}
 
     QLabel#builtWithName {{
-        font-size: 15px;
-        font-weight: 500;
+        font-size: {SIZE_SMALL}px;
+        font-weight: {WEIGHT_MEDIUM};
     }}
 
     QLabel#builtWithDesc {{
-        font-size: 14px;
-        font-weight: 400;
+        font-size: {SIZE_XSMALL}px;
+        font-weight: {WEIGHT_REGULAR};
     }}
 
     QComboBox#changelogCombo {{
-        font-size: 14px;
-        font-weight: 500;
+        font-size: {SIZE_XSMALL}px;
+        font-weight: {WEIGHT_MEDIUM};
     }}
 
     QLabel#changelogBullet {{
-        font-size: 15px;
-        font-weight: 600;
+        font-size: {SIZE_SMALL}px;
+        font-weight: {WEIGHT_SEMIBOLD};
     }}
 """
+
 
 # settings.py
 SETTINGS_FONT_STYLES = f"""
     QLabel#settingsCardTitle {{
-        font-size: {SIZE_XLARGE}px;
-        font-weight: 600;
+        font-size: {SIZE_H5}px;
+        font-weight: {WEIGHT_SEMIBOLD};
     }}
 
     QLabel#settingsCardDescription {{
         font-size: {SIZE_SMALL}px;
-        font-weight: 400;
     }}
 
     QPushButton#langBtn {{
         font-size: {SIZE_XSMALL}px;
-        font-weight: 600;
     }}
 
     QPushButton#themeBtn {{
         font-size: {SIZE_XSMALL}px;
-        font-weight: 500;
     }}
 """
 
-# forgot_password.py (inline widgets)
-FORGOT_PASSWORD_INLINE_FONT_STYLES = """
-    #titleRight {
-        font-weight: 600;
-    }
 
-    QLineEdit[objectName^=\"otpEdit\"] {
-        font-weight: 700;
-    }
+# forgot_password inline
+FORGOT_PASSWORD_INLINE_FONT_STYLES = f"""
+    #titleRight {{
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    QLineEdit[objectName^="otpEdit"] {{
+        font-weight: {WEIGHT_BOLD};
+    }}
 """
 
 
@@ -479,6 +654,8 @@ def get_full_fonts() -> str:
         + LOGIN_FONT_STYLES
         + REGISTER_FONT_STYLES
         + FORGOT_PASSWORD_FONT_STYLES
+        + NAVBAR_FONT_STYLES
+        + DASHBOARD_FONT_STYLES
         + GAMES_FONT_STYLES
         + PROFILE_FONT_STYLES
         + TUTORIAL_FONT_STYLES

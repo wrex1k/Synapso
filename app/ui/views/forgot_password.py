@@ -12,12 +12,11 @@ from app.utils.validator import validate_email, validate_otp, validate_password,
 from app.ui.components.back_button import BackButton
 from app.ui.components.input_field import InputField
 from app.utils.event_filters import context_menu_event_filter, enter_key_event_filter, password_event_filter
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 from app.utils.ui_helpers import draw_background, update_button_state
 from translations.translation import translate
 
 
-logger = get_logger(__name__)
 
 
 class ForgotPassword(QWidget):
@@ -80,11 +79,11 @@ class ForgotPassword(QWidget):
         # title
         self.titleLeft = QLabel("", titleFrame)
         self.titleLeft.setObjectName("titleLeft")
-        self.titleLeft.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.titleLeft.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom)
 
         self.titleRight = QLabel("", titleFrame)
         self.titleRight.setObjectName("titleRight")
-        self.titleRight.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.titleRight.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom)
 
         titleLayout.addStretch()
         titleLayout.addWidget(self.titleLeft)

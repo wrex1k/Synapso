@@ -1,9 +1,8 @@
 from datetime import datetime, timezone
 
 from app.repository.supabase_client import get_client
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 
-logger = get_logger(__name__)
 
 
 def save_report(user_id: str, body: str) -> bool:

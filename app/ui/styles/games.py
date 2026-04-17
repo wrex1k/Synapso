@@ -31,7 +31,7 @@ GAMES_STYLES = f"""
 
     QWidget#switcherWidget {{
         background-color: transparent;
-        border: 1px solid {BORDER_SECONDARY};
+        border: 1px solid {BORDER_LIGHTGREY};
         border-radius: 26px;
         padding: 18px;
         min-height: 15px;
@@ -41,7 +41,7 @@ GAMES_STYLES = f"""
     }}
 
     QWidget#switcherWidget:hover {{
-        border-color: {HOVER_PRIMARY};
+        border-color: {BORDER_GREY};
     }}
 
     QLabel#infoCardTitle {{
@@ -54,9 +54,9 @@ GAMES_STYLES = f"""
     }}
 
     QWidget#infoCardWidget {{
-        padding: 20px;
+        background-color: {BACKGROUND_GLASS};
+        border: 1px solid {BORDER_LIGHTGREY};
         border-radius: 18px;
-        background-color: rgba(32, 48, 47, 0.24);
     }}
 
     QLabel#rtCardTitle,
@@ -80,9 +80,9 @@ GAMES_STYLES = f"""
     QWidget#rtCardWidget,
     QWidget#accCardWidget,
     QWidget#piCardWidget {{
-        border: none;
+        background-color: {BACKGROUND_GLASS};
+        border: 1px solid {BORDER_LIGHTGREY};
         border-radius: 18px;
-        background-color: {BACKGROUND_GLASS}
     }}
 
     QLabel#activityCardTitle {{
@@ -121,7 +121,7 @@ GAMES_STYLES = f"""
 
     QWidget#activityCardWidget {{
         background-color: {BACKGROUND_GLASS};
-        border: none;
+        border: 1px solid {BORDER_LIGHTGREY};
         border-radius: 14px;
         min-width: 300px;
     }}
@@ -146,29 +146,17 @@ GAMES_STYLES = f"""
         border: 1px solid {PRIMARY};
         background-color: transparent;
         color: {OFF_WHITE};
+        padding: 10px 22px;
         border-radius: 22px;
     }}
 
-    QPushButton#tutorialButton[unplayed="true"] {{
-        background-color: transparent;
-    }}
-
-    QPushButton#tutorialButton[unplayed="true"]:hover{{
+    QPushButton#tutorialButton:hover{{
         background-color: {HOVER_DARK};
-    }}
-
-    QPushButton#tutorialButton[unplayed="false"] {{
-        border: 1px solid {BORDER_UNPLAYED};
-    }}
-
-    QPushButton#tutorialButton[unplayed="false"]:hover {{
-        background-color: {HOVER_DARK}
-        
     }}
 
     QWidget#leaderboardCardWidget {{
         background-color: {BACKGROUND_GLASS};
-        border: none;
+        border: 1px solid {BORDER_UNDERLINE};
         border-radius: 18px;
         min-width: 300px;
     }}

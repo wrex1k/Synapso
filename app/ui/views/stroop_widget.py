@@ -7,12 +7,11 @@ from PySide6.QtWidgets import QLabel, QVBoxLayout
 
 from app.games.stroop.game import COLORS
 from app.core.registry import registry
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 from app.ui.styles.colors import PRIMARY_LIGHT, INCORRECT_COLOR, OFF_WHITE, FONT_PRIMARY
 from app.ui.views.base_game_widget import BaseGameWidget, _get_cached_font
 
 
-logger = get_logger(__name__)
 
 _FEEDBACK_MS = 800
 _RESULT_MS = 2000
@@ -231,9 +230,8 @@ class StroopWidget(BaseGameWidget):
                     _svc = self._service
                     _runner = self._runner
 
-                    def _save_tutorial(svc=_svc, r=_runner):
+                    def _save_tutorial(svc=_svc):
                         svc.start_run(stage="tutorial", initialize_game=False)
-                        svc.complete_tutorial(r)
 
                     self._keep_thread(registry.run_thread(_save_tutorial, lambda _: None))
                 self._after_feedback = _RESULT

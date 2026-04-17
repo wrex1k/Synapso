@@ -7,10 +7,9 @@ from PySide6.QtWidgets import (QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QW
 
 from app.ui.styles.colors import FONT_PRIMARY
 from app.ui.views.base_tutorial import BaseTutorialWidget
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 from translations.translation import translate
 
-logger = get_logger(__name__)
 
 _CELL_OFF = (169, 169, 169)
 _CELL_ON = (62, 172, 145)

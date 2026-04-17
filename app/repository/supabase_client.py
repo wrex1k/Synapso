@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from supabase import Client, create_client
 
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 
 """Supabase client initialization and management."""
 
@@ -12,7 +12,6 @@ _service_client: Client | None = None
 _current_access_token: str | None = None
 _current_refresh_token: str | None = None
 
-logger = get_logger(__name__)
 
 
 def get_client() -> Client:
@@ -86,3 +85,19 @@ async def create_realtime_client():
         raise RuntimeError("Missing Supabase env variables: SUPABASE_URL and SUPABASE_ANON_KEY must be set")
     from supabase import acreate_client
     return await acreate_client(url, key)
+
+
+_RETRIABLE = ("Server disconnected", "ConnectionTerminated", "Connection reset", "JSON could not be generated")
+
+
+def with_retry(fn):
+    """Call fn(). On transient HTTP/2 or connection errors, reset the client and retry once."""
+    try:
+        return fn()
+    except Exception as e:
+        err = str(e)
+        if any(marker in err for marker in _RETRIABLE):
+            logger.debug("Transient connection error (%s) — resetting client and retrying once", err)
+            reset_client()
+            return fn()
+        raise

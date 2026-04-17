@@ -28,18 +28,16 @@ resources_rc.py
 
 # Project tools / scripts
 tools/
-dev/simulator/data_cleaner.py
-dev/simulator/game_data_simulator.py
-dev/simulator/run_simulator.py
 
+# Simulator data and tools
+app/utils/dev/simulator/
 
 # Tests
 tests/
 pytest.ini
 
-
-# Ignore all __init__.py
-**/__init__.py
+# Auto-generated files
+translations/synapso_*.qm
 
 # Ignore pylint config and report file
 pylint.py

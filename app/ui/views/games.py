@@ -19,14 +19,16 @@ from app.ui.views.mental_rotation_tutorial import MentalRotationTutorial
 from app.ui.views.memory_grid_widget import MemoryGridWidget
 from app.ui.views.mental_rotation_widget import MentalRotationWidget
 from app.ui.styles.games import GAMES_STYLES
-from app.repository.game_repository import fetch_games, fetch_game_stats, fetch_leaderboard, get_tutorial_completed, subscribe_leaderboard
+from app.ui.styles.colors import SUCCESS, DANGER
+from app.repository.game_repository import fetch_games
+from app.repository.stats_repository import fetch_game_stats, fetch_leaderboard, subscribe_leaderboard
+from app.repository.tutorial_repository import get_tutorial_completed
 from app.repository.user_repository import fetch_avatar
 from app.core.registry import registry
-from app.utils.logger import get_logger
-from app.utils.ui_helpers import image_to_rounded
+from app.utils.logger import logger
+from app.utils.ui_helpers import build_header, image_to_rounded
 from translations.translation import translate
 
-logger = get_logger(__name__)
 
 # Game factories by game_id
 _GAME_FACTORIES = {
@@ -52,15 +54,15 @@ _WIDGET_FACTORIES = {
 _GAME_TEXTS = {
     "stroop": {
         "title": "Stroop color and word test",
-        "desc": "The Stroop Test measures attention, processing speed, and cognitive control. The task is to name the color of a word, not the word itself, which creates mental interference.",
+        "desc": "The Stroop color and word test measures attention, processing speed, and cognitive control. The task is to name the color of a word, not the word itself, which creates mental interference.",
     },
     "memory_grid": {
-        "title": "Memory Grid Test",
-        "desc": "The Memory Grid Test measures visual working memory and attention. The task is to remember a pattern in a grid and reproduce it as accurately as possible.",
+        "title": "Memory Grid",
+        "desc": "The Memory Grid measures visual working memory and attention. The task is to remember a pattern in a grid and reproduce it as accurately as possible.",
     },
     "mental_rotation": {
-        "title": "Mental Rotation Test",
-        "desc": "The Mental Rotation Test measures spatial reasoning and the ability to rotate objects in the mind. The task is to decide whether rotated objects are identical or mirrored.",
+        "title": "Mental Rotation",
+        "desc": "The Mental Rotation measures spatial reasoning and the ability to rotate objects in the mind. The task is to decide whether rotated objects are identical or mirrored.",
     },
 }
 
@@ -153,24 +155,16 @@ class GamesView(QWidget):
     def _build_ui(self):
         root = QVBoxLayout(self)
         root.setContentsMargins(25, 30, 25, 80)
-        root.setSpacing(40)
+        root.setSpacing(28)
 
         # ── Header row ──
         header_layout = QHBoxLayout()
 
-        title_widget = QWidget()
-        title_widget.setObjectName("titleWidget")
-        title_col = QVBoxLayout(title_widget)
-        title_col.setSpacing(0)
-        title_col.setContentsMargins(0, 0, 0, 0)
-        self._page_title_lbl = QLabel("")
-        self._page_title_lbl.setObjectName("gameTitle")
-        self._page_subtitle_lbl = QLabel("")
-        self._page_subtitle_lbl.setObjectName("gameDescription")
-        title_col.addWidget(self._page_title_lbl)
-        title_col.addWidget(self._page_subtitle_lbl)
-
-        header_layout.addWidget(title_widget)
+        header, self._page_title_lbl, self._page_subtitle_lbl = build_header(
+            "Games",
+            "Select a game to play and view your stats"
+        )
+        header_layout.addWidget(header)
         header_layout.addStretch()
 
         self._switcher_pill = QWidget()
@@ -205,7 +199,7 @@ class GamesView(QWidget):
         root.addLayout(header_layout)
 
         body_layout = QHBoxLayout()
-        body_layout.setSpacing(40)
+        body_layout.setSpacing(20)
         body_layout.setContentsMargins(0, 0, 0, 0)
 
         self._game_stack = QStackedWidget()
@@ -213,7 +207,7 @@ class GamesView(QWidget):
         body_layout.addWidget(self._game_stack, 1)
 
         right_col = QVBoxLayout()
-        right_col.setSpacing(15)
+        right_col.setSpacing(20)
         right_col.setContentsMargins(0, 0, 0, 0)
         self._leaderboard_panel = self._build_leaderboard_panel()
         right_col.addWidget(self._leaderboard_panel, 1)
@@ -233,7 +227,7 @@ class GamesView(QWidget):
         panel.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
 
         layout = QVBoxLayout(panel)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setContentsMargins(28, 28, 28, 28)
         layout.setSpacing(20)
 
         self._leaderboard_title_lbl = QLabel("")
@@ -263,20 +257,23 @@ class GamesView(QWidget):
         panel = QWidget()
         outer = QVBoxLayout(panel)
         outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(40)
+        outer.setSpacing(28)
 
-        # Info card
         info_card = QWidget()
         info_card.setObjectName("infoCardWidget")
+        info_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+
         info_layout = QVBoxLayout(info_card)
-        info_layout.setContentsMargins(22, 22, 22, 22)
+        info_layout.setContentsMargins(28, 28, 28, 28)
         info_layout.setSpacing(10)
+
         _texts = _GAME_TEXTS.get(game_slug, {"title": "", "desc": ""})
         info_title = QLabel(translate("GamesView", _texts["title"]))
         info_title.setObjectName("infoCardTitle")
         info_desc = QLabel(translate("GamesView", _texts["desc"]))
         info_desc.setObjectName("infoCardDescription")
         info_desc.setWordWrap(True)
+
         info_layout.addWidget(info_title)
         info_layout.addWidget(info_desc)
         outer.addWidget(info_card)
@@ -285,20 +282,20 @@ class GamesView(QWidget):
         panel._info_desc_lbl = info_desc
         panel._game_slug = game_slug
 
-        # Bottom row: activity card + stats cards
         bottom_row = QHBoxLayout()
-        bottom_row.setSpacing(50)
+        bottom_row.setSpacing(20)
         bottom_row.setContentsMargins(0, 0, 0, 0)
 
         activity_card, num_lbls, activity_title_lbl, activity_desc_lbl, activity_row_title_lbls = self._build_activity_card()
         stats_card, stat_lbls, stat_title_lbls = self._build_stats_card()
-        bottom_row.addWidget(activity_card)
-        bottom_row.addWidget(stats_card, 1)
+
+        bottom_row.addWidget(activity_card, 9)
+        bottom_row.addWidget(stats_card, 11)
+
         outer.addLayout(bottom_row, 1)
 
-        # Buttons
         btn_row = QHBoxLayout()
-        btn_row.setSpacing(16)
+        btn_row.setSpacing(20)
         btn_row.setContentsMargins(0, 0, 120, 0)
 
         tutorial_btn = QPushButton(translate("GamesView", "Tutorial"))
@@ -335,10 +332,11 @@ class GamesView(QWidget):
     def _build_activity_card(self) -> tuple[QWidget, list[QLabel], QLabel, QLabel, dict[str, QLabel]]:
         card = QWidget()
         card.setObjectName("activityCardWidget")
-        card.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        card.setMaximumWidth(360)
 
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setContentsMargins(28, 28, 28, 28)
         layout.setSpacing(20)
 
         title_container = QVBoxLayout()
@@ -383,6 +381,7 @@ class GamesView(QWidget):
 
     def _build_stats_card(self) -> tuple[QWidget, dict, dict[str, QLabel]]:
         card = QWidget()
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         card.setObjectName("statsCardWidget")
 
         layout = QVBoxLayout(card)
@@ -391,11 +390,14 @@ class GamesView(QWidget):
 
         stat_lbls: dict[str, tuple[QLabel, QLabel]] = {}
         stat_title_lbls: dict[str, QLabel] = {}
+
         for suffix, title_text in _STAT_CARDS:
             stat_widget = QWidget()
             stat_widget.setObjectName(f"{suffix}CardWidget")
+            stat_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+
             stat_layout = QVBoxLayout(stat_widget)
-            stat_layout.setContentsMargins(22, 18, 22, 18)
+            stat_layout.setContentsMargins(28, 28, 28, 28)
             stat_layout.setSpacing(4)
 
             title_lbl = QLabel(title_text)
@@ -405,6 +407,7 @@ class GamesView(QWidget):
 
             value_row = QHBoxLayout()
             value_row.setSpacing(0)
+
             val_lbl = QLabel("—")
             val_lbl.setObjectName(f"{suffix}CardValue")
 
@@ -415,6 +418,7 @@ class GamesView(QWidget):
             value_row.addWidget(val_lbl)
             value_row.addStretch()
             value_row.addWidget(delta_lbl)
+
             stat_layout.addLayout(value_row)
 
             layout.addWidget(stat_widget, 1)
@@ -446,7 +450,9 @@ class GamesView(QWidget):
         if hasattr(panel, "_info_title_lbl"):
             _texts = _GAME_TEXTS.get(panel._game_slug, {"title": "", "desc": ""})
             panel._info_title_lbl.setText(translate("GamesView", _texts["title"]))
+            panel._info_title_lbl.setObjectName("infoCardTitle")
             panel._info_desc_lbl.setText(translate("GamesView", _texts["desc"]))
+            panel._info_desc_lbl.setObjectName("infoCardDescription")
         if hasattr(panel, "_activity_title_lbl"):
             panel._activity_title_lbl.setText(translate("GamesView", "Activity"))
         if hasattr(panel, "_activity_desc_lbl"):
@@ -474,8 +480,11 @@ class GamesView(QWidget):
         for panel in self._game_panels.values():
             self._retranslate_panel(panel)
 
-        for btn in self._tutorial_btns.values():
-            btn.setText(translate("GamesView", "Tutorial"))
+        for game_id, btn in self._tutorial_btns.items():
+            if self._play_unlocked.get(game_id, False):
+                btn.setText(translate("GamesView", "Tutorial passed"))
+            else:
+                btn.setText(translate("GamesView", "Tutorial"))
         for btn in self._play_btns.values():
             btn.setText(translate("GamesView", "Play"))
 
@@ -555,7 +564,7 @@ class GamesView(QWidget):
         if rt_diff is not None:
             is_better = rt_diff < 0
             direction = "↑" if is_better else "↓"
-            color = "#12A54C" if is_better else "#E74C3C"
+            color = f"{SUCCESS}" if is_better else f"{DANGER}"
             if is_better:
                 message = translate("GamesView", "you are {value}ms faster than global avg").format(
                     value=abs(int(rt_diff))
@@ -746,14 +755,11 @@ class GamesView(QWidget):
 
         self._launch_game_tutorial(game_id)
 
-    def _launch_game_tutorial(self, game_id: str):
-        if game_id in _INTRO_TUTORIAL_CLASSES:
-            try:
-                if get_tutorial_completed(self._user_id, game_id):
-                    logger.info("Tutorial already completed for %s — gameplay blocked", game_id)
-                    return
-            except Exception as exc:
-                logger.warning("Could not verify tutorial completion for %s: %s", game_id, exc)
+    def _launch_game_tutorial(self, game_id: str) -> None:
+        """Launch the gameplay (GameTutorial) session. Blocked by local state if already passed."""
+        if self._play_unlocked.get(game_id, False):
+            logger.info("Tutorial already completed for %s — gameplay blocked", game_id)
+            return
 
         factory = _GAME_FACTORIES.get(game_id)
         if factory is None:
@@ -765,29 +771,18 @@ class GamesView(QWidget):
         self._open_session(game_id, "tutorial", game, service, runner)
 
     def _launch_intro_tutorial(self, game_id: str) -> None:
-        self._set_buttons_locked(game_id, True)
-
-        user_id = self._user_id
-
-        def _check() -> bool:
-            try:
-                return get_tutorial_completed(user_id, game_id)
-            except Exception as exc:
-                logger.warning("Could not check tutorial completion for %s: %s", game_id, exc)
-                return False
-
-        def _on_checked(completed: bool) -> None:
-            tutorial_cls = _INTRO_TUTORIAL_CLASSES[game_id]
-            widget = tutorial_cls(allow_gameplay_tutorial=not completed)
-            widget.start_game_tutorial_requested.connect(
-                lambda gid=game_id: self._launch_game_tutorial(gid)
-            )
-            widget.session_done.connect(
-                lambda _passed=False, gid=game_id: self._set_buttons_locked(gid, False)
-            )
-            self.launch_game_requested.emit(widget)
-
-        self._keep_thread(registry.run_thread(_check, _on_checked))
+        """Show IntroTutorial → PracticeTutorial. Uses local state — no DB call needed here."""
+        self._set_buttons_locked(game_id, True, lock_play=False)
+        already_done = self._play_unlocked.get(game_id, False)
+        tutorial_cls = _INTRO_TUTORIAL_CLASSES[game_id]
+        widget = tutorial_cls(allow_gameplay_tutorial=not already_done)
+        widget.start_game_tutorial_requested.connect(
+            lambda gid=game_id: self._launch_game_tutorial(gid)
+        )
+        widget.session_done.connect(
+            lambda _passed=False, gid=game_id: self._set_buttons_locked(gid, False)
+        )
+        self.launch_game_requested.emit(widget)
 
     def _launch_play(self, game_id: str):
         factory = _GAME_FACTORIES.get(game_id)
@@ -830,6 +825,7 @@ class GamesView(QWidget):
             tut_btn = self._tutorial_btns.get(game_id)
             if tut_btn:
                 tut_btn.setProperty("unplayed", False)
+                tut_btn.setText(translate("GamesView", "Tutorial passed"))
                 tut_btn.style().unpolish(tut_btn)
                 tut_btn.style().polish(tut_btn)
                 tut_btn.update()
@@ -840,26 +836,42 @@ class GamesView(QWidget):
             self._load_leaderboard_for_current()
 
     def _refresh_play_buttons(self):
-        for game_id in list(self._play_btns):
-            try:
-                completed = get_tutorial_completed(self._user_id, game_id)
-            except Exception as exc:
-                logger.warning("Could not check tutorial status for %s: %s", game_id, exc)
-                completed = False
-            self._play_unlocked[game_id] = completed
-            self._play_btns[game_id].setEnabled(completed)
-            tut_btn = self._tutorial_btns.get(game_id)
-            if tut_btn:
-                tut_btn.setProperty("unplayed", not completed)
-                tut_btn.style().unpolish(tut_btn)
-                tut_btn.style().polish(tut_btn)
-                tut_btn.update()
+        """Asynchronously fetch tutorial completion status from DB for all games,
+        then apply the results to the buttons on the main thread."""
+        game_ids = list(self._play_btns.keys())
+        user_id = self._user_id
 
-    def _set_buttons_locked(self, game_id: str, locked: bool):
+        def _check_all() -> dict[str, bool]:
+            results: dict[str, bool] = {}
+            for game_id in game_ids:
+                try:
+                    results[game_id] = get_tutorial_completed(user_id, game_id)
+                except Exception as exc:
+                    logger.warning("Could not check tutorial status for %s: %s", game_id, exc)
+                    results[game_id] = False
+            return results
+
+        def _apply(results: dict[str, bool]) -> None:
+            for game_id, completed in results.items():
+                self._play_unlocked[game_id] = completed
+                self._play_btns[game_id].setEnabled(completed)
+                tut_btn = self._tutorial_btns.get(game_id)
+                if tut_btn:
+                    tut_btn.setProperty("unplayed", not completed)
+                    if completed:
+                        tut_btn.setText(translate("GamesView", "Tutorial passed"))
+                    tut_btn.style().unpolish(tut_btn)
+                    tut_btn.style().polish(tut_btn)
+                    tut_btn.update()
+
+        self._keep_thread(registry.run_thread(_check_all, _apply))
+
+    def _set_buttons_locked(self, game_id: str, locked: bool, lock_play: bool = True):
         self._tutorial_btns[game_id].setEnabled(not locked)
-        self._play_btns[game_id].setEnabled(
-            (not locked) and self._play_unlocked.get(game_id, False)
-        )
+        if lock_play:
+            self._play_btns[game_id].setEnabled(
+                (not locked) and self._play_unlocked.get(game_id, False)
+            )
 
     def _switcher_refresh(self) -> None:
         total = len(self._game_keys)

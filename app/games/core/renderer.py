@@ -10,12 +10,10 @@ from typing import TYPE_CHECKING
 import pygame
 
 from app.ui.styles.fonts import GENERAL_SANS
-from app.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from app.games.core.base_game import BaseGame
 
-logger = get_logger(__name__)
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600

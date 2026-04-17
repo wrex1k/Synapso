@@ -3,20 +3,23 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QSize, Signal
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QHBoxLayout, QPushButton, QStackedWidget, QVBoxLayout, QWidget
-from supabase_auth import User
+from app.models.user import User
 
+from app.core.registry import registry
+from app.controller.profile_controller import ProfileController
 from app.ui.components.navbar import NavbarWidget
 from app.ui.components.sidebar import SidebarWidget
-from app.ui.views.about import AboutView
-from app.ui.views.games import GamesView
+from app.ui.views.dashboard import DashboardView
 from app.ui.views.profile import ProfileView
+from app.ui.views.games import GamesView
+from app.ui.views.statistics import StatisticsView
+from app.ui.views.about import AboutView
 from app.ui.views.settings import SettingsView
 from app.utils.ui_helpers import draw_background
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 
-logger = get_logger(__name__)
 
 
 class AppWidget(QWidget):
@@ -26,7 +29,6 @@ class AppWidget(QWidget):
         super().__init__(parent)
 
         self._user = user
-
         self.setObjectName("appWidget")
         self.setWindowTitle("Synapso")
 
@@ -92,12 +94,18 @@ class AppWidget(QWidget):
         return b
 
     def _init_pages(self):
-        self.dashboard_page = QWidget()
+        self.dashboard_page = DashboardView(user=self._user)
         self.games_page = GamesView(user_id=self._user.id)
-        self.statistics_page = QWidget()
+        self.statistics_page = StatisticsView(user_id=self._user.id)
         self.settings_page = SettingsView()
         self.info_page = AboutView(user_id=self._user.id)
         self.profile_page = ProfileView(user=self._user)
+        self.profile_controller = ProfileController(
+            view=self.profile_page,
+            user=self._user,
+            navbar=self.navbarWidget,
+            on_logout=self._emit_logout,
+        )
 
         for page in (
             self.dashboard_page,
@@ -166,6 +174,9 @@ class AppWidget(QWidget):
     def _on_logout_clicked(self, checked: bool = False):
         logger.info("User initiated logout..")
         self.logoutButton.setEnabled(False)
+        self.logout_requested.emit()
+
+    def _emit_logout(self):
         self.logout_requested.emit()
 
     def _show_fullscreen_game(self, widget):

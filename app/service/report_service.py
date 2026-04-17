@@ -1,7 +1,6 @@
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 from app.repository.report_repository import save_report
 
-logger = get_logger(__name__)
 
 
 def submit_report(user_id: str, body: str) -> bool:

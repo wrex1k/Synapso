@@ -130,3 +130,6 @@ def get_logger(name: str = "synapso") -> logging.Logger:
     logger.addHandler(console_handler)
 
     return logger
+
+
+logger = get_logger()

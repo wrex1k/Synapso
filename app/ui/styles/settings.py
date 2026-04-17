@@ -7,6 +7,7 @@ SETTINGS_STYLES = f"""
 
     QWidget#settingsCard {{
         background-color: {BACKGROUND_GLASS};
+        border: 1px solid {BORDER_LIGHTGREY};
         border-radius: 18px;
         padding: 0px;
     }}

@@ -7,10 +7,9 @@ from app.ui.components.key_widget import KeyWidget
 from app.ui.styles.colors import FONT_PRIMARY
 from app.ui.views.base_tutorial import BaseTutorialWidget
 from app.games.stroop.config import COLOR_MAP
-from app.utils.logger import get_logger
+from app.utils.logger import logger
 from translations.translation import translate
 
-logger = get_logger(__name__)
 
 
 class StroopTutorial(BaseTutorialWidget):

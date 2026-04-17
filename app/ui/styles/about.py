@@ -7,6 +7,7 @@ ABOUT_STYLES = f"""
 
     QWidget#aboutCard {{
         background-color: {BACKGROUND_GLASS};
+        border: 1px solid {BORDER_LIGHTGREY};
         border-radius: 20px;
     }}
 
@@ -39,11 +40,15 @@ ABOUT_STYLES = f"""
     }}
 
     QTextEdit#reportEditor {{
-        background-color: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        background-color: {INPUT_FIELD_BACKGROUND};
+        border: 1px solid {INPUT_FIELD_BORDER};
         border-radius: 8px;
         color: {OFF_WHITE};
         padding: 10px;
+    }}
+
+    QTextEdit#reportEditor:focus {{
+        border-color: {PRIMARY};
     }}
 
     QPushButton#reportSendButton {{
