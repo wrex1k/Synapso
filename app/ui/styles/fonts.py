@@ -169,6 +169,10 @@ REGISTER_FONT_STYLES = f"""
     #uploadImageButton {{
         font-size: {SIZE_XSMALL}px;
     }}
+
+    #privacyNotice {{
+        font-size: {SIZE_SMALL}px;  
+    }}
 """
 
 

@@ -40,7 +40,7 @@ class StroopTutorial(BaseTutorialWidget):
         ]
 
     def _get_intro_title(self) -> str:
-        return translate("StroopTutorial", "Stroop color and word test")
+        return translate("StroopTutorial", "Stroop test")
 
     def _get_intro_subtitle(self) -> str:
         return translate("StroopTutorial", "Train your cognitive control and selective attention")

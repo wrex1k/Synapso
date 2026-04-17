@@ -338,8 +338,8 @@
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="57"/>
-        <source>The Stroop color and word test measures attention, processing speed, and cognitive control. The task is to name the color of a word, not the word itself, which creates mental interference.</source>
-        <translation>Stroop color and word test meria pozornosť, rýchlosť spracovania a kognitívnu kontrolu. Úlohou je pomenovať farbu slova, nie samotné slovo, čo vytvára mentálnu interferenciu.</translation>
+        <source>The Stroop test measures attention, processing speed, and cognitive control. The task is to name the color of a word, not the word itself, which creates mental interference.</source>
+        <translation>Stroop test meria pozornosť, rýchlosť spracovania a kognitívnu kontrolu. Úlohou je pomenovať farbu slova, nie samotné slovo, čo vytvára mentálnu interferenciu.</translation>
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="61"/>
@@ -350,6 +350,11 @@
         <location filename="../app/ui/views/games.py" line="65"/>
         <source>The Mental Rotation measures spatial reasoning and the ability to rotate objects in the mind. The task is to decide whether rotated objects are identical or mirrored.</source>
         <translation>Mental Rotation meria priestorové myslenie a schopnosť otáčať objekty v mysli. Úlohou je rozhodnúť, či sú otočené objekty identické alebo zrkadlové.</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/games.py" line="485"/>
+        <source>Tutorial passed</source>
+        <translation>Tutoriál splnený</translation>
     </message>
 </context>
 <context>
@@ -637,6 +642,11 @@
         <translation>Potvrdenie hesla</translation>
     </message>
     <message>
+        <location filename="../app/ui/views/register_auth.py" line="300"/>
+        <source>By registering, you agree to the Privacy Policy.</source>
+        <translation>Registráciou súhlasíte so spracovaním osobných údajov.</translation>
+    </message>
+    <message>
         <location filename="../app/ui/views/register_auth.py" line="239"/>
         <location filename="../app/ui/views/register_auth.py" line="248"/>
         <location filename="../app/ui/views/register_auth.py" line="293"/>
@@ -808,8 +818,8 @@
 
     <message>
         <location filename="../app/ui/views/stroop_tutorial.py" line="46"/>
-        <source>Stroop color and word test</source>
-        <translation>Stroop color and word test</translation>
+        <source>Stroop test</source>
+        <translation>Stroop test</translation>
     </message>
 
     <message>
@@ -1017,6 +1027,11 @@
         <source>Send report</source>
         <translation>Odoslať správu</translation>
     </message>
+        <message>
+            <location filename="../app/ui/views/about.py" line="336"/>
+            <source>Your report was successfully sent. Thank you!</source>
+            <translation>Vaša správa bola úspešne odoslaná. Ďakujeme!</translation>
+        </message>
 </context>
 <context>
     <name>ProfileView</name>
@@ -1212,6 +1227,41 @@ Všetky tvoje údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
         <source>Failed to change password</source>
         <translation>Heslo sa nepodarilo zmeniť</translation>
     </message>
+    <message>
+        <location filename="../app/ui/views/profile.py" line="141"/>
+        <source>Click to change profile photo</source>
+        <translation>Klikni na zmenu profilovej fotky</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/profile.py" line="548"/>
+        <source>Select Profile Photo</source>
+        <translation>Vybrať profilovú fotku</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/profile.py" line="550"/>
+        <source>Images (*.png *.jpg *.jpeg *.webp *.bmp)</source>
+        <translation>Obrázky (*.png *.jpg *.jpeg *.webp *.bmp)</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/profile.py" line="676"/>
+        <source>Member since %B %d, %Y</source>
+        <translation>Člen od %d. %B %Y</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/profile.py" line="676"/>
+        <source>Member</source>
+        <translation>Člen</translation>
+    </message>
+    <message>
+        <location filename="../app/controller/profile_controller.py" line="153"/>
+        <source>Profile photo updated</source>
+        <translation>Profilová fotka bola aktualizovaná</translation>
+    </message>
+    <message>
+        <location filename="../app/controller/profile_controller.py" line="156"/>
+        <source>Failed to upload photo</source>
+        <translation>Nahratie fotky zlyhalo</translation>
+    </message>
 </context>
 <context>
     <name>DashboardView</name>
@@ -1224,8 +1274,8 @@ Všetky tvoje údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
     <message>
         <location filename="../app/ui/views/dashboard.py" line="137"/>
         <location filename="../app/ui/views/dashboard.py" line="553"/>
-        <source>Your activity overview</source>
-        <translation>Tvoja aktivita</translation>
+        <source>Continue your training and stay on track</source>
+        <translation>Pokračuj v tréningu a zostaň v tempe</translation>
     </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="179"/>
@@ -1577,6 +1627,45 @@ Všetky tvoje údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
         <location filename="../app/ui/views/statistics.py" line="619"/>
         <source>Consistency</source>
         <translation>Konzistentnosť</translation>
+    </message>
+</context>
+<context>
+    <name>StroopWidget</name>
+    <message>
+        <location filename="translation.py"/>
+        <source>Press the key matching the {word}</source>
+        <translation>Stlač kláves podľa {word}</translation>
+    </message>
+    <message>
+        <location filename="translation.py"/>
+        <source>ink color</source>
+        <translation>farby atramentu</translation>
+    </message>
+</context>
+<context>
+    <name>MemoryGridWidget</name>
+    <message>
+        <location filename="translation.py"/>
+        <source>Select the {word} you remember</source>
+        <translation>Vyber {word}, ktoré si pamätáš</translation>
+    </message>
+    <message>
+        <location filename="translation.py"/>
+        <source>grid squares</source>
+        <translation>políčka mriežky</translation>
+    </message>
+</context>
+<context>
+    <name>MentalRotationWidget</name>
+    <message>
+        <location filename="translation.py"/>
+        <source>Press the key if the {word}</source>
+        <translation>Stlač kláves, ak sú {word}</translation>
+    </message>
+    <message>
+        <location filename="translation.py"/>
+        <source>shapes are the same</source>
+        <translation>tvary rovnaké</translation>
     </message>
 </context>
 </TS>

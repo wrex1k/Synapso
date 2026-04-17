@@ -12,6 +12,15 @@ PROFILE_STYLES = f"""
         border-radius: 20px;
     }}
 
+    QLabel#profileAvatar {{
+        border: 2px solid transparent;
+        border-radius: 42px;
+    }}
+
+    QLabel#profileAvatar:hover {{
+        border: 2px solid {PRIMARY_LIGHT};
+    }}
+
     QLabel#profileUsernameLabel {{
         color: {OFF_WHITE};
     }}
@@ -106,8 +115,11 @@ PROFILE_STYLES = f"""
         color: white;
         border: none;
         border-radius: 16px;
-        padding: 0 16px;
-        min-width: 140px;
+        padding: 0 24px;
+    }}
+
+    QPushButton#profilePrimaryButton:disabled {{
+        background-color: {PRIMARY_DARK}
     }}
 
     QPushButton#profilePrimaryButton:hover {{

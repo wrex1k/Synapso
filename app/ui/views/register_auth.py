@@ -1,9 +1,7 @@
-"""RegisterAuth is the second step of the registration flow where the user sets a password.
-It validates password rules and matching confirmation, manages UI state (idle/loading/error),
-and emits the submitted password on success. Includes fade-in animations on show."""
+"""RegisterAuth is the second step of the registration flow where the user sets a password. It validates password rules and matching confirmation, manages UI state (idle/loading/error), and emits the submitted password on success. Includes fade-in animations on show."""
 
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QIcon
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QSize, Qt, QTimer, QUrl, Signal
+from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtWidgets import QGraphicsOpacityEffect, QGridLayout, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget
 
 from app.ui.components.back_button import BackButton
@@ -12,8 +10,7 @@ from app.utils.logger import logger
 from app.utils.event_filters import context_menu_event_filter, enter_key_event_filter, password_event_filter
 from app.utils.ui_helpers import draw_background, update_button_state
 from app.utils.validator import validate_password, validate_passwords_match
-from translations.translation import translate
-
+from translations.translation import translate, get_translation_manager
 
 
 class RegisterAuth(QWidget):
@@ -148,6 +145,7 @@ class RegisterAuth(QWidget):
 
         copasswordLayout = QVBoxLayout(copasswordFrame)
         copasswordLayout.setContentsMargins(0, 0, 0, 0)
+        copasswordLayout.setSpacing(0)
 
         # confirm password field
         self.copasswordField = InputField(label_text="", placeholder="", is_password=True, object_name="copasswordEdit", parent=copasswordFrame)
@@ -155,6 +153,14 @@ class RegisterAuth(QWidget):
         self.copasswordEdit = self.copasswordField.line_edit
 
         copasswordLayout.addWidget(self.copasswordField)
+        copasswordLayout.setSpacing(10)
+
+        self.privacyLabel = QPushButton("")
+        self.privacyLabel.setObjectName("privacyNotice")
+        self.privacyLabel.setFlat(True)
+        self.privacyLabel.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        copasswordLayout.addWidget(self.privacyLabel, 0, Qt.AlignmentFlag.AlignLeft)
         self._frameLayout.addWidget(copasswordFrame)
 
         # setup opacity for animation confirm password section
@@ -169,13 +175,19 @@ class RegisterAuth(QWidget):
         buttonFrame.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Maximum)
 
         buttonLayout = QHBoxLayout(buttonFrame)
+        buttonLayout.setContentsMargins(0, 0, 0, 0)
+
+        buttonRow = QHBoxLayout()
 
         # sign up button
         self.signUpButton = QPushButton("Finish the registration", buttonFrame)
         self.signUpButton.setObjectName("primaryButton")
         self.signUpButton.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
 
-        buttonLayout.addWidget(self.signUpButton, 0, Qt.AlignmentFlag.AlignRight)
+        buttonRow.addWidget(self.signUpButton, 0, Qt.AlignmentFlag.AlignRight)
+
+        buttonLayout.addStretch()
+        buttonLayout.addLayout(buttonRow)
         self._frameLayout.addWidget(buttonFrame)
 
         # setup opacity for animation button section
@@ -183,10 +195,19 @@ class RegisterAuth(QWidget):
         buttonFrame.setGraphicsEffect(self.buttonOpacity)
         self.buttonOpacity.setOpacity(0)
         self.buttonFrame = buttonFrame
-    
+
     def _setup_connections(self):
         self.signUpButton.clicked.connect(self.handle_auth_register)
         self.backButton.clicked.connect(self.back_to_personal_signal.emit)
+        self.privacyLabel.clicked.connect(self._open_privacy_url)
+
+    def _open_privacy_url(self):
+        lang = get_translation_manager().current_language
+        if lang == "sk":
+            url = "https://synapso.world/zasady-ochrany-osobnych-udajov"
+        else:
+            url = "https://synapso.world/privacy-policy"
+        QDesktopServices.openUrl(QUrl(url))
 
     def _setup_animations(self):
         self.titleAnim = QPropertyAnimation(self.titleOpacity, b"opacity")
@@ -217,7 +238,7 @@ class RegisterAuth(QWidget):
         if self.state == "loading" or self.state == "error":
             logger.info("Already submitting or showing error, ignoring click")
             return
-        
+
         password = self.passwordEdit.text().strip()
         copassword = self.copasswordEdit.text().strip()
 
@@ -248,7 +269,7 @@ class RegisterAuth(QWidget):
             loading_text=translate("RegisterAuth", "Finishing registration..."),
             error_text=message,
             auto_reset_ms=2000)
-        
+
         QTimer.singleShot(2000, lambda: setattr(self, "state", "idle"))
 
     def showEvent(self, event):
@@ -258,7 +279,7 @@ class RegisterAuth(QWidget):
         if not self._animations_started:
             self._animations_started = True
             self._start_animations()
-    
+
     def _start_animations(self):
         QTimer.singleShot(100, self.titleAnim.start)
         QTimer.singleShot(300, self.passwordAnim.start)
@@ -286,6 +307,7 @@ class RegisterAuth(QWidget):
         self.passwordField.line_edit.setPlaceholderText(translate("RegisterAuth", "••••••••••••••••"))
         self.copasswordField.label.setText(translate("RegisterAuth", "Confirm password"))
         self.copasswordField.line_edit.setPlaceholderText(translate("RegisterAuth", "••••••••••••••••"))
+        self.privacyLabel.setText(translate("RegisterAuth", "By registering, you agree to the Privacy Policy."))
         update_button_state(
             self.signUpButton,
             state=self.state,

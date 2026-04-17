@@ -99,6 +99,14 @@ QT_TRANSLATE_NOOP('Validator', 'You must be at least %1 years old to register')
 # Forgot password translation markers
 QT_TRANSLATE_NOOP('ForgotPassword', 'Please wait before sending another reset request')
 
+# Game hint translation markers
+QT_TRANSLATE_NOOP('StroopWidget', 'Press the key matching the {word}')
+QT_TRANSLATE_NOOP('StroopWidget', 'ink color')
+QT_TRANSLATE_NOOP('MemoryGridWidget', 'Select the {word} you remember')
+QT_TRANSLATE_NOOP('MemoryGridWidget', 'grid squares')
+QT_TRANSLATE_NOOP('MentalRotationWidget', 'Press the key if the {word}')
+QT_TRANSLATE_NOOP('MentalRotationWidget', 'shapes are the same')
+
 def get_error_message(error_code: str, context: str = "Errors") -> str:
     """Return a translated error message for the given error code."""
     error_map = {

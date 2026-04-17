@@ -10,11 +10,8 @@ from app.controller.dashboard_controller import DashboardController
 from app.ui.styles.colors import PRIMARY_LIGHT, DASHBOARD_PINK_DOT, DASHBOARD_YELLOW_DOT, DASHBOARD_GRAPH_COLOR, GRAY, GAME_COLORS
 from app.ui.styles.dashboard import DASHBOARD_STYLES
 from app.ui.styles.fonts import DASHBOARD_FONT_STYLES, get_general_sans
-from app.utils.logger import get_logger
 from app.utils.ui_helpers import build_header
 from translations.translation import translate
-
-logger = get_logger(__name__)
 
 
 def _create_chart_view(chart: QChart) -> QChartView:
@@ -89,24 +86,16 @@ class DashboardView(QWidget):
         self._highlights_subtitle_lbl: QLabel | None = None
         self._continue_play_btn: QPushButton | None = None
 
-        logger.debug(
-            "DashboardView initialized: user_id=%s username=%s",
-            getattr(self._user, "id", None),
-            getattr(self._user, "username", None),
-        )
-
         self._build_ui()
 
     def _build_ui(self) -> None:
-        logger.debug("DashboardView._build_ui: building dashboard UI")
-
         root = QVBoxLayout(self)
         root.setContentsMargins(25, 30, 25, 60)
         root.setSpacing(28)
 
         header, self._page_title_lbl, self._page_subtitle_lbl = build_header(
             translate("DashboardView", "Dashboard"),
-            translate("DashboardView", "Your activity overview"),
+            translate("DashboardView", "Continue your training and stay on track"),
         )
         root.addWidget(header)
 
@@ -376,7 +365,7 @@ class DashboardView(QWidget):
 
         return row, value
 
-    def _build_recent_game_tile(self, game_text: str, date_text: str, pi_text: str) -> QWidget:
+    def _build_recent_game_tile(self, game_text: str, date_text: str, pi_text: str, reaction_text: str, acc_text: str) -> QWidget:
         tile = QWidget()
 
         layout = QVBoxLayout(tile)
@@ -391,16 +380,16 @@ class DashboardView(QWidget):
         date_lbl.setObjectName("recentGameSubtitle")
         date_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        pi_lbl = QLabel(pi_text)
-        pi_lbl.setObjectName("recentGameValue")
-        pi_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        value_lbl = QLabel(f"{pi_text} | {reaction_text} | {acc_text}")
+        value_lbl.setObjectName("recentGameValue")
+        value_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         tile.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
         layout.addStretch()
         layout.addWidget(title)
         layout.addWidget(date_lbl)
-        layout.addWidget(pi_lbl)
+        layout.addWidget(value_lbl)
         layout.addStretch()
 
         return tile
@@ -408,24 +397,14 @@ class DashboardView(QWidget):
     def showEvent(self, event) -> None:
         super().showEvent(event)
 
-        logger.debug(
-            "DashboardView.showEvent: loaded_once=%s visible=%s user_id=%s",
-            self._controller.loaded_once,
-            self.isVisible(),
-            getattr(self._user, "id", None),
-        )
-
         if not self._controller.loaded_once:
             self._controller.mark_loaded_once()
-            logger.debug("DashboardView.showEvent: first show -> triggering controller.load()")
             self._controller.load()
             return
 
         if self._controller.is_loading():
-            logger.debug("DashboardView.showEvent: fetch already running, skipping refresh")
             return
 
-        logger.debug("DashboardView.showEvent: visible again -> refreshing data")
         self._controller.load()
         self._update_welcome_title()
 
@@ -435,11 +414,7 @@ class DashboardView(QWidget):
         if event.type() != QEvent.LanguageChange:
             return
 
-        try:
-            logger.debug("DashboardView.changeEvent: LanguageChange received, retranslating UI")
-            self._retranslate_ui()
-        except Exception:
-            logger.exception("DashboardView.changeEvent: failed while handling language change")
+        self._retranslate_ui()
 
     def _update_welcome_title(self) -> None:
         if self._welcome_title_lbl:
@@ -450,54 +425,50 @@ class DashboardView(QWidget):
             )
 
     def _retranslate_ui(self) -> None:
-        try:
-            self._page_title_lbl.setText(translate("DashboardView", "Dashboard"))
-            self._page_subtitle_lbl.setText(translate("DashboardView", "Your activity overview"))
+        self._page_title_lbl.setText(translate("DashboardView", "Dashboard"))
+        self._page_subtitle_lbl.setText(translate("DashboardView", "Continue your training and stay on track"))
 
-            self._update_welcome_title()
+        self._update_welcome_title()
 
-            if self._welcome_subtitle_lbl:
-                self._welcome_subtitle_lbl.setText(
-                    translate("DashboardView", "Are you ready for another training session?")
-                )
-
-            self._update_labels(
-                "dashboardInlineStatLabel",
-                [
-                    "Daily streak",
-                    "Total Games",
-                    "Time played",
-                    "Favorite game",
-                ],
+        if self._welcome_subtitle_lbl:
+            self._welcome_subtitle_lbl.setText(
+                translate("DashboardView", "Are you ready for another training session?")
             )
 
-            self._update_labels(
-                "dashboardRowTitle",
-                [
-                    "Accuracy",
-                    "Reaction time",
-                ],
-            )
+        self._update_labels(
+            "dashboardInlineStatLabel",
+            [
+                "Daily streak",
+                "Total Games",
+                "Time played",
+                "Favorite game",
+            ],
+        )
 
-            if self._goal_title_lbl:
-                self._goal_title_lbl.setText(translate("DashboardView", "Daily Goal"))
-            if self._favorite_game_title_lbl:
-                self._favorite_game_title_lbl.setText(translate("DashboardView", "Favorite Game"))
-            if self._latest_training_title_lbl:
-                self._latest_training_title_lbl.setText(translate("DashboardView", "Latest Training"))
-            if self._recent_games_title_lbl:
-                self._recent_games_title_lbl.setText(translate("DashboardView", "Recent Games"))
-            if self._highlights_title_lbl:
-                self._highlights_title_lbl.setText(translate("DashboardView", "Highlights"))
-            if self._highlights_subtitle_lbl:
-                self._highlights_subtitle_lbl.setText(translate("DashboardView", "from favorite game"))
-            if self._continue_play_btn:
-                self._continue_play_btn.setText(translate("DashboardView", "Play again"))
+        self._update_labels(
+            "dashboardRowTitle",
+            [
+                "Accuracy",
+                "Reaction time",
+            ],
+        )
 
-            self._refresh_dashboard_sections()
+        if self._goal_title_lbl:
+            self._goal_title_lbl.setText(translate("DashboardView", "Daily Goal"))
+        if self._favorite_game_title_lbl:
+            self._favorite_game_title_lbl.setText(translate("DashboardView", "Favorite Game"))
+        if self._latest_training_title_lbl:
+            self._latest_training_title_lbl.setText(translate("DashboardView", "Latest Training"))
+        if self._recent_games_title_lbl:
+            self._recent_games_title_lbl.setText(translate("DashboardView", "Recent Games"))
+        if self._highlights_title_lbl:
+            self._highlights_title_lbl.setText(translate("DashboardView", "Highlights"))
+        if self._highlights_subtitle_lbl:
+            self._highlights_subtitle_lbl.setText(translate("DashboardView", "from favorite game"))
+        if self._continue_play_btn:
+            self._continue_play_btn.setText(translate("DashboardView", "Play again"))
 
-        except Exception:
-            logger.exception("DashboardView._retranslate_ui: unexpected error")
+        self._refresh_dashboard_sections()
 
     def _update_labels(self, object_name: str, keys: list[str]) -> None:
         labels = self.findChildren(QLabel, object_name)
@@ -513,16 +484,9 @@ class DashboardView(QWidget):
             self._populate_highlights,
             self._populate_continue,
         ):
-            try:
-                fn()
-            except Exception:
-                logger.exception(
-                    "DashboardView._refresh_dashboard_sections: failed while calling %s",
-                    fn.__name__,
-                )
+            fn()
 
     def _populate_welcome(self) -> None:
-        logger.debug("DashboardView._populate_welcome: start")
         model = self._controller.get_welcome_model()
 
         self._welcome_refs["daily_streak"].setText(model["daily_streak"])
@@ -531,15 +495,12 @@ class DashboardView(QWidget):
         self._welcome_refs["favorite_game"].setText(model["favorite_game"])
 
     def _populate_activity(self) -> None:
-        logger.debug("DashboardView._populate_activity: start")
         model = self._controller.get_activity_model()
 
         self._goal_progress_value.setText(model["goal_progress"])
         self._goal_hint.setText(model["goal_hint"])
 
     def _populate_recent_games(self) -> None:
-        logger.debug("DashboardView._populate_recent_games: start")
-
         if self._recent_games_layout is None:
             return
 
@@ -564,6 +525,8 @@ class DashboardView(QWidget):
                 item["game"],
                 item["date"],
                 item["pi"],
+                item.get("reaction", "—"),
+                item.get("accuracy", "—"),
             )
             tile.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
             tile.setMinimumWidth(220)
@@ -572,8 +535,6 @@ class DashboardView(QWidget):
         self._recent_games_layout.addWidget(row_widget)
 
     def _populate_trend_chart(self) -> None:
-        logger.debug("DashboardView._populate_trend_chart: start")
-
         if self._trend_chart_layout is None:
             return
 
@@ -641,42 +602,36 @@ class DashboardView(QWidget):
         self._chart_refs.extend([chart, series, scatter, view])
 
         def _add_point_labels() -> None:
-            try:
-                if not view.scene():
-                    return
+            if not view.scene():
+                return
 
-                font = get_general_sans(9)
+            font = get_general_sans(9)
 
-                for i, value in enumerate(values, start=1):
-                    point_pos = chart.mapToPosition(QPointF(i, value), series)
+            for i, value in enumerate(values, start=1):
+                point_pos = chart.mapToPosition(QPointF(i, value), series)
 
-                    text_item = view.scene().addText(f"{value:.2f}")
-                    text_item.setFont(font)
-                    text_item.setDefaultTextColor(QColor("#EAEAEA"))
-                    text_item.setZValue(9999)
+                text_item = view.scene().addText(f"{value:.2f}")
+                text_item.setFont(font)
+                text_item.setDefaultTextColor(QColor("#EAEAEA"))
+                text_item.setZValue(9999)
 
-                    text_rect = text_item.boundingRect()
-                    text_item.setPos(
-                        point_pos.x() - (text_rect.width() / 2),
-                        point_pos.y() - text_rect.height() - 10,
-                    )
+                text_rect = text_item.boundingRect()
+                text_item.setPos(
+                    point_pos.x() - (text_rect.width() / 2),
+                    point_pos.y() - text_rect.height() - 10,
+                )
 
-                    self._chart_refs.append(text_item)
-
-            except Exception:
-                logger.exception("DashboardView._populate_trend_chart: failed to draw point labels")
+                self._chart_refs.append(text_item)
 
         QTimer.singleShot(0, _add_point_labels)
 
     def _populate_highlights(self) -> None:
-        logger.debug("DashboardView._populate_highlights: start")
         model = self._controller.get_highlights_model()
 
         self._highlight_refs["best_accuracy"].setText(model["best_accuracy"])
         self._highlight_refs["fastest_reaction"].setText(model["fastest_reaction"])
 
     def _populate_continue(self) -> None:
-        logger.debug("DashboardView._populate_continue: start")
         model = self._controller.get_continue_model()
 
         self._current_continue_slug = model["slug"]
@@ -687,21 +642,12 @@ class DashboardView(QWidget):
             self._continue_play_btn.setEnabled(model["enabled"])
 
     def _emit_continue_requested(self) -> None:
-        logger.debug(
-            "DashboardView._emit_continue_requested: current_continue_slug=%s",
-            self._current_continue_slug,
-        )
         if self._current_continue_slug:
             self.continue_game_requested.emit(self._current_continue_slug)
 
     def _clear_layout(self, layout: QVBoxLayout) -> None:
-        removed = 0
-
         while layout.count():
             item = layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
                 widget.setParent(None)
-                removed += 1
-
-        logger.debug("DashboardView._clear_layout: removed=%d", removed)

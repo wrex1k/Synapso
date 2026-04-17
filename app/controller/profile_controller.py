@@ -5,21 +5,14 @@ from typing import Callable, Optional
 from PySide6.QtCore import QObject, Slot
 
 from app.core.registry import registry
-from app.repository.user_repository import save_user, delete_user
 from app.service.auth_service import change_password, delete_account
 from app.utils.logger import logger
-from app.utils.validator import (
-    validate_username,
-    validate_birthdate,
-    validate_password,
-    validate_passwords_match,
-)
+from app.repository.user_repository import save_user, delete_user, upload_avatar_blob, check_username_exists
+from app.utils.validator import validate_username, validate_birthdate, validate_password, validate_passwords_match
 from translations.translation import translate
 
 
 class ProfileController(QObject):
-    """Bridge between ProfileView and domain/services."""
-
     def __init__(
         self,
         view,
@@ -37,10 +30,12 @@ class ProfileController(QObject):
         self._save_operation = registry.operation("profile_save")
         self._password_operation = registry.operation("profile_change_password")
         self._delete_operation = registry.operation("profile_delete_account")
+        self._avatar_operation = registry.operation("profile_upload_avatar")
 
         self.view.save_profile_requested.connect(self.save_profile)
         self.view.change_password_requested.connect(self.change_password)
         self.view.delete_account_requested.connect(self.delete_account)
+        self.view.upload_avatar_requested.connect(self.upload_avatar)
 
     @Slot(str, object)
     def save_profile(self, username: str, birthday):
@@ -54,14 +49,29 @@ class ProfileController(QObject):
                 self.view.set_profile_feedback(err, is_error=True)
                 return
 
+        old_username = self.user.username
+        old_birthday = self.user.birthday_date
+
         self.user.username = username
         self.user.birthday_date = birthday
         user_dict = self.user.to_dict()
 
         def _save():
+            if username != old_username and check_username_exists(username):
+                return (False, "username_taken")
             save_user(user_dict)
+            return (True, None)
 
-        def _done(_):
+        def _done(result):
+            if isinstance(result, tuple) and not result[0]:
+                self.user.username = old_username
+                self.user.birthday_date = old_birthday
+                _, err_msg = result
+                if err_msg == "username_taken":
+                    self.view.set_profile_feedback(translate("ProfileView", "Username is already taken"), is_error=True)
+                else:
+                    self.view.set_profile_feedback(translate("ProfileView", "Failed to save profile"), is_error=True)
+                return
             self.navbar.setName(username)
             self.view.set_profile_feedback(translate("ProfileView", "Profile saved successfully"))
             logger.info("Profile updated for user ..%s", self.user.id[-10:])
@@ -136,3 +146,31 @@ class ProfileController(QObject):
         )
         if started:
             logger.info("Deleting account for user ..%s", user_id[-10:])
+
+    @Slot(bytes)
+    def upload_avatar(self, image_bytes: bytes):
+        user_id = self.user.id
+
+        def _upload():
+            return upload_avatar_blob(user_id, image_bytes)
+
+        def _done(avatar_path):
+            if avatar_path:
+                self.user.avatar_path = avatar_path
+                self.user.avatar_blob = image_bytes
+                self.navbar.set_avatar_bytes(image_bytes)
+                self.view.set_profile_feedback(translate("ProfileView", "Profile photo updated"))
+                self.view.avatar_upload_succeeded.emit(image_bytes)
+                logger.info("Avatar uploaded for user ..%s", user_id[-10:])
+            else:
+                self.view.set_profile_feedback(translate("ProfileView", "Failed to upload photo"), is_error=True)
+                logger.error("Avatar upload failed for user ..%s", user_id[-10:])
+
+        started = self._avatar_operation.start(
+            registry.run_thread,
+            _upload,
+            _done,
+            name="profile-avatar-thread",
+        )
+        if started:
+            logger.info("Uploading avatar for user ..%s", user_id[-10:])

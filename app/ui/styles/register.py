@@ -1,12 +1,12 @@
 from app.ui.styles.colors import *
 
 REGISTER_STYLES = f"""
-    #info,
-    #uploadRestriction {{
+    QLabel#info,
+    QPushButton#uploadRestriction {{
         color: {GRAY};
     }}
 
-    #uploadImageButton {{
+    QPushButton#uploadImageButton {{
        height: 15px;
        color: {OFF_WHITE};
        background-color: transparent;
@@ -15,14 +15,14 @@ REGISTER_STYLES = f"""
        padding: 10px 15px;
     }}
 
-    #uploadImageButton:hover {{
+    QPushButton#uploadImageButton:hover {{
         background-color: {DARK_MID};
         border-color: {HOVER_PRIMARY};
     }}
 
-    #birthMonthBox,
-    #dayBox,
-    #yearBox {{
+    QComboBox#birthMonthBox,
+    QComboBox#dayBox,
+    QComboBox#yearBox {{
         height: 20px;
         color: {OFF_WHITE};
         background-color: transparent;
@@ -31,21 +31,21 @@ REGISTER_STYLES = f"""
         padding: 10px 15px;
     }}
 
-    #birthMonthBox:hover,
-    #dayBox:hover,
-    #yearBox:hover {{
+    QComboBox#birthMonthBox:hover,
+    QComboBox#dayBox:hover,
+    QComboBox#yearBox:hover {{
         border-color: {HOVER_PRIMARY};
     }}
 
-    #birthMonthBox::drop-down,
-    #dayBox::drop-down,
-    #yearBox::drop-down {{
+    QComboBox#birthMonthBox::drop-down,
+    QComboBox#dayBox::drop-down,
+    QComboBox#yearBox::drop-down {{
         border: none;
     }}
 
-    #birthMonthBox QAbstractItemView,
-    #dayBox QAbstractItemView,
-    #yearBox QAbstractItemView {{
+    QComboBox#birthMonthBox QAbstractItemView,
+    QComboBox#dayBox QAbstractItemView,
+    QComboBox#yearBox QAbstractItemView {{
         max-height: 200px;
         border: none;
         background-color: transparent;
@@ -53,10 +53,22 @@ REGISTER_STYLES = f"""
         margin-top: 5px;
     }}
 
-    #birthMonthBox QAbstractItemView::item:hover,
-    #dayBox QAbstractItemView::item:hover,
-    #yearBox QAbstractItemView::item:hover {{
+    QComboBox#birthMonthBox QAbstractItemView::item:hover,
+    QComboBox#dayBox QAbstractItemView::item:hover,
+    QComboBox#yearBox QAbstractItemView::item:hover {{
             background-color: #1B5E56;
             color: #FFFFFF;
+    }}
+
+    QPushButton#privacyNotice {{
+        color: {GRAY};
+        background-color: transparent;
+        border: none;
+        padding: 0;
+        text-align: left;
+    }}
+
+    QPushButton#privacyNotice:hover {{
+        color: {FONT_PRIMARY};
     }}
 """

@@ -47,6 +47,12 @@ def start_heartbeat(user_id: str):
         _heartbeat_timer = None
 
 
+def flush_heartbeat():
+    """Force-send accumulated time immediately (e.g. at game boundaries)."""
+    if _current_user_id:
+        _tick(_current_user_id)
+
+
 def stop_heartbeat():
     global _heartbeat_timer, _current_user_id, _last_tick
     if _heartbeat_timer and _heartbeat_timer.isActive() and _current_user_id:

@@ -41,7 +41,14 @@ class Operation:
         self._thread: Optional[QThread] = None
 
     def is_running(self) -> bool:
-        return self._thread is not None and self._thread.isRunning()
+        if self._thread is None:
+            return False
+        try:
+            return self._thread.isRunning()
+        except RuntimeError:
+            # C++ QThread object was already deleted; treat as finished
+            self._thread = None
+            return False
 
     def start(
         self,

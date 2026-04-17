@@ -10,6 +10,7 @@ from app.utils.logger import logger
 from app.ui.styles.colors import *
 from app.ui.styles.games import get_memory_grid_counter_style, get_memory_grid_phase_style, format_ratio_counter
 from app.ui.views.base_game_widget import BaseGameWidget
+from translations.translation import translate
 
 
 
@@ -117,9 +118,10 @@ class MemoryGridWidget(BaseGameWidget):
 
         root.addStretch(1)
 
+        _word = f'<span style="color:{FONT_PRIMARY};">{translate("MemoryGridWidget", "grid squares")}</span>'
         self._build_hud_footer(
             root,
-            f'Select the <span style="color:{FONT_PRIMARY};">grid squares</span> you remember',
+            translate("MemoryGridWidget", "Select the {word} you remember").format(word=_word),
         )
 
     def _show_countdown(self):

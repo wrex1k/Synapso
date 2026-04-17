@@ -7,7 +7,6 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QHBoxLayout, QPushButton, QStackedWidget, QVBoxLayout, QWidget
 from app.models.user import User
 
-from app.core.registry import registry
 from app.controller.profile_controller import ProfileController
 from app.ui.components.navbar import NavbarWidget
 from app.ui.components.sidebar import SidebarWidget
@@ -19,6 +18,7 @@ from app.ui.views.about import AboutView
 from app.ui.views.settings import SettingsView
 from app.utils.ui_helpers import draw_background
 from app.utils.logger import logger
+from app.service.activity_service import flush_heartbeat
 
 
 
@@ -147,6 +147,12 @@ class AppWidget(QWidget):
         self.navbarWidget.profile_clicked.connect(self._go_to_profile)
         for name, btn in self.pages.items():
             btn.clicked.connect(lambda _, n=name: self.on_page_clicked(n))
+        self.profile_page.avatar_upload_succeeded.connect(self._on_avatar_updated)
+
+    def _on_avatar_updated(self, data: bytes) -> None:
+        games = self._page_instances.get("games")
+        if games:
+            games.refresh_user_avatar(self._user.avatar_path, data)
 
     def on_page_clicked(self, page_name: str):
         logger.info("User navigated to %s..", page_name)
@@ -189,6 +195,7 @@ class AppWidget(QWidget):
 
     def _show_fullscreen_game(self, widget):
         logger.info("Game session started: %s..", widget.__class__.__name__)
+        flush_heartbeat()
         widget.session_done.connect(self._hide_fullscreen_game)
 
         old = self._root_stack.widget(1)
@@ -199,6 +206,7 @@ class AppWidget(QWidget):
         widget.setFocus()
 
     def _hide_fullscreen_game(self):
+        flush_heartbeat()
         self._root_stack.setCurrentIndex(0)
         old = self._root_stack.widget(1)
         self._root_stack.removeWidget(old)

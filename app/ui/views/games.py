@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QObject, QSize, Qt, QThread, Signal
+from PySide6.QtCore import QEvent, QObject, QSize, Qt, QThread, Signal
 from PySide6.QtGui import QColor, QIcon, QPixmap
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget
 
@@ -53,8 +53,8 @@ _WIDGET_FACTORIES = {
 
 _GAME_TEXTS = {
     "stroop": {
-        "title": "Stroop color and word test",
-        "desc": "The Stroop color and word test measures attention, processing speed, and cognitive control. The task is to name the color of a word, not the word itself, which creates mental interference.",
+        "title": "Stroop test",
+        "desc": "The Stroop test measures attention, processing speed, and cognitive control. The task is to name the color of a word, not the word itself, which creates mental interference.",
     },
     "memory_grid": {
         "title": "Memory Grid",
@@ -152,6 +152,14 @@ class GamesView(QWidget):
         self._threads.append(thread)
         thread.finished.connect(lambda t=thread: self._threads.remove(t) if t in self._threads else None)
 
+    def refresh_user_avatar(self, avatar_path: str, data: bytes) -> None:
+        """Bust the leaderboard avatar cache so the next render uses the new photo."""
+        if not avatar_path or not data:
+            return
+        pix = QPixmap()
+        if pix.loadFromData(data):
+            self._avatar_cache[avatar_path] = pix
+
     def _build_ui(self):
         root = QVBoxLayout(self)
         root.setContentsMargins(25, 30, 25, 80)
@@ -228,11 +236,12 @@ class GamesView(QWidget):
 
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(28, 28, 28, 28)
-        layout.setSpacing(20)
+        layout.setSpacing(25)
 
         self._leaderboard_title_lbl = QLabel("")
         self._leaderboard_title_lbl.setObjectName("leaderboardCardTitle")
         layout.addWidget(self._leaderboard_title_lbl)
+        layout.addSpacing(15)
 
         self._lb_container = QWidget()
         self._lb_container.setObjectName("lbContainer")
@@ -957,6 +966,11 @@ class GamesView(QWidget):
             )
             thread.finished.connect(thread.deleteLater)
         self._rt_workers.clear()
+
+    def changeEvent(self, event) -> None:
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.LanguageChange:
+            self._retranslate_ui()
 
     def showEvent(self, event):
         super().showEvent(event)

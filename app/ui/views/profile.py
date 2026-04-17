@@ -1,15 +1,15 @@
 from __future__ import annotations
-from PySide6.QtCore import QSize, Qt, Signal, QTimer
-from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QDialog, QFrame, QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSizePolicy, QVBoxLayout, QWidget
 
+from PySide6.QtCore import QBuffer, QByteArray, QEvent, QIODevice, QSize, Qt, Signal, QTimer
+from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtWidgets import QDialog, QFileDialog, QFrame, QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSizePolicy, QVBoxLayout, QWidget
+from datetime import datetime
 from app.utils.logger import logger
 from app.models.user import User
 from app.repository.user_repository import fetch_avatar
 from app.utils.ui_helpers import image_to_rounded, build_header
 from app.utils.event_filters import password_event_filter
 from translations.translation import translate
-
 
 
 class _DeleteConfirmDialog(QDialog):
@@ -75,6 +75,8 @@ class ProfileView(QWidget):
     save_profile_requested = Signal(str, object)
     change_password_requested = Signal(str, str, str)
     delete_account_requested = Signal()
+    upload_avatar_requested = Signal(bytes)
+    avatar_upload_succeeded = Signal(bytes)
 
     def __init__(self, user: User, parent=None):
         super().__init__(parent)
@@ -82,8 +84,12 @@ class ProfileView(QWidget):
         self._user = user
         self._profile_feedback_timer = None
         self._password_feedback_timer = None
+        self._initial_username = ""
+        self._initial_birthday = None
         self._build_ui()
         self._fill_user_data()
+        self._capture_initial_profile_state()
+        self._update_save_button_state()
 
     def _build_ui(self):
         root = QVBoxLayout(self)
@@ -132,6 +138,9 @@ class ProfileView(QWidget):
         self.avatarLabel.setFixedSize(QSize(84, 84))
         self.avatarLabel.setScaledContents(True)
         self.avatarLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.avatarLabel.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.avatarLabel.setToolTip(translate("ProfileView", "Click to change profile photo"))
+        self.avatarLabel.mousePressEvent = lambda event: self._on_avatar_clicked() if event.button() == Qt.MouseButton.LeftButton else None
         self._load_avatar()
 
         layout.addWidget(self.avatarLabel)
@@ -140,7 +149,7 @@ class ProfileView(QWidget):
         text_col.setSpacing(4)
         text_col.setContentsMargins(0, 0, 0, 0)
 
-        self._username_preview_lbl = QLabel(self._user.username or "—") 
+        self._username_preview_lbl = QLabel(self._user.username or "—")
         self._username_preview_lbl.setObjectName("profileUsernameLabel")
 
         self._handle_preview_lbl = QLabel(
@@ -157,7 +166,7 @@ class ProfileView(QWidget):
 
         layout.addLayout(text_col)
         layout.addStretch()
-        pass
+
         return card
 
     def _build_personal_info_card(self) -> QWidget:
@@ -196,12 +205,13 @@ class ProfileView(QWidget):
         self._save_profile_btn = QPushButton(translate("ProfileView", "Save changes"))
         self._save_profile_btn.setObjectName("profilePrimaryButton")
         self._save_profile_btn.setFixedHeight(42)
+        self._save_profile_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self._save_profile_btn.setEnabled(False)
         self._save_profile_btn.clicked.connect(self._on_save_profile_clicked)
 
         btn_row.addWidget(self._save_profile_btn, 0, Qt.AlignmentFlag.AlignRight)
         layout.addLayout(btn_row)
         layout.addStretch()
-
 
         return card
 
@@ -219,11 +229,35 @@ class ProfileView(QWidget):
         layout.addWidget(title)
         layout.addSpacing(18)
 
-        layout.addWidget(self._build_input_block(translate("ProfileView", "Current Password"), self._build_password_input(translate("ProfileView", "Enter current password"), "_current_password_input")))
+        layout.addWidget(
+            self._build_input_block(
+                translate("ProfileView", "Current Password"),
+                self._build_password_input(
+                    translate("ProfileView", "Enter current password"),
+                    "_current_password_input",
+                ),
+            )
+        )
         layout.addSpacing(14)
-        layout.addWidget(self._build_input_block(translate("ProfileView", "New Password"), self._build_password_input(translate("ProfileView", "Enter new password"), "_new_password_input")))
+        layout.addWidget(
+            self._build_input_block(
+                translate("ProfileView", "New Password"),
+                self._build_password_input(
+                    translate("ProfileView", "Enter new password"),
+                    "_new_password_input",
+                ),
+            )
+        )
         layout.addSpacing(14)
-        layout.addWidget(self._build_input_block(translate("ProfileView", "Confirm Password"), self._build_password_input(translate("ProfileView", "Confirm new password"), "_confirm_password_input")))
+        layout.addWidget(
+            self._build_input_block(
+                translate("ProfileView", "Confirm Password"),
+                self._build_password_input(
+                    translate("ProfileView", "Confirm new password"),
+                    "_confirm_password_input",
+                ),
+            )
+        )
         layout.addSpacing(30)
 
         self._password_feedback_lbl = QLabel("")
@@ -290,6 +324,7 @@ class ProfileView(QWidget):
         self._username_input.setObjectName("profileLineEdit")
         self._username_input.setPlaceholderText(translate("ProfileView", "Enter your username"))
         self._username_input.textChanged.connect(self._sync_preview)
+        self._username_input.textChanged.connect(self._update_save_button_state)
         return self._username_input
 
     def _build_email_value(self) -> QWidget:
@@ -310,6 +345,7 @@ class ProfileView(QWidget):
             self._max_birthdate = datetime.date(today.year - 15, today.month, today.day)
         except ValueError:
             self._max_birthdate = datetime.date(today.year - 15, 2, 28)
+
         self._months = [
             translate("ProfileView", "January"),
             translate("ProfileView", "February"),
@@ -328,12 +364,12 @@ class ProfileView(QWidget):
         self.birthMonthBox = QComboBox()
         self.birthMonthBox.setObjectName("profileBirthMonthBox")
         self.birthMonthBox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.birthMonthBox.setMaxVisibleItems(5)
+        self.birthMonthBox.setMaxVisibleItems(1)
 
         self.dayBox = QComboBox()
         self.dayBox.setObjectName("profileDayBox")
         self.dayBox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.dayBox.setMaxVisibleItems(5)
+        self.dayBox.setMaxVisibleItems(1)
 
         self.yearBox = QComboBox()
         self.yearBox.setObjectName("profileYearBox")
@@ -351,6 +387,10 @@ class ProfileView(QWidget):
 
         self.birthMonthBox.currentIndexChanged.connect(self._update_days_for_month)
         self.yearBox.currentTextChanged.connect(self._update_months_for_year)
+
+        self.birthMonthBox.currentIndexChanged.connect(self._update_save_button_state)
+        self.dayBox.currentTextChanged.connect(self._update_save_button_state)
+        self.yearBox.currentTextChanged.connect(self._update_save_button_state)
 
         return wrapper
 
@@ -371,7 +411,7 @@ class ProfileView(QWidget):
 
         label = QLabel(label_text)
         label.setObjectName("profileInputLabel")
-        
+
         layout.addWidget(label)
         layout.addWidget(field_widget)
 
@@ -398,6 +438,35 @@ class ProfileView(QWidget):
             self._reset_birthdate_to_max()
 
         self._sync_preview()
+
+    def _get_current_birthday(self):
+        from datetime import date
+        try:
+            year_text = self.yearBox.currentText()
+            month_index = self.birthMonthBox.currentIndex()
+            day_text = self.dayBox.currentText()
+
+            if year_text and day_text and month_index >= 0:
+                return date(int(year_text), month_index + 1, int(day_text))
+        except Exception:
+            pass
+        return None
+
+    def _capture_initial_profile_state(self):
+        self._initial_username = self._username_input.text().strip()
+        self._initial_birthday = self._get_current_birthday()
+
+    def _has_profile_changed(self) -> bool:
+        current_username = self._username_input.text().strip()
+        current_birthday = self._get_current_birthday()
+        return (
+            current_username != self._initial_username
+            or current_birthday != self._initial_birthday
+        )
+
+    def _update_save_button_state(self):
+        if hasattr(self, "_save_profile_btn"):
+            self._save_profile_btn.setEnabled(self._has_profile_changed())
 
     def _update_months_for_year(self):
         try:
@@ -474,6 +543,37 @@ class ProfileView(QWidget):
         self._username_preview_lbl.setText(username or "—")
         self._handle_preview_lbl.setText(f"@{username.lower()}" if username else "")
 
+    def _on_avatar_clicked(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            translate("ProfileView", "Select Profile Photo"),
+            "",
+            translate("ProfileView", "Images (*.png *.jpg *.jpeg *.webp *.bmp)"),
+        )
+        if not path:
+            return
+        img = QImage(path)
+        if img.isNull():
+            return
+        size = min(img.width(), img.height())
+        x = (img.width() - size) // 2
+        y = (img.height() - size) // 2
+        img = img.copy(x, y, size, size).scaled(
+            256, 256,
+            Qt.AspectRatioMode.IgnoreAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        buf = QByteArray()
+        buffer = QBuffer(buf)
+        buffer.open(QIODevice.OpenModeFlag.WriteOnly)
+        img.save(buffer, "WEBP", 85)
+        buffer.close()
+        data = bytes(buf)
+        if not data:
+            return
+        self.set_avatar_bytes(data)
+        self.upload_avatar_requested.emit(data)
+
     def _on_delete_account_clicked(self):
         dlg = _DeleteConfirmDialog(self)
         if dlg.exec() == QDialog.DialogCode.Accepted:
@@ -481,17 +581,7 @@ class ProfileView(QWidget):
 
     def _on_save_profile_clicked(self):
         username = self._username_input.text().strip()
-        from datetime import date
-        try:
-            year_text = self.yearBox.currentText()
-            month_index = self.birthMonthBox.currentIndex()
-            day_text = self.dayBox.currentText()
-            if year_text and day_text and month_index >= 0:
-                birthday = date(int(year_text), month_index + 1, int(day_text))
-            else:
-                birthday = None
-        except Exception:
-            birthday = None
+        birthday = self._get_current_birthday()
 
         self._profile_feedback_lbl.hide()
         self.save_profile_requested.emit(username, birthday)
@@ -510,6 +600,11 @@ class ProfileView(QWidget):
         self._profile_feedback_lbl.style().unpolish(self._profile_feedback_lbl)
         self._profile_feedback_lbl.style().polish(self._profile_feedback_lbl)
         self._profile_feedback_lbl.show()
+
+        if not is_error:
+            self._capture_initial_profile_state()
+            self._update_save_button_state()
+
         if self._profile_feedback_timer is None:
             self._profile_feedback_timer = QTimer(self)
             self._profile_feedback_timer.setSingleShot(True)
@@ -533,9 +628,71 @@ class ProfileView(QWidget):
         self._new_password_input.clear()
         self._confirm_password_input.clear()
 
+    def _retranslate_ui(self) -> None:
+        self._page_title_lbl.setText(translate("ProfileView", "Profile"))
+        self._page_subtitle_lbl.setText(translate("ProfileView", "Manage your profile details and account security"))
+        self._save_profile_btn.setText(translate("ProfileView", "Save changes"))
+        self._change_password_btn.setText(translate("ProfileView", "Change password"))
+        self._delete_account_btn.setText(translate("ProfileView", "Delete account"))
+        self._username_input.setPlaceholderText(translate("ProfileView", "Enter your username"))
+        self._current_password_input.setPlaceholderText(translate("ProfileView", "Enter current password"))
+        self._new_password_input.setPlaceholderText(translate("ProfileView", "Enter new password"))
+        self._confirm_password_input.setPlaceholderText(translate("ProfileView", "Confirm new password"))
+        self.avatarLabel.setToolTip(translate("ProfileView", "Click to change profile photo"))
+        self._member_lbl.setText(self._format_member_since())
+
+        section_titles = self.findChildren(QLabel, "profileSectionTitle")
+        for lbl, key in zip(section_titles, ["Personal Information", "Change Password"]):
+            lbl.setText(translate("ProfileView", key))
+
+        danger_title = self.findChild(QLabel, "profileDangerTitle")
+        if danger_title:
+            danger_title.setText(translate("ProfileView", "Delete Account"))
+        danger_desc = self.findChild(QLabel, "profileDangerDescription")
+        if danger_desc:
+            danger_desc.setText(translate("ProfileView", "This action is permanent and cannot be undone."))
+
+        input_labels = self.findChildren(QLabel, "profileInputLabel")
+        for lbl, key in zip(input_labels, ["Username", "Email", "Date of Birth", "Current Password", "New Password", "Confirm Password"]):
+            lbl.setText(translate("ProfileView", key))
+
+        current_month_idx = self.birthMonthBox.currentIndex()
+        self._months = [
+            translate("ProfileView", "January"),
+            translate("ProfileView", "February"),
+            translate("ProfileView", "March"),
+            translate("ProfileView", "April"),
+            translate("ProfileView", "May"),
+            translate("ProfileView", "June"),
+            translate("ProfileView", "July"),
+            translate("ProfileView", "August"),
+            translate("ProfileView", "September"),
+            translate("ProfileView", "October"),
+            translate("ProfileView", "November"),
+            translate("ProfileView", "December"),
+        ]
+        year_text = self.yearBox.currentText()
+        try:
+            year = int(year_text)
+        except (ValueError, TypeError):
+            year = self._max_birthdate.year
+        allowed_months = self._months[: self._max_birthdate.month] if year == self._max_birthdate.year else self._months
+        self.birthMonthBox.blockSignals(True)
+        self.birthMonthBox.clear()
+        self.birthMonthBox.addItems(allowed_months)
+        if 0 <= current_month_idx < len(allowed_months):
+            self.birthMonthBox.setCurrentIndex(current_month_idx)
+        self.birthMonthBox.blockSignals(False)
+
+    def changeEvent(self, event) -> None:
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.LanguageChange:
+            self._retranslate_ui()
+
     def showEvent(self, event):
         super().showEvent(event)
         self._sync_preview()
+        self._update_save_button_state()
 
     def _load_avatar(self):
         if getattr(self._user, "avatar_blob", None):
@@ -577,7 +734,6 @@ class ProfileView(QWidget):
         try:
             created_at = self._user.created_at
             if isinstance(created_at, str):
-                from datetime import datetime
                 created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
             return created_at.strftime(translate("ProfileView", "Member since %B %d, %Y")) if created_at else translate("ProfileView", "Member")
         except Exception:

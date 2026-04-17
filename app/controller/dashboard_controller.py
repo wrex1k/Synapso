@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from PySide6.QtCore import QObject, Signal, QThread
+from PySide6.QtCore import QObject, QThread, Signal
 
 from app.core.registry import registry
 from app.games.core.base_game import GAME_ID_MAP
@@ -23,6 +23,7 @@ _GAME_LABELS = {
     "memory_grid": "Memory Grid",
     "mental_rotation": "Mental Rotation",
 }
+_GAME_ID_TO_SLUG = {value: key for key, value in GAME_ID_MAP.items()}
 _MIN_UTC = datetime.min.replace(tzinfo=timezone.utc)
 
 
@@ -43,7 +44,6 @@ class DashboardController(QObject):
         super().__init__(parent)
         self._user = user
         self._threads: list[QThread] = []
-
         self._loaded_once = False
 
         self._data = DashboardData(
@@ -51,12 +51,6 @@ class DashboardController(QObject):
             all_stats={"games": []},
             per_game={},
             histories={},
-        )
-
-        logger.debug(
-            "DashboardController initialized: user_id=%s username=%s",
-            getattr(self._user, "id", None),
-            getattr(self._user, "username", None),
         )
 
     @property
@@ -70,7 +64,6 @@ class DashboardController(QObject):
         return any(getattr(t, "isRunning", lambda: False)() for t in self._threads)
 
     def load(self) -> None:
-        logger.debug("DashboardController.load: starting background fetch")
         self.loading_started.emit()
         thread = registry.run_thread(
             self._fetch_all,
@@ -80,44 +73,24 @@ class DashboardController(QObject):
         self._keep_thread(thread)
 
     def _keep_thread(self, thread: QThread) -> None:
-        logger.debug("DashboardController._keep_thread: registering thread=%s", thread)
         self._threads.append(thread)
 
         def _cleanup_thread(t=thread):
-            logger.debug("DashboardController thread finished: thread=%s", t)
             if t in self._threads:
                 self._threads.remove(t)
-                logger.debug(
-                    "DashboardController thread removed from registry: remaining=%d",
-                    len(self._threads),
-                )
             self.loading_finished.emit()
 
         thread.finished.connect(_cleanup_thread)
 
     def _fetch_all(self) -> DashboardData:
-        logger.debug(
-            "DashboardController._fetch_all: begin user_id=%s",
-            getattr(self._user, "id", None),
-        )
-
         time_played_total = 0
         try:
             time_played_total = get_time_played(self._user.id) or 0
-            logger.debug(
-                "DashboardController._fetch_all: total_time_played=%s",
-                time_played_total,
-            )
         except Exception:
             logger.exception("Failed to load total time played")
 
         try:
             all_stats = fetch_all_user_stats(self._user.id) or {"games": []}
-            logger.debug(
-                "DashboardController._fetch_all: all_stats loaded games_count=%d payload=%s",
-                len(all_stats.get("games", [])),
-                all_stats,
-            )
         except Exception:
             logger.exception("Failed to load all user stats")
             all_stats = {"games": []}
@@ -128,23 +101,12 @@ class DashboardController(QObject):
         for slug in _GAME_SLUGS:
             try:
                 per_game[slug] = fetch_player_game_stats(self._user.id, slug)
-                logger.debug(
-                    "DashboardController._fetch_all: per_game[%s]=%s",
-                    slug,
-                    per_game[slug],
-                )
             except Exception:
                 logger.exception("Failed to load per-game stats for %s", slug)
                 per_game[slug] = None
 
             try:
                 histories[slug] = fetch_user_run_history(self._user.id, slug, limit=20) or []
-                logger.debug(
-                    "DashboardController._fetch_all: histories[%s] count=%d sample=%s",
-                    slug,
-                    len(histories[slug]),
-                    (histories[slug] or [None])[0],
-                )
             except Exception:
                 logger.exception("Failed to load run history for %s", slug)
                 histories[slug] = []
@@ -157,18 +119,11 @@ class DashboardController(QObject):
         )
 
     def _on_data_loaded(self, result: DashboardData | None) -> None:
-        logger.debug("DashboardController._on_data_loaded: result=%s", result)
-
         if not result:
-            logger.debug("DashboardController._on_data_loaded: empty result")
             return
 
         self._data = result
         self.data_changed.emit()
-
-    # -------------------------------------------------------------------------
-    # Public models for View
-    # -------------------------------------------------------------------------
 
     def get_welcome_model(self) -> dict[str, str]:
         streak = self._compute_current_streak()
@@ -176,15 +131,12 @@ class DashboardController(QObject):
         total_games = len(all_runs)
         favorite_game_slug = self._get_most_played_slug()
 
-        model = {
+        return {
             "daily_streak": self._format_day_label(streak) if streak else "—",
             "total_games": str(total_games) if total_games else "—",
             "time_played": self._format_time(self._data.time_played_total),
             "favorite_game": self._label_for_slug(favorite_game_slug),
         }
-
-        logger.debug("DashboardController.get_welcome_model: %s", model)
-        return model
 
     def get_activity_model(self) -> dict[str, str]:
         history_runs = self._get_all_runs_sorted_desc()
@@ -194,6 +146,7 @@ class DashboardController(QObject):
 
         goal = self._estimate_daily_goal()
         done = len(self._get_today_runs())
+        shown_done = min(done, goal) if goal > 0 else done
 
         if done >= goal and goal > 0:
             goal_hint = translate("DashboardView", "Goal completed for today")
@@ -206,17 +159,14 @@ class DashboardController(QObject):
                 "{count} more session(s) to reach today’s goal",
             ).format(count=remaining)
 
-        model = {
+        return {
             "total_runs": str(total_runs) if total_runs else "—",
             "total_trials": str(total_trials) if total_trials else "—",
             "current_streak": self._format_day_label(streak) if streak else "—",
             "time_played": self._format_time(self._data.time_played_total),
-            "goal_progress": f"{done} / {goal}",
+            "goal_progress": f"{shown_done} / {goal}",
             "goal_hint": goal_hint,
         }
-
-        logger.debug("DashboardController.get_activity_model: %s", model)
-        return model
 
     def get_recent_games_model(self) -> list[dict[str, str]]:
         runs = self._get_all_runs_sorted_desc()
@@ -225,15 +175,20 @@ class DashboardController(QObject):
         for dt, slug, row in runs[:3]:
             pi = row.get("pi_run")
             pi_text = f"{pi:.2f} PI" if isinstance(pi, (int, float)) else "—"
+            reaction = row.get("avg_reaction_time_ms")
+            reaction_text = f"{int(reaction)} ms" if isinstance(reaction, (int, float)) else "—"
+            acc = row.get("avg_accuracy")
+            acc_text = f"{acc}%" if isinstance(acc, (int, float)) else "—"
             items.append(
                 {
                     "game": self._label_for_slug(slug),
                     "date": self._relative_datetime_text(dt),
                     "pi": pi_text,
+                    "reaction": reaction_text,
+                    "accuracy": acc_text,
                 }
             )
 
-        logger.debug("DashboardController.get_recent_games_model: %s", items)
         return items
 
     def get_trend_chart_model(self) -> dict[str, Any]:
@@ -250,77 +205,53 @@ class DashboardController(QObject):
 
         runs.sort(key=lambda item: item[0] or _MIN_UTC)
         values = [pi for _, pi in runs][-10:]
-
         y_range = self._safe_y_range(values) if values else (0.0, 1.0)
 
-        model = {
+        return {
             "slug": most_played_slug,
             "values": values,
             "y_range": y_range,
         }
 
-        logger.debug("DashboardController.get_trend_chart_model: %s", model)
-        return model
-
     def get_highlights_model(self) -> dict[str, str]:
         fav_row = self._get_most_played_row()
 
         if not fav_row:
-            model = {
+            return {
                 "best_accuracy": "—",
                 "fastest_reaction": "—",
             }
-            logger.debug("DashboardController.get_highlights_model: no favorite game data")
-            return model
 
-        model = {
+        return {
             "best_accuracy": self._fmt_pct(fav_row.get("avg_accuracy_overall")),
             "fastest_reaction": self._fmt_ms(fav_row.get("avg_reaction_time_ms")),
         }
 
-        logger.debug("DashboardController.get_highlights_model: %s", model)
-        return model
-
     def get_continue_model(self) -> dict[str, Any]:
         runs = self._get_all_runs_sorted_desc()
         if not runs:
-            model = {
+            return {
                 "slug": None,
                 "game_name": "—",
                 "info": "—",
                 "enabled": False,
             }
-            logger.debug("DashboardController.get_continue_model: no runs")
-            return model
 
         dt, slug, _row = runs[0]
-        model = {
+        return {
             "slug": slug,
             "game_name": self._label_for_slug(slug),
             "info": self._relative_datetime_text(dt),
             "enabled": True,
         }
 
-        logger.debug("DashboardController.get_continue_model: %s", model)
-        return model
-
-    # -------------------------------------------------------------------------
-    # Internal logic
-    # -------------------------------------------------------------------------
-
     def _get_today_runs(self) -> list[tuple[datetime | None, str, dict]]:
         today = datetime.now(timezone.utc).date()
-        runs = [
+        return [
             item
             for item in self._get_all_runs_sorted_desc()
             if item[0] and item[0].date() == today
         ]
-        logger.debug(
-            "DashboardController._get_today_runs: today=%s count=%d",
-            today,
-            len(runs),
-        )
-        return runs
 
     def _get_all_runs_sorted_desc(self) -> list[tuple[datetime | None, str, dict]]:
         runs: list[tuple[datetime | None, str, dict]] = []
@@ -330,12 +261,6 @@ class DashboardController(QObject):
                 runs.append((self._parse_dt(row.get("started_at")), slug, row))
 
         runs.sort(key=lambda item: item[0] or _MIN_UTC, reverse=True)
-
-        logger.debug(
-            "DashboardController._get_all_runs_sorted_desc: total=%d per_slug=%s",
-            len(runs),
-            {slug: len(hist or []) for slug, hist in self._data.histories.items()},
-        )
         return runs
 
     def _compute_current_streak(self) -> int:
@@ -347,7 +272,6 @@ class DashboardController(QObject):
         }
 
         if not days:
-            logger.debug("DashboardController._compute_current_streak: no days available")
             return 0
 
         cursor = today if today in days else today - timedelta(days=1)
@@ -357,16 +281,11 @@ class DashboardController(QObject):
             streak += 1
             cursor -= timedelta(days=1)
 
-        logger.debug(
-            "DashboardController._compute_current_streak: today=%s unique_days=%d streak=%d",
-            today,
-            len(days),
-            streak,
-        )
         return streak
 
     def _estimate_daily_goal(self) -> int:
         runs_by_day: dict[Any, int] = {}
+
         for dt, _, _ in self._get_all_runs_sorted_desc():
             if dt is None:
                 continue
@@ -374,47 +293,27 @@ class DashboardController(QObject):
             runs_by_day[day] = runs_by_day.get(day, 0) + 1
 
         if not runs_by_day:
-            logger.debug("DashboardController._estimate_daily_goal: no runs_by_day, fallback=3")
             return 3
 
         avg = sum(runs_by_day.values()) / len(runs_by_day)
-        goal = max(1, round(avg))
-
-        logger.debug(
-            "DashboardController._estimate_daily_goal: runs_by_day=%s avg=%.3f goal=%d",
-            runs_by_day,
-            avg,
-            goal,
-        )
-        return goal
+        return max(1, round(avg))
 
     def _get_most_played_row(self) -> dict | None:
         games = self._data.all_stats.get("games", []) or []
-        row = max(
+        return max(
             (g for g in games if g.get("total_runs") is not None),
             key=lambda g: g.get("total_runs") or 0,
             default=None,
         )
-        logger.debug("DashboardController._get_most_played_row: row=%s", row)
-        return row
 
     def _get_most_played_slug(self) -> str | None:
         row = self._get_most_played_row()
         if not row:
             return None
-        slug = self._game_slug_from_id(row.get("game_id"))
-        logger.debug("DashboardController._get_most_played_slug: slug=%s", slug)
-        return slug
+        return self._game_slug_from_id(row.get("game_id"))
 
     def _game_slug_from_id(self, game_id: Any) -> str | None:
-        inverse = {value: key for key, value in GAME_ID_MAP.items()}
-        slug = inverse.get(game_id)
-        logger.debug(
-            "DashboardController._game_slug_from_id: game_id=%s slug=%s",
-            game_id,
-            slug,
-        )
-        return slug
+        return _GAME_ID_TO_SLUG.get(game_id)
 
     def _safe_y_range(self, values: list[float]) -> tuple[float, float]:
         if not values:
@@ -425,24 +324,10 @@ class DashboardController(QObject):
 
         if abs(high - low) < 1e-9:
             padding = max(0.1, abs(low) * 0.1)
-            result = (round(low - padding, 3), round(high + padding, 3))
-            logger.debug(
-                "DashboardController._safe_y_range: flat values=%s result=%s",
-                values,
-                result,
-            )
-            return result
+            return round(low - padding, 3), round(high + padding, 3)
 
         padding = (high - low) * 0.12
-        result = (round(low - padding, 3), round(high + padding, 3))
-        logger.debug(
-            "DashboardController._safe_y_range: low=%s high=%s padding=%s result=%s",
-            low,
-            high,
-            padding,
-            result,
-        )
-        return result
+        return round(low - padding, 3), round(high + padding, 3)
 
     def _label_for_slug(self, slug: str | None) -> str:
         if not slug:
@@ -492,6 +377,7 @@ class DashboardController(QObject):
                 hours=hours,
                 minutes=minutes,
             )
+
         return translate("DashboardView", "{minutes} min").format(minutes=minutes)
 
     def _format_day_label(self, count: int) -> str:

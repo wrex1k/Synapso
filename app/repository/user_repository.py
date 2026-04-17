@@ -97,13 +97,33 @@ def check_username_exists(username: str) -> bool:
     return bool(getattr(resp, "data", False))
 
 
-# delete the user record from the database
+# delete the user record and all associated data from the database
 def delete_user(user_id: str) -> None:
     try:
-        get_client().table("users").delete().eq("id", user_id).execute()
-        logger.info("User record deleted (user_id=..%s)", user_id[-10:])
+        client = get_client()
+
+        run_ids_resp = client.table("runs").select("run_id").eq("user_id", user_id).execute()
+        run_ids = [r["run_id"] for r in (run_ids_resp.data or [])]
+        if run_ids:
+            client.table("trials").delete().in_("run_id", run_ids).execute()
+            logger.debug("Deleted trials for %d runs (user_id=..%s)", len(run_ids), user_id[-10:])
+
+        client.table("runs").delete().eq("user_id", user_id).execute()
+        client.table("player_game_stats").delete().eq("user_id", user_id).execute()
+        client.table("game_tutorials").delete().eq("user_id", user_id).execute()
+        client.table("user_activity").delete().eq("user_id", user_id).execute()
+        client.table("reports").delete().eq("user_id", user_id).execute()
+
+        try:
+            client.storage.from_("avatars").remove([f"{user_id}.webp"])
+            logger.debug("Avatar deleted from storage (user_id=..%s)", user_id[-10:])
+        except Exception as e:
+            logger.warning("Failed to delete avatar (user_id=..%s): %s", user_id[-10:], e)
+
+        client.table("users").delete().eq("id", user_id).execute()
+        logger.info("User and all associated data deleted (user_id=..%s)", user_id[-10:])
     except Exception as e:
-        logger.error("Failed to delete user record: %s", e)
+        logger.error("Failed to delete user: %s", e)
         raise
 
 # fetch the avatar image blob from Supabase storage given the storage path

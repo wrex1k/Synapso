@@ -10,6 +10,7 @@ from app.core.registry import registry
 from app.utils.logger import logger
 from app.ui.styles.colors import PRIMARY_LIGHT, INCORRECT_COLOR, OFF_WHITE, FONT_PRIMARY
 from app.ui.views.base_game_widget import BaseGameWidget, _get_cached_font
+from translations.translation import translate
 
 
 
@@ -45,7 +46,7 @@ class StroopWidget(BaseGameWidget):
         return bool(getattr(self._service, "_run_id", None))
 
     def _build_ui(self) -> None:
-        root = self._build_hud_header("SCWT", margins=(150, 100, 150, 80))
+        root = self._build_hud_header("Stroop test", margins=(150, 100, 150, 80))
         root.addStretch(2)
 
         centre_box = QVBoxLayout()
@@ -67,9 +68,10 @@ class StroopWidget(BaseGameWidget):
         root.addLayout(centre_box)
         root.addStretch(2)
 
+        _word = f'<span style="color:{FONT_PRIMARY};">{translate("StroopWidget", "ink color")}</span>'
         self._build_hud_footer(
             root,
-            f'Press the key matching the <span style="color:{FONT_PRIMARY};">ink color</span>',
+            translate("StroopWidget", "Press the key matching the {word}").format(word=_word),
         )
 
     def _render_text_pixmap(

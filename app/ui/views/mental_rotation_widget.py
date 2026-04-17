@@ -9,6 +9,7 @@ from app.core.registry import registry
 from app.utils.logger import logger
 from app.ui.styles.colors import CORRECT_COLOR, INCORRECT_COLOR, FONT_PRIMARY, OFF_WHITE, PRIMARY_LIGHT
 from app.ui.views.base_game_widget import BaseGameWidget
+from translations.translation import translate
 
 
 _SHAPE_CELL = 72
@@ -115,6 +116,7 @@ class MentalRotationWidget(BaseGameWidget):
         self._lbl_feedback.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._lbl_feedback.setTextFormat(Qt.TextFormat.RichText)
         self._lbl_feedback.setStyleSheet("background: transparent;")
+        self._lbl_feedback.setMinimumHeight(56)
         root.addWidget(self._lbl_feedback)
 
         root.addSpacing(16)
@@ -130,9 +132,10 @@ class MentalRotationWidget(BaseGameWidget):
 
         root.addStretch(1)
 
+        _word = f'<span style="color:{FONT_PRIMARY};">{translate("MentalRotationWidget", "shapes are the same")}</span>'
         self._build_hud_footer(
             root,
-            f'Press the key if the <span style="color:{FONT_PRIMARY};">shapes are the same</span>',
+            translate("MentalRotationWidget", "Press the key if the {word}").format(word=_word),
         )
 
     def _show_countdown(self):

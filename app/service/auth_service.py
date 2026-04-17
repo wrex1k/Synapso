@@ -336,7 +336,6 @@ def get_auth_email() -> str | None:
         if user:
             email = getattr(user, "email", None)
             if email:
-                logger.debug("Fetched auth email successfully")
                 return email
     except Exception as e:
         logger.warning("Failed to fetch email from auth: %s", e)
