@@ -69,7 +69,8 @@ SIDEBAR_STYLES = f"""
     #primarySidebarWidget,
     #secondarySidebarWidget,
     #logoutButton {{
-        background-color: {BACKGROUND_SIDEBAR};
+        background-color: {BACKGROUND_GLASS};
+        border: 1px solid {BORDER_LIGHTGREY};
         border-radius: 27px;
     }}
 

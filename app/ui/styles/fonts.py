@@ -1,5 +1,7 @@
 from PySide6.QtGui import QFont, QFontDatabase
 
+from app.ui.styles.colors import GRAY
+
 # font family
 GENERAL_SANS = "General Sans"
 
@@ -56,7 +58,8 @@ SIZE_TUTORIAL_NORMAL = SIZE_H2
 SIZE_TUTORIAL_LARGE = SIZE_H1
 SIZE_TUTORIAL_XLARGE = 37
 SIZE_TUTORIAL_XXLARGE = SIZE_DISPLAY_XXXL
-SIZE_TUTORIAL_ANSWER_LABEL = SIZE_SMALL
+SIZE_TUTORIAL_ANSWER_LABEL = SIZE_H2
+SIZE_TUTORIAL_COMPLETION = 46
 
 
 def load_fonts() -> None:
@@ -559,7 +562,49 @@ TUTORIAL_FONT_STYLES = f"""
         font-weight: {WEIGHT_MEDIUM};
     }}
 """
+# statistics.py
+STATISTICS_FONT_STYLES = f"""
+    QWidget#statisticsView {{
+        background-color: transparent;
+    }}
 
+    QLabel#statOverviewLabel {{
+        font-size: {SIZE_H3}px;
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    QLabel#statOverviewValue {{
+        font-size: {SIZE_H2}px;
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    QLabel#statOverviewSubtext {{
+        font-size: {SIZE_SMALL}px;
+    }}
+
+    QLabel#statChartTitle {{
+        font-size: {SIZE_H3}px;
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    QLabel#statChartSubtitle {{
+        font-size: {SIZE_SMALL}px;
+    }}
+
+    QLabel#statGameTitle {{
+        font-size: {SIZE_H3}px;
+        font-weight: {WEIGHT_SEMIBOLD};
+    }}
+
+    QLabel#statGameMetricLabel {{
+        font-size: {SIZE_SMALL}px;
+        font-weight: {WEIGHT_MEDIUM};
+    }}
+
+    QLabel#statGameMetricValue {{
+        font-size: {SIZE_SMALL}px;
+    }}
+"""
 
 # about.py
 ABOUT_FONT_STYLES = f"""
@@ -569,27 +614,24 @@ ABOUT_FONT_STYLES = f"""
     }}
 
     QLabel#aboutSectionTitle {{
-        font-size: {SIZE_H5}px;
+        font-size: {SIZE_H4}px;
         font-weight: {WEIGHT_MEDIUM};
     }}
 
     QLabel#aboutDescriptionText {{
-        font-size: {SIZE_SMALL}px;
-        font-weight: {WEIGHT_REGULAR};
+        font-size: {SIZE_MEDIUM}px;
     }}
 
     QLabel#aboutMetaText {{
-        font-size: {SIZE_XSMALL}px;
-        font-weight: {WEIGHT_REGULAR};
+        font-size: {SIZE_SMALL}px;
     }}
 
     QTextEdit#reportEditor {{
-        font-size: {SIZE_XSMALL}px;
-        font-weight: {WEIGHT_REGULAR};
+        font-size: {SIZE_SMALL}px;
     }}
 
     QPushButton#reportSendButton {{
-        font-size: {SIZE_XSMALL}px;
+        font-size: {SIZE_SMALL}px;
         font-weight: {WEIGHT_MEDIUM};
     }}
 
@@ -599,12 +641,11 @@ ABOUT_FONT_STYLES = f"""
     }}
 
     QLabel#builtWithDesc {{
-        font-size: {SIZE_XSMALL}px;
-        font-weight: {WEIGHT_REGULAR};
+        font-size: {SIZE_SMALL}px;
     }}
 
     QComboBox#changelogCombo {{
-        font-size: {SIZE_XSMALL}px;
+        font-size: {SIZE_SMALL}px;
         font-weight: {WEIGHT_MEDIUM};
     }}
 
@@ -613,7 +654,6 @@ ABOUT_FONT_STYLES = f"""
         font-weight: {WEIGHT_SEMIBOLD};
     }}
 """
-
 
 # settings.py
 SETTINGS_FONT_STYLES = f"""
@@ -627,11 +667,11 @@ SETTINGS_FONT_STYLES = f"""
     }}
 
     QPushButton#langBtn {{
-        font-size: {SIZE_XSMALL}px;
+        font-size: {SIZE_SMALL}px;
     }}
 
     QPushButton#themeBtn {{
-        font-size: {SIZE_XSMALL}px;
+        font-size: {SIZE_SMALL}px;
     }}
 """
 
@@ -643,6 +683,7 @@ FORGOT_PASSWORD_INLINE_FONT_STYLES = f"""
     }}
 
     QLineEdit[objectName^="otpEdit"] {{
+        font-size: {SIZE_DISPLAY_XXL}px;
         font-weight: {WEIGHT_BOLD};
     }}
 """
@@ -657,6 +698,7 @@ def get_full_fonts() -> str:
         + NAVBAR_FONT_STYLES
         + DASHBOARD_FONT_STYLES
         + GAMES_FONT_STYLES
+        + STATISTICS_FONT_STYLES
         + PROFILE_FONT_STYLES
         + TUTORIAL_FONT_STYLES
         + ABOUT_FONT_STYLES

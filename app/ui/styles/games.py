@@ -129,8 +129,8 @@ GAMES_STYLES = f"""
     QPushButton#playButton {{
         border: none;
         background-color: {PRIMARY};
-        color: {OFF_WHITE};
-        border-radius: 22px;
+        padding: 10px 22px;
+        border-radius: 16px;
     }}
 
     QPushButton#playButton:hover {{
@@ -145,9 +145,8 @@ GAMES_STYLES = f"""
     QPushButton#tutorialButton {{
         border: 1px solid {PRIMARY};
         background-color: transparent;
-        color: {OFF_WHITE};
         padding: 10px 22px;
-        border-radius: 22px;
+        border-radius: 16px;
     }}
 
     QPushButton#tutorialButton:hover{{

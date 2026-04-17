@@ -4,6 +4,21 @@ CURSOR_COLOR = "#FFFFFF"
 # fonts colors
 FONT_PRIMARY = "#3EAC91"
 
+# dashboard colors
+DASHBOARD_PINK_DOT = "#F08A8A"
+DASHBOARD_YELLOW_DOT = "#F0E68C"
+DASHBOARD_GRAPH_COLOR = "#4BA690"
+
+# game colors
+GAME_COLOR_STROOP = "#3EAC91"
+GAME_COLOR_MEMORY_GRID = "#4FC3F7"
+GAME_COLOR_MENTAL_ROTATION = "#FFB74D"
+GAME_COLORS: dict[str, str] = {
+    "stroop": GAME_COLOR_STROOP,
+    "memory_grid": GAME_COLOR_MEMORY_GRID,
+    "mental_rotation": GAME_COLOR_MENTAL_ROTATION,
+}
+
 # background colors
 BACKGROUND_GLASS = "rgba(32, 48, 47, 0.24)"
 BACKGROUND_KEY_CHIP = "rgba(217, 217, 217, 0.1)"

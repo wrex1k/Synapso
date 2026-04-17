@@ -133,6 +133,10 @@ class AppWidget(QWidget):
         }
 
         self.games_page.launch_game_requested.connect(self._show_fullscreen_game)
+        try:
+            self.dashboard_page.continue_game_requested.connect(lambda slug: self.games_page._launch_play(slug))
+        except Exception:
+            logger.exception("Failed to connect dashboard continue signal to games launcher")
 
     def _connect_signals(self):
         self.logoutButton.clicked.connect(self._on_logout_clicked)

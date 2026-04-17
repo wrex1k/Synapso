@@ -42,13 +42,13 @@ class MemoryGridTutorial(BaseTutorialWidget):
                 "grid_size": 3,
                 "highlight": {1, 2, 5},
                 "cell_count": 3,
-                "description": translate("MemoryGridTutorial", "Memorize the highlighted pattern and click to reproduce it!"),
+                "description": translate("MemoryGridTutorial", "Memorize the highlighted pattern!"),
             },
             {
                 "grid_size": 3,
                 "highlight": {1, 2},
                 "cell_count": 2,
-                "description": translate("MemoryGridTutorial", "The grid gets bigger as difficulty increases!"),
+                "description": translate("MemoryGridTutorial", "Reproduce the pattern you memorized!"),
             },
         ]
 

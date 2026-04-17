@@ -10,7 +10,7 @@ REGISTER_STYLES = f"""
        height: 15px;
        color: {OFF_WHITE};
        background-color: transparent;
-       border: 1px solid {BORDER_LIGHTGREY};
+       border: 1px solid {BORDER_UPLOAD_BUTTON};
        border-radius: 15px;
        padding: 10px 15px;
     }}

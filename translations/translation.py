@@ -77,9 +77,8 @@ def init_translations(language: Optional[str] = None) -> bool:
 
     return manager.load_translation(language)
 
-def translate(context: str, source_text: str) -> str:
-    """Look up source_text in the given Qt translation context."""
-    return QCoreApplication.translate(context, source_text)
+def translate(context: str, source_text: str, n: int = -1) -> str:
+    return QCoreApplication.translate(context, source_text, None, n)
 
 # Error message translation markers
 QT_TRANSLATE_NOOP('Errors', 'Invalid email format')

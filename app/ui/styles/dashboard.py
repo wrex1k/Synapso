@@ -59,22 +59,27 @@ QLabel#dashboardMetricLabel {{
 }}
 
 QLabel#dashboardMetricValue,
-QLabel#dashboardRowTitle,
 QLabel#dashboardRowValue {{
     color: {OFF_WHITE};
 }}
 
-QScrollArea#dashboardRecentGamesScroll {{
-    background: transparent;
+QLabel#dashboardRowTitle {{
+    color: {OFF_WHITE};
+}}
+
+QLabel#recentGameTitle {{
+    color: {PRIMARY_LIGHT};
 }}
 
 QPushButton#dashboardPrimaryButton {{
-    background-color: {FONT_PRIMARY};
-    color: white;
-    border: none;
-    border-radius: 14px;
+    background-color: {PRIMARY};
+    border-radius: 16px;
     min-height: 42px;
     padding: 0 16px;
+}}
+
+QPushButton#dashboardPrimaryButton:hover {{
+    background-color: {HOVER_PRIMARY};
 }}
 
 QPushButton#dashboardPrimaryButton:disabled {{

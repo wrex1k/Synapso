@@ -8,8 +8,8 @@ PROFILE_STYLES = f"""
     QFrame#profileHeroCard,
     QFrame#profileMainCard {{
         background-color: {BACKGROUND_GLASS};
-        border-radius: 20px;
         border: 1px solid {BORDER_LIGHTGREY};
+        border-radius: 20px;
     }}
 
     QLabel#profileUsernameLabel {{
@@ -102,16 +102,16 @@ PROFILE_STYLES = f"""
     }}
 
     QPushButton#profilePrimaryButton {{
-        background-color: {PRIMARY_LIGHT};
+        background-color: {PRIMARY};
         color: white;
         border: none;
-        border-radius: 14px;
+        border-radius: 16px;
         padding: 0 16px;
         min-width: 140px;
     }}
 
     QPushButton#profilePrimaryButton:hover {{
-        background-color: {FONT_PRIMARY};
+        background-color: {HOVER_PRIMARY};
     }}
 
     QLabel#profileDangerTitle {{
@@ -126,7 +126,7 @@ PROFILE_STYLES = f"""
         background-color: {DANGER_BACKGROUND};
         color: {DANGER};
         border: 1px solid {DANGER_BORDER};
-        border-radius: 14px;
+        border-radius: 16px;
         padding: 0 16px;
         min-width: 140px;
     }}

@@ -46,7 +46,7 @@
     <message>
         <location filename="translation.py" line="87"/>
         <source>Invalid email format</source>
-        <translation>Neplatný formát emailu</translation>
+        <translation>Neplatný formát e-mailu</translation>
     </message>
     <message>
         <location filename="translation.py" line="88"/>
@@ -61,7 +61,7 @@
     <message>
         <location filename="translation.py" line="90"/>
         <source>Email already in use</source>
-        <translation>Email sa už používa</translation>
+        <translation>E-mail sa už používa</translation>
     </message>
     <message>
         <location filename="translation.py" line="91"/>
@@ -90,7 +90,7 @@
         <location filename="../app/ui/views/forgot_password.py" line="307"/>
         <location filename="../app/ui/views/forgot_password.py" line="634"/>
         <source>Enter your email address and we&apos;ll send you a code to reset your password.</source>
-        <translation>Zadajte svoju emailovú adresu a my vám pošleme kód na obnovenie hesla.</translation>
+        <translation>Zadaj svoju e-mailovú adresu a my ti pošleme kód na obnovenie hesla.</translation>
     </message>
     <message>
         <location filename="../app/ui/views/forgot_password.py" line="314"/>
@@ -98,7 +98,7 @@
         <location filename="../app/ui/views/forgot_password.py" line="484"/>
         <location filename="../app/ui/views/forgot_password.py" line="621"/>
         <source>Send reset email</source>
-        <translation>Odoslať email na obnovenie</translation>
+        <translation>Odoslať e-mail na obnovenie</translation>
     </message>
     <message>
         <location filename="../app/ui/views/forgot_password.py" line="314"/>
@@ -112,7 +112,7 @@
         <location filename="../app/ui/views/forgot_password.py" line="342"/>
         <location filename="../app/ui/views/forgot_password.py" line="636"/>
         <source>Check your email. You received a code.</source>
-        <translation>Skontrolujte svoj email. Dostali ste kód.</translation>
+        <translation>Skontroluj si e-mail. Poslali sme ti kód.</translation>
     </message>
     <message>
         <location filename="../app/ui/views/forgot_password.py" line="327"/>
@@ -137,7 +137,7 @@
         <location filename="../app/ui/views/forgot_password.py" line="358"/>
         <location filename="../app/ui/views/forgot_password.py" line="638"/>
         <source>Enter your new password</source>
-        <translation>Zadajte svoje nové heslo</translation>
+        <translation>Zadaj svoje nové heslo</translation>
     </message>
     <message>
         <location filename="../app/ui/views/forgot_password.py" line="365"/>
@@ -189,7 +189,7 @@
     <message>
         <location filename="../app/ui/views/forgot_password.py" line="618"/>
         <source>Email</source>
-        <translation>Email</translation>
+        <translation>E-mail</translation>
     </message>
     <message>
         <location filename="../app/ui/views/forgot_password.py" line="619"/>
@@ -274,7 +274,7 @@
     <message>
         <location filename="../app/ui/views/games.py" line="431"/>
         <source>Below you can read the basic activity stats about this game</source>
-        <translation>Nižšie nájdeš základné štatistiky aktivity pre túto hru</translation>
+        <translation>Nižšie nájdeš základné štatistiky aktivity tejto hry</translation>
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="444"/>
@@ -284,7 +284,7 @@
     <message>
         <location filename="../app/ui/views/games.py" line="447"/>
         <source>Explore global game statistics and compete on the leaderboard</source>
-        <translation>Preskúmaj globálne štatistiky a súťaž v rebríčku hráčov</translation>
+        <translation>Preskúmaj globálne štatistiky hier a súťaž v rebríčku hráčov</translation>
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="448"/>
@@ -364,7 +364,7 @@
     <message>
         <location filename="../app/ui/views/login_auth.py" line="384"/>
         <source>welcome in</source>
-        <translation>vitajte v</translation>
+        <translation>vitaj v</translation>
     </message>
     <message>
         <location filename="../app/ui/views/login_auth.py" line="385"/>
@@ -374,7 +374,7 @@
     <message>
         <location filename="../app/ui/views/login_auth.py" line="387"/>
         <source>Email</source>
-        <translation>Email</translation>
+        <translation>E-mail</translation>
     </message>
     <message>
         <location filename="../app/ui/views/login_auth.py" line="390"/>
@@ -390,7 +390,7 @@
         <location filename="../app/ui/views/login_auth.py" line="225"/>
         <location filename="../app/ui/views/login_auth.py" line="394"/>
         <source>Forgot your password? Click here</source>
-        <translation>Zabudli ste heslo? Kliknite sem</translation>
+        <translation>Zabudol si heslo? Klikni sem</translation>
     </message>
     <message>
         <location filename="../app/ui/views/login_auth.py" line="208"/>
@@ -404,13 +404,13 @@
     <message>
         <location filename="../app/ui/views/login_auth.py" line="354"/>
         <source>Please enter email and password</source>
-        <translation>Prosím, zadajte email a heslo</translation>
+        <translation>Prosím, zadaj e-mail a heslo</translation>
     </message>
     <message>
         <location filename="../app/ui/views/login_auth.py" line="250"/>
         <location filename="../app/ui/views/login_auth.py" line="395"/>
         <source>Don&apos;t have an account? Sign up</source>
-        <translation>Nemáte účet? Zaregistrujte sa</translation>
+        <translation>Nemáš účet? Zaregistruj sa</translation>
     </message>
 </context>
 <context>
@@ -418,44 +418,44 @@
 
     <message>
         <location filename="../app/ui/views/memory_grid_tutorial.py" line="46"/>
-        <source>Memorize the highlighted pattern and click to reproduce it!</source>
-        <translation>Zapamätajte si zvýraznený vzor a kliknutím ho zopakujte!</translation>
+        <source>Memorize the highlighted pattern!</source>
+        <translation>Zapamätaj si zvýraznený vzor!</translation>
     </message>
 
     <message>
         <location filename="../app/ui/views/memory_grid_tutorial.py" line="52"/>
-        <source>The grid gets bigger as difficulty increases!</source>
-        <translation>Mriežka sa zväčšuje so zvyšujúcou sa náročnosťou!</translation>
+        <source>Reproduce the pattern you memorized!</source>
+        <translation>Zopakuj vzor, ktorý si si zapamätal!</translation>
     </message>
 
     <message>
         <location filename="../app/ui/views/memory_grid_tutorial.py" line="59"/>
         <source>Memory Grid</source>
-        <translation>Pamäťová mriežka</translation>
+        <translation>Memory Grid</translation>
     </message>
 
     <message>
         <location filename="../app/ui/views/memory_grid_tutorial.py" line="62"/>
         <source>Train your spatial working memory and pattern recognition</source>
-        <translation>Trénujte svoju priestorovú pracovnú pamäť a rozpoznávanie vzorov</translation>
+        <translation>Trénuj svoju priestorovú pracovnú pamäť a rozpoznávanie vzorov</translation>
     </message>
 
     <message>
         <location filename="../app/ui/views/memory_grid_tutorial.py" line="69"/>
         <source>Memorize the &lt;span style=&quot;color:{color};&quot;&gt;highlighted tiles&lt;/span&gt; and &lt;span style=&quot;color:{color};&quot;&gt;reproduce the pattern&lt;/span&gt;.&lt;br&gt;React as &lt;span style=&quot;color:{color};&quot;&gt;quickly&lt;/span&gt; and &lt;span style=&quot;color:{color};&quot;&gt;accurately&lt;/span&gt; as possible.</source>
-        <translation>Zapamätajte si &lt;span style=&quot;color:{color};&quot;&gt;zvýraznené políčka&lt;/span&gt; a &lt;span style=&quot;color:{color};&quot;&gt;zopakujte vzor&lt;/span&gt;.&lt;br&gt;Reagujte čo &lt;span style=&quot;color:{color};&quot;&gt;najrýchlejšie&lt;/span&gt; a &lt;span style=&quot;color:{color};&quot;&gt;najpresnejšie&lt;/span&gt;.</translation>
+        <translation>Zapamätaj si &lt;span style=&quot;color:{color};&quot;&gt;zvýraznené políčka&lt;/span&gt; a &lt;span style=&quot;color:{color};&quot;&gt;zopakuj vzor&lt;/span&gt;.&lt;br&gt;Reaguj čo &lt;span style=&quot;color:{color};&quot;&gt;najrýchlejšie&lt;/span&gt; a &lt;span style=&quot;color:{color};&quot;&gt;najpresnejšie&lt;/span&gt;.</translation>
     </message>
 
     <message>
         <location filename="../app/ui/views/memory_grid_tutorial.py" line="72"/>
         <source>• Memorize the highlighted tiles</source>
-        <translation>• Zapamätajte si zvýraznené políčka</translation>
+        <translation>• Zapamätaj si zvýraznené políčka</translation>
     </message>
 
     <message>
         <location filename="../app/ui/views/memory_grid_tutorial.py" line="78"/>
         <source>• Click on the grid cells to select the ones you remember</source>
-        <translation>• Kliknite na políčka v mriežke, ktoré si pamätáte</translation>
+        <translation>• Klikni na políčka v mriežke, ktoré si pamätáš</translation>
     </message>
 
     <message>
@@ -467,13 +467,13 @@
     <message>
         <location filename="../app/ui/views/memory_grid_tutorial.py" line="101"/>
         <source>• Complete &lt;span style=&quot;color:#3EAC91;&quot;&gt;20 grids&lt;/span&gt; to finish the run.</source>
-        <translation>• Dokončite &lt;span style=&quot;color:#3EAC91;&quot;&gt;20 mriežok&lt;/span&gt; pre ukončenie hry.</translation>
+        <translation>• Dokonči &lt;span style=&quot;color:#3EAC91;&quot;&gt;20 mriežok&lt;/span&gt; pre ukončenie hry.</translation>
     </message>
 
     <message>
         <location filename="../app/ui/views/memory_grid_tutorial.py" line="113"/>
         <source>Let&apos;s learn how the &lt;span style=&quot;color:#3EAC91;&quot;&gt;Memory Grid&lt;/span&gt; works. Memorize the pattern!</source>
-        <translation>Pozrime sa, ako funguje &lt;span style=&quot;color:#3EAC91;&quot;&gt;Memory Grid&lt;/span&gt;. Zapamätajte si vzor!</translation>
+        <translation>Pozrime sa, ako funguje &lt;span style=&quot;color:#3EAC91;&quot;&gt;Memory Grid&lt;/span&gt;. Zapamätaj si vzor!</translation>
     </message>
 
 </context>
@@ -496,19 +496,19 @@
     <message>
         <location filename="../app/ui/views/mental_rotation_tutorial.py" line="87"/>
         <source>Mental Rotation</source>
-        <translation>Mentálna rotácia</translation>
+        <translation>Mental Rotation</translation>
     </message>
 
     <message>
         <location filename="../app/ui/views/mental_rotation_tutorial.py" line="90"/>
         <source>Train your spatial reasoning and mental transformation skills</source>
-        <translation>Trénujte svoje priestorové myslenie a mentálnu transformáciu</translation>
+        <translation>Trénuj svoje priestorové myslenie a mentálnu transformáciu</translation>
     </message>
 
     <message>
         <location filename="../app/ui/views/mental_rotation_tutorial.py" line="97"/>
         <source>Compare the &lt;span style=&quot;color:{color};&quot;&gt;shapes&lt;/span&gt; and decide if they are the &lt;span style=&quot;color:{color};&quot;&gt;same&lt;/span&gt; or &lt;span style=&quot;color:{color};&quot;&gt;mirrored&lt;/span&gt;.&lt;br&gt;&lt;span style=&quot;color:{color};&quot;&gt;Rotate&lt;/span&gt; them mentally to find out.</source>
-        <translation>Porovnajte &lt;span style=&quot;color:{color};&quot;&gt;tvary&lt;/span&gt; a rozhodnite, či sú &lt;span style=&quot;color:{color};&quot;&gt;rovnaké&lt;/span&gt; alebo &lt;span style=&quot;color:{color};&quot;&gt;zrkadlové&lt;/span&gt;.&lt;br&gt;&lt;span style=&quot;color:{color};&quot;&gt;Mentálne ich otočte&lt;/span&gt;, aby ste to zistili.</translation>
+        <translation>Porovnaj &lt;span style=&quot;color:{color};&quot;&gt;tvary&lt;/span&gt; a rozhodmi sa, či sú &lt;span style=&quot;color:{color};&quot;&gt;rovnaké&lt;/span&gt; alebo &lt;span style=&quot;color:{color};&quot;&gt;zrkadlové&lt;/span&gt;.&lt;br&gt;&lt;span style=&quot;color:{color};&quot;&gt;Mentálne ich otočte&lt;/span&gt;, aby si to zistil.</translation>
     </message>
 
     <message>
@@ -544,19 +544,19 @@
     <message>
         <location filename="../app/ui/views/mental_rotation_tutorial.py" line="150"/>
         <source>• Complete &lt;span style=&quot;color:#3EAC91;&quot;&gt;20 shapes&lt;/span&gt; to finish the run.</source>
-        <translation>• Dokončite &lt;span style=&quot;color:#3EAC91;&quot;&gt;20 tvarov&lt;/span&gt; pre ukončenie hry.</translation>
+        <translation>• Dokonči &lt;span style=&quot;color:#3EAC91;&quot;&gt;20 tvarov&lt;/span&gt; pre ukončenie hry.</translation>
     </message>
 
     <message>
         <location filename="../app/ui/views/mental_rotation_tutorial.py" line="159"/>
         <source>Don&apos;t worry - a brief tutorial will guide you before starting.</source>
-        <translation>Nemajte obavy – pred začiatkom vás prevedie krátky tutoriál.</translation>
+        <translation>Nemaj obavy – pred začiatkom ťa prevedie krátky tutoriál.</translation>
     </message>
 
     <message>
         <location filename="../app/ui/views/mental_rotation_tutorial.py" line="165"/>
         <source>Let&apos;s learn how the &lt;span style=&quot;color:#3EAC91;&quot;&gt;Mental Rotation&lt;/span&gt; works. Compare both shapes!</source>
-        <translation>Pozrime sa, ako funguje &lt;span style=&quot;color:#3EAC91;&quot;&gt;Mental Rotation&lt;/span&gt;. Porovnajte oba tvary!</translation>
+        <translation>Pozrime sa, ako funguje &lt;span style=&quot;color:#3EAC91;&quot;&gt;Mental Rotation&lt;/span&gt;. Porovnaj oba tvary!</translation>
     </message>
 
     <message>
@@ -575,7 +575,7 @@
     <message>
         <location filename="../app/ui/views/settings.py" line="173"/>
         <source>Customize your application preferences</source>
-        <translation>Prispôsobte si predvoľby aplikácie</translation>
+        <translation>Prispôsob si predvoľby aplikácie</translation>
     </message>
     <message>
         <location filename="../app/ui/views/settings.py" line="176"/>
@@ -585,7 +585,7 @@
     <message>
         <location filename="../app/ui/views/settings.py" line="177"/>
         <source>Select your preferred language</source>
-        <translation>Vyberte si preferovaný jazyk</translation>
+        <translation>Vyber si preferovaný jazyk</translation>
     </message>
     <message>
         <location filename="../app/ui/views/settings.py" line="180"/>
@@ -595,7 +595,7 @@
     <message>
         <location filename="../app/ui/views/settings.py" line="181"/>
         <source>Choose the application appearance</source>
-        <translation>Zvoľte vzhľad aplikácie</translation>
+        <translation>Zvoľ vzhľad aplikácie</translation>
     </message>
     <message>
         <location filename="../app/ui/views/settings.py" line="183"/>
@@ -613,12 +613,12 @@
     <message>
         <location filename="../app/ui/views/register_auth.py" line="284"/>
         <source>Let&apos;s set up your password</source>
-        <translation>Poďme nastaviť vaše heslo</translation>
+        <translation>Poďme nastaviť tvoje heslo</translation>
     </message>
     <message>
         <location filename="../app/ui/views/register_auth.py" line="285"/>
         <source>Next step is to make a password. Make sure it&apos;s strong and secure. Your password should be at least 8 characters, include at least one uppercase letter and one number.</source>
-        <translation>Ďalším krokom je vytvorenie hesla. Uistite sa, že je silné a bezpečné. Heslo by malo mať aspoň 8 znakov, obsahovať aspoň jedno veľké písmeno a jedno číslo.</translation>
+        <translation>Ďalším krokom je vytvorenie hesla. Uisti sa, že je silné a bezpečné. Heslo by malo mať aspoň 8 znakov, obsahovať aspoň jedno veľké písmeno a jedno číslo.</translation>
     </message>
     <message>
         <location filename="../app/ui/views/register_auth.py" line="286"/>
@@ -656,7 +656,7 @@
     <message>
         <location filename="../app/ui/views/register_personal.py" line="364"/>
         <source>Let&apos;s set up your profile</source>
-        <translation>Poďme nastaviť váš profil</translation>
+        <translation>Poďme nastaviť tvoj profil</translation>
     </message>
     <message>
         <location filename="../app/ui/views/register_personal.py" line="371"/>
@@ -692,7 +692,7 @@
     <message>
         <location filename="../app/ui/views/register_personal.py" line="385"/>
         <source>Email</source>
-        <translation>Email</translation>
+        <translation>E-mail</translation>
     </message>
     <message>
         <location filename="../app/ui/views/register_personal.py" line="386"/>
@@ -815,13 +815,13 @@
     <message>
         <location filename="../app/ui/views/stroop_tutorial.py" line="49"/>
         <source>Train your cognitive control and selective attention</source>
-        <translation>Trénujte svoju kognitívnu kontrolu a selektívnu pozornosť</translation>
+        <translation>Trénuj svoju kognitívnu kontrolu a selektívnu pozornosť</translation>
     </message>
 
     <message>
         <location filename="../app/ui/views/stroop_tutorial.py" line="56"/>
         <source>Match the &lt;span style=&quot;color:{color};&quot;&gt;ink color&lt;/span&gt; of each word, not what the word says.&lt;br&gt;React as &lt;span style=&quot;color:{color};&quot;&gt;quickly&lt;/span&gt; and &lt;span style=&quot;color:{color};&quot;&gt;accurately&lt;/span&gt; as possible.</source>
-        <translation>Priraďte &lt;span style=&quot;color:{color};&quot;&gt;farbu textu&lt;/span&gt; každého slova, nie jeho význam.&lt;br&gt;Reagujte čo &lt;span style=&quot;color:{color};&quot;&gt;najrýchlejšie&lt;/span&gt; a &lt;span style=&quot;color:{color};&quot;&gt;najpresnejšie&lt;/span&gt;.</translation>
+        <translation>Priraď &lt;span style=&quot;color:{color};&quot;&gt;farbu textu&lt;/span&gt; každého slova, nie jeho význam.&lt;br&gt;Reaguj čo &lt;span style=&quot;color:{color};&quot;&gt;najrýchlejšie&lt;/span&gt; a &lt;span style=&quot;color:{color};&quot;&gt;najpresnejšie&lt;/span&gt;.</translation>
     </message>
 
     <message>
@@ -876,13 +876,13 @@
     <message>
         <location filename="../app/ui/views/stroop_tutorial.py" line="148"/>
         <source>• Complete &lt;span style=&quot;color:#3EAC91;&quot;&gt;20 trials&lt;/span&gt; to finish the run.</source>
-        <translation>• Dokončite &lt;span style=&quot;color:#3EAC91;&quot;&gt;20 pokusov&lt;/span&gt; pre ukončenie hry.</translation>
+        <translation>• Dokonči &lt;span style=&quot;color:#3EAC91;&quot;&gt;20 pokusov&lt;/span&gt; pre ukončenie hry.</translation>
     </message>
 
     <message>
         <location filename="../app/ui/views/stroop_tutorial.py" line="160"/>
         <source>Let&apos;s learn how the &lt;span style=&quot;color:#3EAC91;&quot;&gt;Stroop&lt;/span&gt; test works. This will only take a minute!</source>
-        <translation>Pozrime sa, ako funguje &lt;span style=&quot;color:#3EAC91;&quot;&gt;Stroopov&lt;/span&gt; test. Zaberie to len minútu!</translation>
+        <translation>Pozrime sa, ako funguje &lt;span style=&quot;color:#3EAC91;&quot;&gt;Stroop test&lt;/span&gt;. Zaberie to len minútu!</translation>
     </message>
 
     <message>
@@ -896,12 +896,12 @@
     <message>
         <location filename="../app/utils/validator.py" line="25"/>
         <source>Please fill email</source>
-        <translation>Prosím, vyplňte email</translation>
+        <translation>Prosím, vyplň e-mail</translation>
     </message>
     <message>
         <location filename="../app/utils/validator.py" line="29"/>
         <source>Please enter a valid email address</source>
-        <translation>Prosím, zadajte platnú emailovú adresu</translation>
+        <translation>Prosím, zadaj platnú e-mailovú adresu</translation>
     </message>
     <message>
         <location filename="../app/utils/validator.py" line="38"/>
@@ -950,7 +950,7 @@
     <message>
         <location filename="../app/utils/validator.py" line="71"/>
         <source>Please fill username</source>
-        <translation>Prosím, vyplňte používateľské meno</translation>
+        <translation>Prosím, vyplň používateľské meno</translation>
     </message>
     <message>
         <location filename="../app/utils/validator.py" line="78"/>
@@ -985,7 +985,7 @@
     <message>
         <location filename="../app/ui/views/about.py" line="422"/>
         <source>&lt;b&gt;Synapso&lt;/b&gt; is a cognitive training app designed to improve memory, attention, focus, and mental flexibility through interactive brain games.&lt;br&gt;&lt;br&gt;&lt;b&gt;Games:&lt;/b&gt;&lt;br&gt;• &lt;b&gt;Memory Grid&lt;/b&gt; — Train working memory with pattern recall&lt;br&gt;• &lt;b&gt;Mental Rotation&lt;/b&gt; — Improve spatial reasoning&lt;br&gt;• &lt;b&gt;Stroop Test&lt;/b&gt; — Enhance focus and cognitive control&lt;br&gt;&lt;br&gt;Track your performance, monitor progress, and train your brain consistently.</source>
-        <translation>&lt;b&gt;Synapso&lt;/b&gt; je aplikácia na kognitívny tréning navrhnutá na zlepšenie pamäti, pozornosti, sústredenia a mentálnej flexibility prostredníctvom interaktívnych mozgových hier.&lt;br&gt;&lt;br&gt;&lt;b&gt;Hry:&lt;/b&gt;&lt;br&gt;• &lt;b&gt;Pamäťová mriežka&lt;/b&gt; — Trénuj pracovnú pamäť pomocou recall vzorov&lt;br&gt;• &lt;b&gt;Mentálna rotácia&lt;/b&gt; — Zlepši priestorové myslenie&lt;br&gt;• &lt;b&gt;Stroopov test&lt;/b&gt; — Posilni sústredenie a kognitívnu kontrolu&lt;br&gt;&lt;br&gt;Sleduj svoj výkon, monitoruj pokrok a tréninguj mozog pravidelne.</translation>
+        <translation>&lt;b&gt;Synapso&lt;/b&gt; je aplikácia na kognitívny tréning navrhnutá na zlepšenie pamäti, pozornosti, sústredenia a mentálnej flexibility prostredníctvom interaktívnych mozgových hier.&lt;br&gt;&lt;br&gt;&lt;b&gt;Hry:&lt;/b&gt;&lt;br&gt;• &lt;b&gt;Memory Grid&lt;/b&gt; — Trénuj pracovnú pamäť pomocou zapamätávania si vzorov&lt;br&gt;• &lt;b&gt;Mental Rotation&lt;/b&gt; — Zlepši priestorové myslenie&lt;br&gt;• &lt;b&gt;Stroop Test&lt;/b&gt; — Posilni sústredenie a kognitívnu kontrolu&lt;br&gt;&lt;br&gt;Sleduj svoj výkon, monitoruj pokrok a trénuj mozog pravidelne.</translation>
     </message>
     <message>
         <location filename="../app/ui/views/about.py" line="434"/>
@@ -995,7 +995,7 @@
     <message>
         <location filename="../app/ui/views/about.py" line="435"/>
         <source>Built with</source>
-        <translation>Postavené s</translation>
+        <translation>Vytvorené s pomocou</translation>
     </message>
     <message>
         <location filename="../app/ui/views/about.py" line="436"/>
@@ -1005,12 +1005,12 @@
     <message>
         <location filename="../app/ui/views/about.py" line="438"/>
         <source>Describe the issue and include steps to reproduce.</source>
-        <translation>Opíšte problém a uveďte kroky na jeho reprodukciu.</translation>
+        <translation>Opíš problém a uveď kroky na jeho reprodukciu.</translation>
     </message>
     <message>
         <location filename="../app/ui/views/about.py" line="441"/>
         <source>Write your bug report here...</source>
-        <translation>Sem napíšte správu o chybe...</translation>
+        <translation>Sem napíš správu o chybe...</translation>
     </message>
     <message>
         <location filename="../app/ui/views/about.py" line="443"/>
@@ -1029,8 +1029,8 @@
         <location filename="../app/ui/views/profile.py" line="43"/>
         <source>Are you sure you want to delete your account?
 All your data will be permanently removed. This action cannot be undone.</source>
-        <translation>Naozaj chcete zmazať svoj účet?
-Všetky vaše údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.</translation>
+        <translation>Naozaj chceš zmazať svoj účet?
+Všetky tvoje údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.</translation>
     </message>
     <message>
         <location filename="../app/ui/views/profile.py" line="55"/>
@@ -1050,7 +1050,7 @@ Všetky vaše údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
     <message>
         <location filename="../app/ui/views/profile.py" line="87"/>
         <source>Manage your profile details and account security</source>
-        <translation>Spravujte detaily profilu a zabezpečenie účtu</translation>
+        <translation>Spravuj detaily profilu a zabezpečenie účtu</translation>
     </message>
     <message>
         <location filename="../app/ui/views/profile.py" line="121"/>
@@ -1090,7 +1090,7 @@ Všetky vaše údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
     <message>
         <location filename="../app/ui/views/profile.py" line="161"/>
         <source>Enter current password</source>
-        <translation>Zadajte aktuálne heslo</translation>
+        <translation>Zadaj aktuálne heslo</translation>
     </message>
     <message>
         <location filename="../app/ui/views/profile.py" line="163"/>
@@ -1100,17 +1100,17 @@ Všetky vaše údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
     <message>
         <location filename="../app/ui/views/profile.py" line="163"/>
         <source>Enter new password</source>
-        <translation>Zadajte nové heslo</translation>
+        <translation>Zadaj nové heslo</translation>
     </message>
     <message>
         <location filename="../app/ui/views/profile.py" line="165"/>
         <source>Confirm Password</source>
-        <translation>Potvrďte heslo</translation>
+        <translation>Potvrd heslo</translation>
     </message>
     <message>
         <location filename="../app/ui/views/profile.py" line="165"/>
         <source>Confirm new password</source>
-        <translation>Potvrďte nové heslo</translation>
+        <translation>Potvrď nové heslo</translation>
     </message>
     <message>
         <location filename="../app/ui/views/profile.py" line="169"/>
@@ -1125,7 +1125,7 @@ Všetky vaše údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
     <message>
         <location filename="../app/ui/views/profile.py" line="214"/>
         <source>Enter your username</source>
-        <translation>Zadajte používateľské meno</translation>
+        <translation>Zadaj používateľské meno</translation>
     </message>
     <message>
         <location filename="../app/ui/views/profile.py" line="78"/>
@@ -1225,7 +1225,7 @@ Všetky vaše údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
         <location filename="../app/ui/views/dashboard.py" line="137"/>
         <location filename="../app/ui/views/dashboard.py" line="553"/>
         <source>Your activity overview</source>
-        <translation>Prehľad tvojej aktivity</translation>
+        <translation>Tvoja aktivita</translation>
     </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="179"/>
@@ -1243,15 +1243,24 @@ Všetky vaše údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
         <source>Current streak</source>
         <translation>Aktuálna séria</translation>
     </message>
+    <message numerus="yes">
+        <location filename="../app/ui/views/dashboard.py" line="1283"/>
+        <source>%n day</source>
+        <translation>
+            <numerusform>%n deň</numerusform>
+            <numerusform>%n dni</numerusform>
+            <numerusform>%n dní</numerusform>
+        </translation>
+    </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="207"/>
         <source>Weekly play time</source>
-        <translation>Týždenný čas hrania</translation>
+        <translation>Týždenný odohraný čas</translation>
     </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="209"/>
         <source>Runs this week</source>
-        <translation>Hier tento týždeň</translation>
+        <translation>Odohrané hry za týždeň</translation>
     </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="211"/>
@@ -1289,8 +1298,8 @@ Všetky vaše údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
     </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="266"/>
-        <source>Time played</source>
-        <translation>Čas hrania</translation>
+        <source>Total time played</source>
+        <translation>Celkový odohraný čas</translation>
     </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="283"/>
@@ -1328,14 +1337,34 @@ Všetky vaše údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
         <translation>Zaujímavosti</translation>
     </message>
     <message>
-        <location filename="../app/ui/views/dashboard.py" line="374"/>
-        <source>Best accuracy</source>
-        <translation>Najlepšia presnosť</translation>
+        <location filename="../app/ui/views/dashboard.py" line="164"/>
+        <source>Daily streak</source>
+        <translation>Denná séria</translation>
     </message>
     <message>
-        <location filename="../app/ui/views/dashboard.py" line="377"/>
-        <source>Fastest reaction</source>
-        <translation>Najrýchlejšia reakcia</translation>
+        <location filename="../app/ui/views/dashboard.py" line="166"/>
+        <source>Total Games</source>
+        <translation>Celkový počet hier</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/dashboard.py" line="168"/>
+        <source>Time played</source>
+        <translation>Odohraný čas</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/dashboard.py" line="311"/>
+        <source>from favorite game</source>
+        <translation>z obľúbenej hry</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/dashboard.py" line="314"/>
+        <source>Accuracy</source>
+        <translation>Presnosť</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/dashboard.py" line="317"/>
+        <source>Reaction time</source>
+        <translation>Reakčný čas</translation>
     </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="788"/>
@@ -1361,7 +1390,7 @@ Všetky vaše údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
         <location filename="../app/ui/views/dashboard.py" line="872"/>
         <location filename="../app/ui/views/dashboard.py" line="897"/>
         <source>No run data yet</source>
-        <translation>Zatiaľ nie sú dostupné žiadne údaje o hrách</translation>
+        <translation>Zatiaľ nie sú žiadne údaje</translation>
     </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="1226"/>
@@ -1371,12 +1400,12 @@ Všetky vaše údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
     <message>
         <location filename="../app/ui/views/dashboard.py" line="1226"/>
         <source>Memory Grid</source>
-        <translation>Pamäťová mriežka</translation>
+        <translation>Memory Grid</translation>
     </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="1226"/>
         <source>Mental Rotation</source>
-        <translation>Mentálna rotácia</translation>
+        <translation>Mental Rotation</translation>
     </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="1254"/>
@@ -1417,6 +1446,11 @@ Všetky vaše údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
         <location filename="../app/ui/views/dashboard.py" line="1282"/>
         <source>{minutes} min</source>
         <translation>{minutes} min</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/dashboard.py" line="1293"/>
+        <source>{count} days</source>
+        <translation>{count} dni</translation>
     </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="1298"/>

@@ -98,7 +98,7 @@ def update_time_played(user_id: str, seconds: int):
         if result.data:
             logger.info("Updated time_played to %s for user_id=%s", new_time_played, user_id[-10:])
         else:
-            logger.debug("Time played upsert executed (user_id: ..%s)", user_id[-10:])
+            logger.debug("Total time_played upsert executed (user_id: ..%s)", user_id[-10:])
 
     except Exception as e:
         logger.exception("Failed to update time_played (user_id=%s): %s", user_id[-10:], str(e))

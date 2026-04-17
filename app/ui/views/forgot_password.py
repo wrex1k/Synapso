@@ -37,7 +37,7 @@ class ForgotPassword(QWidget):
         self._animations_started = False
 
         self.current_step = "email"
-        self.resend_timer_seconds = 5
+        self.resend_timer_seconds = 60
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._update_timer)
         self._last_sent_email = None
@@ -325,7 +325,7 @@ class ForgotPassword(QWidget):
         self.state = "idle"
         update_button_state(self.approveButton, "idle", idle_text=translate("ForgotPassword", "Approve Code"), loading_text=translate("ForgotPassword", "Verifying…"))
 
-        self.resend_timer_seconds = 5
+        self.resend_timer_seconds = 60
         self.resendButton.setEnabled(False)
         self.resendButton.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
         self.timer.start(1000)

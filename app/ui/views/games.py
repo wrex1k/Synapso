@@ -58,7 +58,7 @@ _GAME_TEXTS = {
     },
     "memory_grid": {
         "title": "Memory Grid",
-        "desc": "The Memory Grid measures visual working memory and attention. The task is to remember a pattern in a grid and reproduce it as accurately as possible.",
+        "desc": "The Memory Grid measures visual working memory and attention span. The task is to observe and memorize highlighted tiles in a grid, then reproduce the exact pattern by clicking on the correct tiles as accurately and quickly as possible.",
     },
     "mental_rotation": {
         "title": "Mental Rotation",
@@ -584,7 +584,7 @@ class GamesView(QWidget):
         if acc_diff is not None:
             is_better = acc_diff > 0
             direction = "↑" if is_better else "↓"
-            color = "#12A54C" if is_better else "#E74C3C"
+            color = f"{SUCCESS}" if is_better else f"{DANGER}"
             if is_better:
                 message = translate("GamesView", "you are {value}% more accurate than global avg").format(
                     value=f"{abs(acc_diff):.1f}"
@@ -604,7 +604,7 @@ class GamesView(QWidget):
         if score_diff is not None:
             is_better = score_diff > 0
             direction = "↑" if is_better else "↓"
-            color = "#12A54C" if is_better else "#E74C3C"
+            color = f"{SUCCESS}" if is_better else f"{DANGER}"
             if is_better:
                 message = translate("GamesView", "you are {value}pi higher than global avg").format(
                     value=f"{abs(score_diff):.1f}"
@@ -720,7 +720,11 @@ class GamesView(QWidget):
 
     def _apply_lb_avatar(self, lbl: QLabel, data: bytes | None, avatar_path: str | None = None) -> None:
         if not data:
-            logger.debug("Avatar data is None/empty, skipping")
+            fallback = QPixmap(":/images/graphics/avatar.png")
+            if not fallback.isNull():
+                lbl.setPixmap(fallback)
+                lbl.setScaledContents(True)
+                image_to_rounded(lbl)
             return
         pix = QPixmap()
         if pix.loadFromData(data):
