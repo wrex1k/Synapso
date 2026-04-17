@@ -1,9 +1,12 @@
+"""ForgotPassword view manages the multi-step password reset UI, including email submission, OTP verification, and password update.
+It provides signals for user actions that the ForgotPasswordController connects to, and methods to update the
+UI based on the controller's responses (e.g. showing success/error states and navigating between steps)."""
+
 import re
 
-from PySide6.QtCore import QEvent, QRegularExpression, QSize, Qt, QTimer, Signal
+from PySide6.QtCore import QEasingCurve, QEvent, QPoint, QPropertyAnimation, QRegularExpression, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QCursor, QFont, QIcon, QRegularExpressionValidator
-from PySide6.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSizePolicy, QVBoxLayout, QWidget
-from app.ui.styles.fonts import FONT_OTP
+from PySide6.QtWidgets import QApplication, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSizePolicy, QVBoxLayout, QWidget
 
 from app.utils.validator import validate_email, validate_otp, validate_password, validate_passwords_match
 from app.ui.components.back_button import BackButton
@@ -13,11 +16,6 @@ from app.utils.logger import get_logger
 from app.utils.ui_helpers import draw_background, update_button_state
 from translations.translation import translate
 
-"""
-ForgotPassword view manages the multi-step password reset UI, including email submission, OTP verification, and password update.
-It provides signals for user actions that the ForgotPasswordController connects to, and methods to update the
-UI based on the controller's responses (e.g. showing success/error states and navigating between steps).
-"""
 
 logger = get_logger(__name__)
 
@@ -37,6 +35,7 @@ class ForgotPassword(QWidget):
 
         self.states = ["idle", "loading", "error"]
         self.state = "idle"
+        self._animations_started = False
 
         self.current_step = "email"
         self.resend_timer_seconds = 5
@@ -95,6 +94,8 @@ class ForgotPassword(QWidget):
         self.frameLayout.addWidget(titleFrame)
         self.frameLayout.addSpacing(10)
 
+        self.titleFrame = titleFrame
+
         # info
         self.descLabel = QLabel("", frame)
         self.descLabel.setObjectName("descLabel")
@@ -102,12 +103,20 @@ class ForgotPassword(QWidget):
         self.descLabel.setWordWrap(True)
         self.frameLayout.addWidget(self.descLabel)
 
+        self.descOpacity = QGraphicsOpacityEffect(self.descLabel)
+        self.descLabel.setGraphicsEffect(self.descOpacity)
+        self.descOpacity.setOpacity(0)
+
         self.frameLayout.addSpacing(40)
 
         self.stepsContainer = QWidget(frame)
         self.stepsLayout = QVBoxLayout(self.stepsContainer)
         self.stepsLayout.setContentsMargins(0, 0, 0, 0)
         self.frameLayout.addWidget(self.stepsContainer)
+
+        self.stepsOpacity = QGraphicsOpacityEffect(self.stepsContainer)
+        self.stepsContainer.setGraphicsEffect(self.stepsOpacity)
+        self.stepsOpacity.setOpacity(0)
         
         self.frameLayout.addSpacing(40)
         self.frameLayout.addStretch()
@@ -116,8 +125,70 @@ class ForgotPassword(QWidget):
         self._build_otp_step()
         self._build_password_step()
 
+        self.welcomeOpacity = QGraphicsOpacityEffect(self.titleLeft)
+        self.titleLeft.setGraphicsEffect(self.welcomeOpacity)
+        self.welcomeOpacity.setOpacity(0)
+
+        self.logoOpacity = QGraphicsOpacityEffect(self.titleRight)
+        self.titleRight.setGraphicsEffect(self.logoOpacity)
+        self.logoOpacity.setOpacity(0)
+
         rootLayout.addWidget(frame, 0, Qt.AlignmentFlag.AlignHCenter)
         mainLayout.addWidget(contentWidget)
+
+    def _start_welcome_animation(self):
+        left_final_pos = self.titleLeft.pos()
+        right_final_pos = self.titleRight.pos()
+        offset = 90
+
+        welcome_start_pos = QPoint(left_final_pos.x() - offset, left_final_pos.y())
+        logo_start_pos = QPoint(right_final_pos.x() + offset, right_final_pos.y())
+
+        self.titleLeft.move(welcome_start_pos)
+        self.titleRight.move(logo_start_pos)
+
+        self.welcomePosAnim = QPropertyAnimation(self.titleLeft, b"pos")
+        self.welcomePosAnim.setDuration(700)
+        self.welcomePosAnim.setStartValue(welcome_start_pos)
+        self.welcomePosAnim.setEndValue(left_final_pos)
+        self.welcomePosAnim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        self.logoPosAnim = QPropertyAnimation(self.titleRight, b"pos")
+        self.logoPosAnim.setDuration(800)
+        self.logoPosAnim.setStartValue(logo_start_pos)
+        self.logoPosAnim.setEndValue(right_final_pos)
+        self.logoPosAnim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        self.welcomeOpacityAnim = QPropertyAnimation(self.welcomeOpacity, b"opacity")
+        self.welcomeOpacityAnim.setDuration(350)
+        self.welcomeOpacityAnim.setStartValue(0.0)
+        self.welcomeOpacityAnim.setEndValue(1.0)
+        self.welcomeOpacityAnim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        self.logoOpacityAnim = QPropertyAnimation(self.logoOpacity, b"opacity")
+        self.logoOpacityAnim.setDuration(350)
+        self.logoOpacityAnim.setStartValue(0.0)
+        self.logoOpacityAnim.setEndValue(1.0)
+        self.logoOpacityAnim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        self.descOpacityAnim = QPropertyAnimation(self.descOpacity, b"opacity")
+        self.descOpacityAnim.setDuration(500)
+        self.descOpacityAnim.setStartValue(0.0)
+        self.descOpacityAnim.setEndValue(1.0)
+        self.descOpacityAnim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        self.stepsOpacityAnim = QPropertyAnimation(self.stepsOpacity, b"opacity")
+        self.stepsOpacityAnim.setDuration(550)
+        self.stepsOpacityAnim.setStartValue(0.0)
+        self.stepsOpacityAnim.setEndValue(1.0)
+        self.stepsOpacityAnim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        self.welcomePosAnim.start()
+        self.logoPosAnim.start()
+        QTimer.singleShot(80, self.welcomeOpacityAnim.start)
+        QTimer.singleShot(160, self.logoOpacityAnim.start)
+        QTimer.singleShot(260, self.descOpacityAnim.start)
+        QTimer.singleShot(340, self.stepsOpacityAnim.start)
 
     def _build_email_step(self):
         self.emailStep = QWidget(self.stepsContainer)
@@ -158,11 +229,11 @@ class ForgotPassword(QWidget):
         for i in range(6):
             otpEdit = QLineEdit(otpFrame)
             otpEdit.setObjectName(f"otpEdit{i}")
+            otpEdit.setProperty("otpIndex", i)
             otpEdit.setMaxLength(1)
             otpEdit.setValidator(digit_validator)
             otpEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
             otpEdit.setFixedSize(QSize(60, 70))
-            otpEdit.setFont(FONT_OTP)
             otpEdit.setCursor(QCursor(Qt.CursorShape.IBeamCursor))
             otpEdit.installEventFilter(self)
             self.otpInputs.append(otpEdit)
@@ -569,6 +640,9 @@ class ForgotPassword(QWidget):
     def showEvent(self, event):
         super().showEvent(event)
         self._retranslate_ui()
+        if not self._animations_started:
+            self._animations_started = True
+            QTimer.singleShot(40, self._start_welcome_animation)
 
     def paintEvent(self, event):
         draw_background(self, event)

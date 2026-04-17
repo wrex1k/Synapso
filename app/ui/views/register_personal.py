@@ -79,7 +79,7 @@ class RegisterPersonal(QWidget):
         frame.setObjectName("frame")
 
         frame_layout = QVBoxLayout(frame)
-        frame_layout.setContentsMargins(0, 70, 0, 70)
+        frame_layout.setContentsMargins(0, 120, 0, 70)
         frame.setMaximumWidth(760)
         content_layout.addWidget(frame, 0, Qt.AlignmentFlag.AlignHCenter)
 

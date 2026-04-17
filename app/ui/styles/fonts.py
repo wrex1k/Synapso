@@ -18,6 +18,7 @@ SIZE_SMALL = 15
 SIZE_NORMAL = 16
 SIZE_MEDIUM = 17
 SIZE_LARGE = 18
+SIZE_XLARGE = 20
 SIZE_TITLE = 32
 
 SIZE_HEADER_SMALL = 42
@@ -259,6 +260,39 @@ GAMES_FONT_STYLES = f"""
     }}
 """
 
+# profile.py
+PROFILE_FONT_STYLES = f"""
+    QLabel#profileUsernameLabel {{
+        font-size: {SIZE_XLARGE}px;
+        font-weight: 600;
+    }}
+
+    QLabel#profileHandleLabel {{
+        font-size: {SIZE_SMALL}px;
+        font-weight: 400;
+    }}
+
+    QLabel#profileMemberLabel {{
+        font-size: {SIZE_XSMALL}px;
+        font-weight: 400;
+    }}
+
+    QLabel#profileSectionTitle {{
+        font-size: {SIZE_XLARGE}px;
+        font-weight: 600;
+    }}
+
+    QLabel#profileInfoKey {{
+        font-size: {SIZE_XSMALL}px;
+        font-weight: 400;
+    }}
+
+    QLabel#profileInfoValue {{
+        font-size: {SIZE_SMALL}px;
+        font-weight: 500;
+    }}
+"""
+
 # tutorial.py
 TUTORIAL_FONT_STYLES = f"""
     QLabel#stroopTutorialTitle {{
@@ -361,6 +395,7 @@ def get_full_fonts() -> str:
         + REGISTER_FONT_STYLES
         + FORGOT_PASSWORD_FONT_STYLES
         + GAMES_FONT_STYLES
+        + PROFILE_FONT_STYLES
         + TUTORIAL_FONT_STYLES
         + FORGOT_PASSWORD_INLINE_FONT_STYLES
     )

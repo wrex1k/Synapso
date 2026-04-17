@@ -15,7 +15,7 @@ PRIMARY_LIGHT = "#4BA690"
 
 # hover colors
 HOVER_PRIMARY = "#1B5E56"
-HOVER_LIGHT = "rgba(255, 255, 255, 0.1)"
+HOVER_DARK = "rgba(32, 48, 47, 0.24)"
 
 # neutral colors
 OFF_WHITE = "#FAFAFA"

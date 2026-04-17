@@ -5,6 +5,7 @@ from app.ui.styles.login import LOGIN_STYLES
 from app.ui.styles.register import REGISTER_STYLES
 from app.ui.styles.tutorial import TUTORIAL_STYLESHEET
 from app.ui.styles.forgot_password import FORGOT_PASSWORD_STYLES
+from app.ui.styles.profile import PROFILE_STYLES
 
 from app.ui.styles.fonts import get_full_fonts
 
@@ -19,19 +20,20 @@ GLOBAL_STYLES = f"""
 """
 
 NAVBAR_STYLES = f"""
-    #titleNavbarLabel {{
+    QLabel#titleNavbarLabel {{
             color: {FONT_PRIMARY};
             font-size: 38px;
             font-weight: 600;
     }}
 
-    #profileWidget {{
+    QWidget#profileWidget {{
         background-color: {PROFILE_WIDGET};
         border: none;
         border-radius: 26px;
+        padding: 0px;
     }}
 
-    #profileWidget:hover {{
+    QWidget#profileWidget:hover {{
         background-color: {PROFILE_WIDGET_HOVER};
     }}
 
@@ -146,7 +148,7 @@ BUTTON_TRANSPARENT_STYLES = f"""
     }}
 
     QPushButton#transparentButton:hover {{
-        background-color: {HOVER_LIGHT};
+        background-color: {HOVER_DARK};
     }}
 """
 
@@ -204,8 +206,8 @@ def get_full_stylesheet():
         + INPUT_FIELD_STYLES
         + UPLOAD_BUTTON_STYLES
         + BUTTON_PRIMARY_STYLES
-            + PROGRESS_BAR_STYLES
-            + BUTTON_TRANSPARENT_STYLES
+        + PROGRESS_BAR_STYLES
+        + BUTTON_TRANSPARENT_STYLES
         + KEY_CHIP_STYLES
         + BACK_BUTTON_STYLES
         + GAMES_STYLES
@@ -213,4 +215,5 @@ def get_full_stylesheet():
         + LOGIN_STYLES
         + REGISTER_STYLES
         + FORGOT_PASSWORD_STYLES
+        + PROFILE_STYLES
     )

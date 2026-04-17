@@ -1,3 +1,7 @@
+"""RegisterAuth is the second step of the registration flow where the user sets a password.
+It validates password rules and matching confirmation, manages UI state (idle/loading/error),
+and emits the submitted password on success. Includes fade-in animations on show."""
+
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QGraphicsOpacityEffect, QGridLayout, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget
@@ -10,14 +14,8 @@ from app.utils.ui_helpers import draw_background, update_button_state
 from app.utils.validator import validate_password, validate_passwords_match
 from translations.translation import translate
 
-"""
-RegisterAuth is the second step of the registration flow where the user sets a password.
-
-It validates password rules and matching confirmation, manages UI state (idle/loading/error),
-and emits the submitted password on success. Includes fade-in animations on show.
-"""
-
 logger = get_logger(__name__)
+
 
 class RegisterAuth(QWidget):
     auth_data_submit = Signal(str)
@@ -54,7 +52,7 @@ class RegisterAuth(QWidget):
 
         contentWidget = QWidget(self)
         rootLayout = QVBoxLayout(contentWidget)
-        rootLayout.setContentsMargins(40, 0, 40, 0)
+        rootLayout.setContentsMargins(0, 0, 0, 0)
 
         mainLayout.addWidget(contentWidget, 0, 0)
 
@@ -70,12 +68,12 @@ class RegisterAuth(QWidget):
         frame = QWidget(contentWidget)
         frame.setObjectName("frame")
         frame.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        frame.setMinimumSize(QSize(600, 500))
+        frame.setMinimumSize(QSize(600, 800))
 
         frameLayout = QVBoxLayout(frame)
         frameLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        frameLayout.setContentsMargins(0, 70, 0, 70)
-        frameLayout.setSpacing(40)
+        frameLayout.setContentsMargins(0, 150, 0, 70)
+        frameLayout.setSpacing(60)
 
         self._frame = frame
         self._frameLayout = frameLayout
@@ -247,8 +245,12 @@ class RegisterAuth(QWidget):
         self.state = "error"
         update_button_state(self.signUpButton, 
             state=self.state,
-            idle_text=translate("RegisterAuth", "Finish the registration"), 
-            error_text=message)
+            idle_text=translate("RegisterAuth", "Finish the registration"),
+            loading_text=translate("RegisterAuth", "Finishing registration..."),
+            error_text=message,
+            auto_reset_ms=2000)
+        
+        QTimer.singleShot(2000, lambda: setattr(self, "state", "idle"))
 
     def showEvent(self, event):
         super().showEvent(event)

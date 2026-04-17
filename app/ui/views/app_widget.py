@@ -1,3 +1,5 @@
+"""Main application widget managing navigation, pages and user profile display."""
+
 from __future__ import annotations
 
 from PySide6.QtCore import QSize, Signal
@@ -7,14 +9,13 @@ from supabase_auth import User
 
 from app.ui.components.navbar import NavbarWidget
 from app.ui.components.sidebar import SidebarWidget
+from app.ui.views.games import GamesView
+from app.ui.views.profile import ProfileView
 from app.utils.ui_helpers import draw_background
 from app.utils.logger import get_logger
 
-"""
-Main application widget managing navigation, pages and user profile display.
-"""
-
 logger = get_logger(__name__)
+
 
 class AppWidget(QWidget):
     logout_requested = Signal()
@@ -33,11 +34,20 @@ class AppWidget(QWidget):
 
         self.on_page_clicked("dashboard")
 
-        logger.debug("Initializing AppWidget (user_id: ..%s)", self._user.id[-10:])
-
     def _build_ui(self):
-        self.rootLayout = QHBoxLayout(self)
-        self.rootLayout.setContentsMargins(20, 20, 20, 20)
+        self._root_stack = QStackedWidget(self)
+        self._root_stack.setAutoFillBackground(False)
+
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(self._root_stack)
+
+        self._main_widget = QWidget()
+        self._main_widget.setAutoFillBackground(False)
+        self._root_stack.addWidget(self._main_widget)
+
+        self.rootLayout = QHBoxLayout(self._main_widget)
+        self.rootLayout.setContentsMargins(50, 25, 50, 25)
 
         self.mainLayout = QVBoxLayout()
         self.mainLayout.setSpacing(0)
@@ -49,21 +59,23 @@ class AppWidget(QWidget):
         self.bodyLayout = QHBoxLayout()
         self.bodyLayout.setSpacing(20)
         self.bodyLayout.setContentsMargins(10, 0, 0, 0)
-        self.mainLayout.addLayout(self.bodyLayout, 1)
+        self.mainLayout.addLayout(self.bodyLayout, 0)
 
         self.sidebarWidget = SidebarWidget(self)
         self.dashboardButton = self.sidebarWidget.dashboardButton
         self.gamesButton = self.sidebarWidget.gamesButton
-        self.leaderboardButton = self.sidebarWidget.leaderboardButton
+        self.statisticsButton = self.sidebarWidget.statisticsButton
         self.settingsButton = self.sidebarWidget.settingsButton
         self.infoButton = self.sidebarWidget.infoButton
         self.logoutButton = self.sidebarWidget.logoutButton
 
         self.bodyLayout.addWidget(self.sidebarWidget)
 
-        self.contentWidget = QStackedWidget(self)
+        self.contentWidget = QStackedWidget(self._main_widget)
         self.contentWidget.setObjectName("contentWidget")
         self.bodyLayout.addWidget(self.contentWidget, 1)
+
+        self._root_stack.addWidget(QWidget())
 
     def _nav_button(self, parent: QWidget, name: str) -> QPushButton:
         b = QPushButton(parent)
@@ -79,42 +91,47 @@ class AppWidget(QWidget):
 
     def _init_pages(self):
         self.dashboard_page = QWidget()
-        self.games_page = QWidget()
-        self.leaderboard_page = QWidget()
-        
+        self.games_page = GamesView(user_id=self._user.id)
+        self.statistics_page = QWidget()
         self.settings_page = QWidget()
         self.info_page = QWidget()
+        self.profile_page = ProfileView(user=self._user)
 
         for page in (
             self.dashboard_page,
             self.games_page,
-            self.leaderboard_page,
+            self.statistics_page,
             self.settings_page,
             self.info_page,
+            self.profile_page,
         ):
             self.contentWidget.addWidget(page)
 
         self.pages = {
             "dashboard": self.dashboardButton,
             "games": self.gamesButton,
-            "leaderboard": self.leaderboardButton,
+            "statistics": self.statisticsButton,
             "settings": self.settingsButton,
             "info": self.infoButton,
         }
         self.page_map = {
             "dashboard": self.dashboard_page,
             "games": self.games_page,
-            "leaderboard": self.leaderboard_page,
+            "statistics": self.statistics_page,
             "settings": self.settings_page,
             "info": self.info_page,
         }
 
+        self.games_page.launch_game_requested.connect(self._show_fullscreen_game)
+
     def _connect_signals(self):
         self.logoutButton.clicked.connect(self._on_logout_clicked)
+        self.navbarWidget.profile_clicked.connect(self._go_to_profile)
         for name, btn in self.pages.items():
             btn.clicked.connect(lambda _, n=name: self.on_page_clicked(n))
 
     def on_page_clicked(self, page_name: str):
+        logger.info("User navigated to %s..", page_name)
         for name, button in self.pages.items():
             selected = (name == page_name)
             suffix = "selected" if selected else "unselected"
@@ -131,9 +148,41 @@ class AppWidget(QWidget):
             self.page_map.get(page_name, self.dashboard_page)
         )
 
+    def _go_to_profile(self):
+        logger.info("User opened profile..")
+        for name, button in self.pages.items():
+            icon = QIcon(f":/images/icons/{name}-unselected.png")
+            if icon.isNull():
+                icon = QIcon(f":/images/icons/{name}.png")
+            button.setIcon(icon)
+            button.setProperty("selected", "false")
+            button.style().unpolish(button)
+            button.style().polish(button)
+            button.update()
+        self.contentWidget.setCurrentWidget(self.profile_page)
+
     def _on_logout_clicked(self, checked: bool = False):
+        logger.info("User initiated logout..")
         self.logoutButton.setEnabled(False)
         self.logout_requested.emit()
+
+    def _show_fullscreen_game(self, widget):
+        logger.info("Game session started: %s..", widget.__class__.__name__)
+        widget.session_done.connect(self._hide_fullscreen_game)
+
+        old = self._root_stack.widget(1)
+        self._root_stack.insertWidget(1, widget)
+        self._root_stack.setCurrentIndex(1)
+        self._root_stack.removeWidget(old)
+        old.deleteLater()
+        widget.setFocus()
+
+    def _hide_fullscreen_game(self):
+        self._root_stack.setCurrentIndex(0)
+        old = self._root_stack.widget(1)
+        self._root_stack.removeWidget(old)
+        old.deleteLater()
+        self._root_stack.insertWidget(1, QWidget())
 
     def paintEvent(self, event):
         draw_background(self, event)

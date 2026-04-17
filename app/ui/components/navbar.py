@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSize, Qt, QEvent, Signal
 from PySide6.QtGui import QPixmap
 from app.ui.styles.fonts import FONT_NAVBAR
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QWidget
@@ -12,6 +12,8 @@ from app.ui.styles.colors import *
 
 
 class NavbarWidget(QWidget):
+    profile_clicked = Signal()
+    
     def __init__(self, username: str, avatar_path: str | None = None, parent=None):
         super().__init__(parent)
         self._username = username
@@ -37,6 +39,7 @@ class NavbarWidget(QWidget):
         self.profileWidget = QWidget(self)
         self.profileWidget.setObjectName("profileWidget")
         self.profileWidget.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
+        self.profileWidget.installEventFilter(self)
 
         self.profileLayout = QHBoxLayout(self.profileWidget)
         self.profileLayout.setSpacing(10)
@@ -66,3 +69,8 @@ class NavbarWidget(QWidget):
             self.avatarIcon.setPixmap(pixmap)
             self.avatarIcon.setScaledContents(True)
             image_to_rounded(self.avatarIcon)
+
+    def eventFilter(self, obj, event):
+        if obj == self.profileWidget and event.type() == QEvent.Type.MouseButtonPress:
+            self.profile_clicked.emit()
+        return super().eventFilter(obj, event)
