@@ -5,14 +5,13 @@ from numpy.ma import size
 GENERAL_SANS = "General Sans"
 
 # Font weights
-WEIGHT_LIGHT = QFont.Weight.Light
-WEIGHT_REGULAR = QFont.Weight.Normal
-WEIGHT_MEDIUM = QFont.Weight.Medium
-WEIGHT_SEMIBOLD = QFont.Weight.DemiBold
-WEIGHT_BOLD = QFont.Weight.Bold
+WEIGHT_LIGHT = QFont.Weight.Light           # 300
+WEIGHT_REGULAR = QFont.Weight.Normal        # 400
+WEIGHT_MEDIUM = QFont.Weight.Medium         # 500
+WEIGHT_SEMIBOLD = QFont.Weight.DemiBold     # 600
+WEIGHT_BOLD = QFont.Weight.Bold             # 700
 
 # Shared font sizes
-SIZE_TINY = 13
 SIZE_XSMALL = 14
 SIZE_SMALL = 15
 SIZE_NORMAL = 16
@@ -66,20 +65,16 @@ FONT_NAVBAR = get_general_sans(SIZE_TITLE, WEIGHT_BOLD)
 BASE_FONT_STYLES = f"""
     * {{
         font-family: \"General Sans\";
-        font-weight: 400;
+        font-weight: {WEIGHT_REGULAR};
     }}
-
+    
     QLabel#titleLabel {{
         font-size: {SIZE_HEADER_SMALL}px;
-        font-weight: 600;
+        font-weight: {WEIGHT_SEMIBOLD};
     }}
 
     #usernameLabel {{
-        font-size: {SIZE_XSMALL}px;
-    }}
-
-    QLabel#profilePicture {{
-        font-size: {SIZE_MEDIUM}px;
+        font-size: {SIZE_SMALL}px;
     }}
 
     QLabel#inputLabel {{
@@ -105,13 +100,19 @@ BASE_FONT_STYLES = f"""
 
 # login.py
 LOGIN_FONT_STYLES = f"""
+    QPushButton#langSkBtn,
+    QPushButton#langEnBtn {{
+        font-size: {SIZE_MEDIUM}px;
+        font-weight: {WEIGHT_MEDIUM};
+    }}
+
     QLabel#titleLabelLeft {{
         font-size: {LOGIN_HEADER_SMALL}px;
     }}
 
     QLabel#titleLabelRight {{
         font-size: {LOGIN_HEADER_LARGE}px;
-        font-weight: 600;
+        font-weight: {WEIGHT_SEMIBOLD};
     }}
 
     #forgotPasswordLink, #startRegistration, #startRegistrationLabel {{
@@ -121,6 +122,10 @@ LOGIN_FONT_STYLES = f"""
 
 # register.py
 REGISTER_FONT_STYLES = f"""
+    QLabel#profilePicture {{
+        font-size: {SIZE_MEDIUM}px;
+    }}
+
     #info, #uploadRestriction {{
         font-size: {SIZE_MEDIUM}px;
     }}
@@ -215,7 +220,7 @@ GAMES_FONT_STYLES = f"""
     }}
 
     QLabel#activityCardDescription {{
-        font-size: 14px;
+        font-size: 15px;
     }}
 
     QLabel#activityPPRowNumber,
@@ -265,6 +270,10 @@ PROFILE_FONT_STYLES = f"""
     QLabel#profileUsernameLabel {{
         font-size: {SIZE_XLARGE}px;
         font-weight: 600;
+    }}
+
+    QLabel#usernameLabel {{
+        font-size: {SIZE_SMALL}px;
     }}
 
     QLabel#profileHandleLabel {{
@@ -366,12 +375,88 @@ TUTORIAL_FONT_STYLES = f"""
     }}
 
     QPushButton#tutorialButton {{
-        font-size: {SIZE_TINY}px;
+        font-size: {SIZE_XSMALL}px;
         font-weight: 500;
     }}
 
     QPushButton#transparentButton {{
         font-size: {SIZE_SMALL}px;
+        font-weight: 500;
+    }}
+"""
+
+# about.py
+ABOUT_FONT_STYLES = f"""
+    QLabel#aboutCardTitle {{
+        font-size: 22px;
+        font-weight: 600;
+    }}
+
+    QLabel#aboutSectionTitle {{
+        font-size: 20px;
+        font-weight: 500;
+    }}
+
+    QLabel#aboutDescriptionText {{
+        font-size: 15px;
+        font-weight: 400;
+    }}
+
+    QLabel#aboutMetaText {{
+        font-size: 14px;
+        font-weight: 400;
+    }}
+
+    QTextEdit#reportEditor {{
+        font-size: 14px;
+        font-weight: 400;
+    }}
+
+    QPushButton#reportSendButton {{
+        font-size: 14px;
+        font-weight: 500;
+    }}
+
+    QLabel#builtWithName {{
+        font-size: 15px;
+        font-weight: 500;
+    }}
+
+    QLabel#builtWithDesc {{
+        font-size: 14px;
+        font-weight: 400;
+    }}
+
+    QComboBox#changelogCombo {{
+        font-size: 14px;
+        font-weight: 500;
+    }}
+
+    QLabel#changelogBullet {{
+        font-size: 15px;
+        font-weight: 600;
+    }}
+"""
+
+# settings.py
+SETTINGS_FONT_STYLES = f"""
+    QLabel#settingsCardTitle {{
+        font-size: {SIZE_XLARGE}px;
+        font-weight: 600;
+    }}
+
+    QLabel#settingsCardDescription {{
+        font-size: {SIZE_SMALL}px;
+        font-weight: 400;
+    }}
+
+    QPushButton#langBtn {{
+        font-size: {SIZE_XSMALL}px;
+        font-weight: 600;
+    }}
+
+    QPushButton#themeBtn {{
+        font-size: {SIZE_XSMALL}px;
         font-weight: 500;
     }}
 """
@@ -397,5 +482,7 @@ def get_full_fonts() -> str:
         + GAMES_FONT_STYLES
         + PROFILE_FONT_STYLES
         + TUTORIAL_FONT_STYLES
+        + ABOUT_FONT_STYLES
+        + SETTINGS_FONT_STYLES
         + FORGOT_PASSWORD_INLINE_FONT_STYLES
     )

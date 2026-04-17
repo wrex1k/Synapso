@@ -7,9 +7,9 @@ from PySide6.QtWidgets import (
     QStackedWidget, QVBoxLayout, QWidget,
 )
 
-from app.ui.styles.colors import FONT_PRIMARY
 from app.utils.ui_helpers import draw_background
 from app.utils.logger import get_logger
+from translations.translation import translate
 
 logger = get_logger(__name__)
 
@@ -50,7 +50,7 @@ class BaseTutorialWidget(QWidget):
         raise NotImplementedError
 
     def _get_tip_text(self) -> str:
-        return "Don't worry \u2013 a brief tutorial will guide you before starting."
+        return translate("BaseTutorialWidget", "Don't worry - a brief tutorial will guide you before starting.")
 
     def _build_ui(self):
         root = QVBoxLayout(self)
@@ -120,7 +120,7 @@ class BaseTutorialWidget(QWidget):
         intro.setWordWrap(True)
         text_col.addWidget(intro)
 
-        how = QLabel("How to play")
+        how = QLabel(translate("BaseTutorialWidget", "How to play"))
         how.setObjectName("stroopTutorialHow")
         text_col.addWidget(how)
 
@@ -146,7 +146,7 @@ class BaseTutorialWidget(QWidget):
 
         center_layout.addSpacing(30)
 
-        start_btn = QPushButton("Practice Tutorial")
+        start_btn = QPushButton(translate("BaseTutorialWidget", "Practice Tutorial"))
         start_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         start_btn.setFixedSize(182, 48)
         start_btn.setObjectName("transparentButton")
@@ -178,7 +178,7 @@ class BaseTutorialWidget(QWidget):
         header = QVBoxLayout()
         header.setSpacing(4)
 
-        self._step_title = QLabel("Practice Tutorial")
+        self._step_title = QLabel(translate("BaseTutorialWidget", "Practice Tutorial"))
         self._step_title.setObjectName("practiceTutorialTitle")
         header.addWidget(self._step_title)
 
@@ -228,7 +228,7 @@ class BaseTutorialWidget(QWidget):
         bottom_row = QHBoxLayout()
         bottom_row.setContentsMargins(0, 0, 0, 0)
 
-        self._next_btn = QPushButton("Next")
+        self._next_btn = QPushButton(translate("BaseTutorialWidget", "Next"))
         self._next_btn.setObjectName("practiceTutorialButton")
         self._next_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Minimum)
         self._next_btn.clicked.connect(self._on_tutorial_next)
@@ -249,12 +249,21 @@ class BaseTutorialWidget(QWidget):
     def _update_tutorial_state(self):
         total = len(self._tutorial_steps)
         self._example_stack.setCurrentIndex(self._tutorial_index)
-        self._step_counter.setText(f"Step {self._tutorial_index + 1} of {total}")
+        self._step_counter.setText(
+            translate("BaseTutorialWidget", "Step {current} of {total}").format(
+                current=self._tutorial_index + 1,
+                total=total,
+            )
+        )
         is_last = self._tutorial_index == (total - 1)
         if is_last:
-            self._next_btn.setText("Start" if self._allow_gameplay_tutorial else "Back")
+            self._next_btn.setText(
+                translate("BaseTutorialWidget", "Start")
+                if self._allow_gameplay_tutorial
+                else translate("BaseTutorialWidget", "Back")
+            )
         else:
-            self._next_btn.setText("Next")
+            self._next_btn.setText(translate("BaseTutorialWidget", "Next"))
 
         for idx, dot in enumerate(self._dots):
             if idx == self._tutorial_index:
@@ -284,6 +293,27 @@ class BaseTutorialWidget(QWidget):
             self.session_done.emit(False)
             return
         super().keyPressEvent(event)
+
+    def _retranslate_ui(self) -> None:
+        current_page = self._main_stack.currentIndex()
+        current_step = self._tutorial_index
+
+        self._tutorial_steps = self._get_tutorial_steps()
+        self._tutorial_index = min(current_step, max(len(self._tutorial_steps) - 1, 0))
+
+        while self._main_stack.count():
+            widget = self._main_stack.widget(0)
+            self._main_stack.removeWidget(widget)
+            widget.deleteLater()
+
+        self._main_stack.addWidget(self._build_intro_tutorial_page())
+        self._main_stack.addWidget(self._build_practice_tutorial_page())
+        self._main_stack.setCurrentIndex(min(current_page, self._main_stack.count() - 1))
+        self._update_tutorial_state()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._retranslate_ui()
 
     def paintEvent(self, event):
         draw_background(self, event)

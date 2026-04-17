@@ -5,6 +5,8 @@ from .register import REGISTER_STYLES
 from .games import GAMES_STYLES
 from .tutorial import TUTORIAL_STYLESHEET
 from .forgot_password import FORGOT_PASSWORD_STYLES
+from .settings import SETTINGS_STYLES
+from .about import ABOUT_STYLES
 
 __all__ = [
     # Colors
@@ -35,4 +37,6 @@ __all__ = [
     "GAMES_STYLES",
     "TUTORIAL_STYLESHEET",
     "FORGOT_PASSWORD_STYLES",
+    "SETTINGS_STYLES",
+    "ABOUT_STYLES",
 ]

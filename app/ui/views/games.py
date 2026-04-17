@@ -24,6 +24,7 @@ from app.repository.user_repository import fetch_avatar
 from app.core.registry import registry
 from app.utils.logger import get_logger
 from app.utils.ui_helpers import image_to_rounded
+from translations.translation import translate
 
 logger = get_logger(__name__)
 
@@ -48,6 +49,21 @@ _WIDGET_FACTORIES = {
     "mental_rotation": lambda: MentalRotationWidget(),
 }
 
+_GAME_TEXTS = {
+    "stroop": {
+        "title": "Stroop color and word test",
+        "desc": "The Stroop Test measures attention, processing speed, and cognitive control. The task is to name the color of a word, not the word itself, which creates mental interference.",
+    },
+    "memory_grid": {
+        "title": "Memory Grid Test",
+        "desc": "The Memory Grid Test measures visual working memory and attention. The task is to remember a pattern in a grid and reproduce it as accurately as possible.",
+    },
+    "mental_rotation": {
+        "title": "Mental Rotation Test",
+        "desc": "The Mental Rotation Test measures spatial reasoning and the ability to rotate objects in the mind. The task is to decide whether rotated objects are identical or mirrored.",
+    },
+}
+
 _ACTIVITY_ROWS = [
     ("PP", "Players playing"),
     ("GT", "Games today"),
@@ -60,7 +76,6 @@ _STAT_CARDS = [
     ("acc", "Average accuracy"),
     ("pi", "Average performance index"),
 ]
-
 
 class _RealtimeWorker(QObject):
     """Persistent QObject worker that listens for leaderboard changes via Supabase Realtime.
@@ -125,8 +140,10 @@ class GamesView(QWidget):
         # Leaderboard cache and avatar cache
         self._lb_cache: dict[int, dict] = {}
         self._avatar_cache: dict[str, QPixmap] = {}
+        self._current_user_rank: int | None = None
 
         self._build_ui()
+        self._retranslate_ui()
         self._keep_thread(registry.run_thread(fetch_games, self._on_games_loaded))
 
     def _keep_thread(self, thread) -> None:
@@ -146,12 +163,12 @@ class GamesView(QWidget):
         title_col = QVBoxLayout(title_widget)
         title_col.setSpacing(0)
         title_col.setContentsMargins(0, 0, 0, 0)
-        page_title = QLabel("Games")
-        page_title.setObjectName("gameTitle")
-        page_subtitle = QLabel("Explore global game statistics and compete on the leaderboard")
-        page_subtitle.setObjectName("gameDescription")
-        title_col.addWidget(page_title)
-        title_col.addWidget(page_subtitle)
+        self._page_title_lbl = QLabel("")
+        self._page_title_lbl.setObjectName("gameTitle")
+        self._page_subtitle_lbl = QLabel("")
+        self._page_subtitle_lbl.setObjectName("gameDescription")
+        title_col.addWidget(self._page_title_lbl)
+        title_col.addWidget(self._page_subtitle_lbl)
 
         header_layout.addWidget(title_widget)
         header_layout.addStretch()
@@ -201,7 +218,7 @@ class GamesView(QWidget):
         self._leaderboard_panel = self._build_leaderboard_panel()
         right_col.addWidget(self._leaderboard_panel, 1)
         
-        self._user_rank_lbl = QLabel("Your rank: —")
+        self._user_rank_lbl = QLabel("")
         self._user_rank_lbl.setObjectName("userRankLabel")
         self._user_rank_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         right_col.addWidget(self._user_rank_lbl, 0)
@@ -219,9 +236,9 @@ class GamesView(QWidget):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(20)
 
-        title = QLabel("Leaderboard")
-        title.setObjectName("leaderboardCardTitle")
-        layout.addWidget(title)
+        self._leaderboard_title_lbl = QLabel("")
+        self._leaderboard_title_lbl.setObjectName("leaderboardCardTitle")
+        layout.addWidget(self._leaderboard_title_lbl)
 
         self._lb_container = QWidget()
         self._lb_container.setObjectName("lbContainer")
@@ -242,7 +259,7 @@ class GamesView(QWidget):
 
         return panel
 
-    def _build_game_panel(self, game_id: str, title: str, description: str) -> QWidget:
+    def _build_game_panel(self, game_slug: str) -> QWidget:
         panel = QWidget()
         outer = QVBoxLayout(panel)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -254,22 +271,27 @@ class GamesView(QWidget):
         info_layout = QVBoxLayout(info_card)
         info_layout.setContentsMargins(22, 22, 22, 22)
         info_layout.setSpacing(10)
-        info_title = QLabel(title)
+        _texts = _GAME_TEXTS.get(game_slug, {"title": "", "desc": ""})
+        info_title = QLabel(translate("GamesView", _texts["title"]))
         info_title.setObjectName("infoCardTitle")
-        info_desc = QLabel(description)
+        info_desc = QLabel(translate("GamesView", _texts["desc"]))
         info_desc.setObjectName("infoCardDescription")
         info_desc.setWordWrap(True)
         info_layout.addWidget(info_title)
         info_layout.addWidget(info_desc)
         outer.addWidget(info_card)
 
+        panel._info_title_lbl = info_title
+        panel._info_desc_lbl = info_desc
+        panel._game_slug = game_slug
+
         # Bottom row: activity card + stats cards
         bottom_row = QHBoxLayout()
         bottom_row.setSpacing(50)
         bottom_row.setContentsMargins(0, 0, 0, 0)
 
-        activity_card, num_lbls = self._build_activity_card()
-        stats_card, stat_lbls = self._build_stats_card()
+        activity_card, num_lbls, activity_title_lbl, activity_desc_lbl, activity_row_title_lbls = self._build_activity_card()
+        stats_card, stat_lbls, stat_title_lbls = self._build_stats_card()
         bottom_row.addWidget(activity_card)
         bottom_row.addWidget(stats_card, 1)
         outer.addLayout(bottom_row, 1)
@@ -279,12 +301,12 @@ class GamesView(QWidget):
         btn_row.setSpacing(16)
         btn_row.setContentsMargins(0, 0, 120, 0)
 
-        tutorial_btn = QPushButton("Tutorial")
+        tutorial_btn = QPushButton(translate("GamesView", "Tutorial"))
         tutorial_btn.setObjectName("tutorialButton")
         tutorial_btn.setFixedSize(165, 44)
         tutorial_btn.setProperty("unplayed", True)
 
-        play_btn = QPushButton("Play")
+        play_btn = QPushButton(translate("GamesView", "Play"))
         play_btn.setObjectName("playButton")
         play_btn.setFixedSize(165, 44)
         play_btn.setEnabled(False)
@@ -294,20 +316,23 @@ class GamesView(QWidget):
         btn_row.addWidget(play_btn)
         outer.addLayout(btn_row)
 
-        self._tutorial_btns[game_id] = tutorial_btn
-        self._play_btns[game_id] = play_btn
-        self._play_unlocked[game_id] = False
+        self._tutorial_btns[game_slug] = tutorial_btn
+        self._play_btns[game_slug] = play_btn
+        self._play_unlocked[game_slug] = False
 
-        tutorial_btn.clicked.connect(lambda _, gid=game_id: self._launch_tutorial(gid))
-        play_btn.clicked.connect(lambda _, gid=game_id: self._launch_play(gid))
+        tutorial_btn.clicked.connect(lambda _, gid=game_slug: self._launch_tutorial(gid))
+        play_btn.clicked.connect(lambda _, gid=game_slug: self._launch_play(gid))
 
         panel._num_lbls = num_lbls
         panel._stat_lbls = stat_lbls
+        panel._activity_title_lbl = activity_title_lbl
+        panel._activity_desc_lbl = activity_desc_lbl
+        panel._activity_row_title_lbls = activity_row_title_lbls
+        panel._stat_title_lbls = stat_title_lbls
 
         return panel
 
-    @staticmethod
-    def _build_activity_card() -> tuple[QWidget, list[QLabel]]:
+    def _build_activity_card(self) -> tuple[QWidget, list[QLabel], QLabel, QLabel, dict[str, QLabel]]:
         card = QWidget()
         card.setObjectName("activityCardWidget")
         card.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
@@ -332,6 +357,7 @@ class GamesView(QWidget):
         rows_container.setContentsMargins(0, 0, 0, 0)
 
         num_lbls: list[QLabel] = []
+        row_title_lbls: dict[str, QLabel] = {}
         for suffix, label_text in _ACTIVITY_ROWS:
             row_widget = QWidget()
             row_widget.setObjectName(f"activity{suffix}Widget")
@@ -345,6 +371,7 @@ class GamesView(QWidget):
 
             title_lbl = QLabel(label_text)
             title_lbl.setObjectName(f"activity{suffix}RowTitle")
+            row_title_lbls[suffix] = title_lbl
 
             row_layout.addWidget(num_lbl)
             row_layout.addWidget(title_lbl)
@@ -352,10 +379,9 @@ class GamesView(QWidget):
             num_lbls.append(num_lbl)
 
         layout.addLayout(rows_container)
-        return card, num_lbls
+        return card, num_lbls, act_title, act_desc, row_title_lbls
 
-    @staticmethod
-    def _build_stats_card() -> tuple[QWidget, dict]:
+    def _build_stats_card(self) -> tuple[QWidget, dict, dict[str, QLabel]]:
         card = QWidget()
         card.setObjectName("statsCardWidget")
 
@@ -364,6 +390,7 @@ class GamesView(QWidget):
         layout.setSpacing(20)
 
         stat_lbls: dict[str, tuple[QLabel, QLabel]] = {}
+        stat_title_lbls: dict[str, QLabel] = {}
         for suffix, title_text in _STAT_CARDS:
             stat_widget = QWidget()
             stat_widget.setObjectName(f"{suffix}CardWidget")
@@ -374,6 +401,7 @@ class GamesView(QWidget):
             title_lbl = QLabel(title_text)
             title_lbl.setObjectName(f"{suffix}CardTitle")
             stat_layout.addWidget(title_lbl)
+            stat_title_lbls[suffix] = title_lbl
 
             value_row = QHBoxLayout()
             value_row.setSpacing(0)
@@ -392,7 +420,66 @@ class GamesView(QWidget):
             layout.addWidget(stat_widget, 1)
             stat_lbls[suffix] = (val_lbl, delta_lbl)
 
-        return card, stat_lbls
+        return card, stat_lbls, stat_title_lbls
+
+    def _set_user_rank_text(self, user_rank: int | None) -> None:
+        if user_rank is None:
+            self._user_rank_lbl.setText(translate("GamesView", "Your rank: —"))
+            return
+        self._user_rank_lbl.setText(
+            translate("GamesView", "Your rank: {rank}").format(rank=user_rank)
+        )
+
+    def _retranslate_panel(self, panel: QWidget) -> None:
+        activity_row_texts = {
+            "PP": translate("GamesView", "Players playing"),
+            "GT": translate("GamesView", "Games today"),
+            "TW": translate("GamesView", "This week"),
+            "TG": translate("GamesView", "Total games"),
+        }
+        stat_title_texts = {
+            "rt": translate("GamesView", "Average reaction time"),
+            "acc": translate("GamesView", "Average accuracy"),
+            "pi": translate("GamesView", "Average performance index"),
+        }
+
+        if hasattr(panel, "_info_title_lbl"):
+            _texts = _GAME_TEXTS.get(panel._game_slug, {"title": "", "desc": ""})
+            panel._info_title_lbl.setText(translate("GamesView", _texts["title"]))
+            panel._info_desc_lbl.setText(translate("GamesView", _texts["desc"]))
+        if hasattr(panel, "_activity_title_lbl"):
+            panel._activity_title_lbl.setText(translate("GamesView", "Activity"))
+        if hasattr(panel, "_activity_desc_lbl"):
+            panel._activity_desc_lbl.setText(
+                translate("GamesView", "Below you can read the basic activity stats about this game")
+            )
+        if hasattr(panel, "_activity_row_title_lbls"):
+            for suffix, _label_text in _ACTIVITY_ROWS:
+                title_lbl = panel._activity_row_title_lbls.get(suffix)
+                if title_lbl is not None:
+                    title_lbl.setText(activity_row_texts.get(suffix, _label_text))
+        if hasattr(panel, "_stat_title_lbls"):
+            for suffix, _title_text in _STAT_CARDS:
+                title_lbl = panel._stat_title_lbls.get(suffix)
+                if title_lbl is not None:
+                    title_lbl.setText(stat_title_texts.get(suffix, _title_text))
+
+    def _retranslate_ui(self) -> None:
+        self._page_title_lbl.setText(translate("GamesView", "Games"))
+        self._page_subtitle_lbl.setText(
+            translate("GamesView", "Explore global game statistics and compete on the leaderboard")
+        )
+        self._leaderboard_title_lbl.setText(translate("GamesView", "Leaderboard"))
+
+        for panel in self._game_panels.values():
+            self._retranslate_panel(panel)
+
+        for btn in self._tutorial_btns.values():
+            btn.setText(translate("GamesView", "Tutorial"))
+        for btn in self._play_btns.values():
+            btn.setText(translate("GamesView", "Play"))
+
+        self._set_user_rank_text(self._current_user_rank)
 
     def _on_games_loaded(self, games: list) -> None:
         for g in games:
@@ -401,12 +488,13 @@ class GamesView(QWidget):
             if impl_key is None:
                 logger.debug("No implementation for db game id=%d, skipping", db_id)
                 continue
-            panel = self._build_game_panel(impl_key, g["name"], g["description"])
+            panel = self._build_game_panel(impl_key)
             self._game_stack.addWidget(panel)
             self._game_keys.append(impl_key)
             self._game_db_ids[impl_key] = db_id
             self._game_panels[impl_key] = panel
 
+        self._retranslate_ui()
         self._refresh_play_buttons()
         self._switcher_refresh()
 
@@ -468,7 +556,14 @@ class GamesView(QWidget):
             is_better = rt_diff < 0
             direction = "↑" if is_better else "↓"
             color = "#12A54C" if is_better else "#E74C3C"
-            message = f"you are {abs(int(rt_diff))}ms faster than global avg" if is_better else f"you are {abs(int(rt_diff))}ms slower than global avg"
+            if is_better:
+                message = translate("GamesView", "you are {value}ms faster than global avg").format(
+                    value=abs(int(rt_diff))
+                )
+            else:
+                message = translate("GamesView", "you are {value}ms slower than global avg").format(
+                    value=abs(int(rt_diff))
+                )
             delta.setText(f'<span style="color:{color}; font-weight: 600;">{direction}</span>&nbsp;<span style="color:#FAFAFA;">{message}</span>')
         else:
             delta.setText("")
@@ -481,7 +576,14 @@ class GamesView(QWidget):
             is_better = acc_diff > 0
             direction = "↑" if is_better else "↓"
             color = "#12A54C" if is_better else "#E74C3C"
-            message = f"you are {abs(acc_diff):.1f}% better than global avg" if is_better else f"you are {abs(acc_diff):.1f}% worse than global avg"
+            if is_better:
+                message = translate("GamesView", "you are {value}% more accurate than global avg").format(
+                    value=f"{abs(acc_diff):.1f}"
+                )
+            else:
+                message = translate("GamesView", "you are {value}% less accurate than global avg").format(
+                    value=f"{abs(acc_diff):.1f}"
+                )
             delta.setText(f'<span style="color:{color}; font-weight: 600;">{direction}</span>&nbsp;<span style="color:#FAFAFA;">{message}</span>')
         else:
             delta.setText("")
@@ -494,7 +596,14 @@ class GamesView(QWidget):
             is_better = score_diff > 0
             direction = "↑" if is_better else "↓"
             color = "#12A54C" if is_better else "#E74C3C"
-            message = f"you are {abs(score_diff):.1f}pi higher than global avg" if is_better else f"you are {abs(score_diff):.1f}pi lower than global avg"
+            if is_better:
+                message = translate("GamesView", "you are {value}pi higher than global avg").format(
+                    value=f"{abs(score_diff):.1f}"
+                )
+            else:
+                message = translate("GamesView", "you are {value}pi lower than global avg").format(
+                    value=f"{abs(score_diff):.1f}"
+                )
             delta.setText(f'<span style="color:{color}; font-weight: 600;">{direction}</span>&nbsp;<span style="color:#FAFAFA;">{message}</span>')
         else:
             delta.setText("")
@@ -516,6 +625,7 @@ class GamesView(QWidget):
     def _render_leaderboard(self, data: dict) -> None:
         entries = data.get("entries", [])
         user_rank = data.get("user_rank")
+        self._current_user_rank = user_rank
 
         self._lb_container.setUpdatesEnabled(False)
         try:
@@ -531,9 +641,7 @@ class GamesView(QWidget):
         finally:
             self._lb_container.setUpdatesEnabled(True)
 
-        self._user_rank_lbl.setText(
-            f"Your rank: {user_rank}" if user_rank is not None else "Your rank: —"
-        )
+        self._set_user_rank_text(user_rank)
 
     def _build_lb_row(self, entry: dict) -> QWidget:
         is_online = entry.get("is_online", False)
@@ -561,7 +669,7 @@ class GamesView(QWidget):
         middle_col.setContentsMargins(0, 0, 0, 0)
         middle_col.setSpacing(2)
         
-        name_lbl = QLabel(entry.get("username", "Player"))
+        name_lbl = QLabel(entry.get("username", translate("GamesView", "Player")))
         name_lbl.setObjectName("leaderboardRowTitle")
         middle_col.addWidget(name_lbl)
 
@@ -569,7 +677,7 @@ class GamesView(QWidget):
         status_row.setContentsMargins(0, 0, 0, 0)
         status_row.setSpacing(0)
         status_color = "#3A9A8F" if is_online else "#9E3F3F"
-        status_text = "Online" if is_online else "Offline"
+        status_text = translate("GamesView", "Online") if is_online else translate("GamesView", "Offline")
         status_lbl = QLabel(f'<span style="color:{status_color};">⬤ {status_text}</span>')
         status_lbl.setTextFormat(Qt.TextFormat.RichText)
         status_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
@@ -834,6 +942,11 @@ class GamesView(QWidget):
             thread.finished.connect(thread.deleteLater)
         self._rt_workers.clear()
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._retranslate_ui()
+
     def closeEvent(self, event):
         self._stop_all_realtime()
         super().closeEvent(event)
+

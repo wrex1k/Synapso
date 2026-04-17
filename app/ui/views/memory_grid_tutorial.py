@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QW
 from app.ui.styles.colors import FONT_PRIMARY
 from app.ui.views.base_tutorial import BaseTutorialWidget
 from app.utils.logger import get_logger
+from translations.translation import translate
 
 logger = get_logger(__name__)
 
@@ -42,65 +43,71 @@ class MemoryGridTutorial(BaseTutorialWidget):
                 "grid_size": 3,
                 "highlight": {1, 2, 5},
                 "cell_count": 3,
-                "description": "Memorize the highlighted pattern and click to reproduce it!",
+                "description": translate("MemoryGridTutorial", "Memorize the highlighted pattern and click to reproduce it!"),
             },
             {
                 "grid_size": 3,
                 "highlight": {1, 2},
                 "cell_count": 2,
-                "description": "The grid gets bigger as difficulty increases!",
+                "description": translate("MemoryGridTutorial", "The grid gets bigger as difficulty increases!"),
             },
         ]
 
     def _get_intro_title(self) -> str:
-        return "Memory Grid"
+        return translate("MemoryGridTutorial", "Memory Grid")
 
     def _get_intro_subtitle(self) -> str:
-        return "Train your spatial working memory and pattern recognition"
+        return translate("MemoryGridTutorial", "Train your spatial working memory and pattern recognition")
 
     def _get_card_intro_html(self) -> str:
-        return (
-            f'Memorize the <span style="color:{FONT_PRIMARY};">highlighted tiles</span> '
-            f'and <span style="color:{FONT_PRIMARY};">reproduce the pattern</span>.<br>'
-            f'React as <span style="color:{FONT_PRIMARY};">quickly</span> and '
-            f'<span style="color:{FONT_PRIMARY};">accurately</span> as possible.'
-        )
+        return translate(
+            "MemoryGridTutorial",
+            'Memorize the <span style="color:{color};">highlighted tiles</span> '
+            'and <span style="color:{color};">reproduce the pattern</span>.<br>'
+            'React as <span style="color:{color};">quickly</span> and '
+            '<span style="color:{color};">accurately</span> as possible.',
+        ).format(color=FONT_PRIMARY)
 
     def _build_card_bullets(self, bullets_layout: QVBoxLayout) -> None:
-        b1 = QLabel(
-            "• Memorize the highlighted tiles"
-        )
+        b1 = QLabel(translate("MemoryGridTutorial", "• Memorize the highlighted tiles"))
         b1.setTextFormat(Qt.TextFormat.RichText)
         b1.setObjectName("tutorialBaseText")
         b1.setWordWrap(True)
         bullets_layout.addWidget(b1)
 
-        b2 = QLabel("• Click on the grid cells to select the ones you remember")
+        b2 = QLabel(translate("MemoryGridTutorial", "• Click on the grid cells to select the ones you remember"))
         b2.setTextFormat(Qt.TextFormat.RichText)
         b2.setObjectName("tutorialBaseText")
         b2.setWordWrap(True)
         bullets_layout.addWidget(b2)
 
         b3 = QLabel(
-            f'• Each response calculates difficulty'
-            f'<span style="color:{FONT_PRIMARY};"> \u2013 response correct!</span>'
+            translate(
+                "MemoryGridTutorial",
+                '• Each response calculates difficulty'
+                '<span style="color:{color};"> - response correct!</span>',
+            ).format(color=FONT_PRIMARY)
         )
         b3.setTextFormat(Qt.TextFormat.RichText)
         b3.setObjectName("tutorialBaseText")
         b3.setWordWrap(True)
         bullets_layout.addWidget(b3)
 
-        b4 = QLabel("• Complete <span style=\"color:#3EAC91;\">20 grids</span> to finish the run.")
+        b4 = QLabel(
+            translate(
+                "MemoryGridTutorial",
+                '• Complete <span style="color:#3EAC91;">20 grids</span> to finish the run.',
+            )
+        )
         b4.setTextFormat(Qt.TextFormat.RichText)
         b4.setObjectName("tutorialBaseText")
         b4.setWordWrap(True)
         bullets_layout.addWidget(b4)
 
     def _get_practice_subtitle_html(self) -> str:
-        return (
-            "Let's learn how the "
-            '<span style="color:#3EAC91;">Memory Grid</span> '
-            "works. Memorize the pattern!"
+        return translate(
+            "MemoryGridTutorial",
+            'Let\'s learn how the <span style="color:#3EAC91;">Memory Grid</span> works. Memorize the pattern!',
         )
 
     def _build_example_page(self, step: dict) -> QWidget:
@@ -125,7 +132,7 @@ class MemoryGridTutorial(BaseTutorialWidget):
         answer_row.setContentsMargins(100, 0, 100, 0)
 
         answer_label = QLabel()
-        answer_label.setText("description")
+        answer_label.setText(step["description"])
         answer_label.setObjectName("practiceTutorialAnswerLabel")
         answer_label.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         answer_row.addWidget(answer_label, 0, Qt.AlignmentFlag.AlignHCenter)

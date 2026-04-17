@@ -28,6 +28,10 @@ resources_rc.py
 
 # Project tools / scripts
 tools/
+dev/simulator/data_cleaner.py
+dev/simulator/game_data_simulator.py
+dev/simulator/run_simulator.py
+
 
 # Tests
 tests/

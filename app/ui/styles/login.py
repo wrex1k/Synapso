@@ -1,6 +1,20 @@
 from app.ui.styles.colors import *
 
 LOGIN_STYLES = f"""
+    QPushButton#langSkBtn,
+    QPushButton#langEnBtn {{
+        padding: 5px;
+        border-bottom: 1px solid {DARK_GRAY};
+        background-color: transparent;
+        color: {GRAY};
+    }}
+
+    QPushButton#langSkBtn[selected="true"],
+    QPushButton#langEnBtn[selected="true"] {{
+        border-bottom: 1px solid {PRIMARY_LIGHT};
+        color: {PRIMARY};
+    }}
+
     QLabel#titleLabelLeft {{
         color: {OFF_WHITE};
     }}

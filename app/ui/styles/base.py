@@ -6,6 +6,7 @@ from app.ui.styles.register import REGISTER_STYLES
 from app.ui.styles.tutorial import TUTORIAL_STYLESHEET
 from app.ui.styles.forgot_password import FORGOT_PASSWORD_STYLES
 from app.ui.styles.profile import PROFILE_STYLES
+from app.ui.styles.settings import SETTINGS_STYLES
 
 from app.ui.styles.fonts import get_full_fonts
 
@@ -216,4 +217,5 @@ def get_full_stylesheet():
         + REGISTER_STYLES
         + FORGOT_PASSWORD_STYLES
         + PROFILE_STYLES
+        + SETTINGS_STYLES
     )

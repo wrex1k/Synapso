@@ -72,54 +72,20 @@ class LoginAuth(QWidget):
         layout = QHBoxLayout(widget)
         layout.setContentsMargins(70, 70, 0, 0)
 
-        self.langSkBtn = QPushButton("SK", widget)
+        self.langSkBtn = QPushButton("sk", widget)
         self.langSkBtn.setObjectName("langSkBtn")
         self.langSkBtn.setMaximumWidth(40)
 
-        self.langSkBtn.setStyleSheet("""
-        QPushButton#langSkBtn {
-            background-color: transparent;
-            border: 1px solid #3EAC91;
-            color: #3EAC91;
-            border-radius: 4px;
-            padding: 4px 8px;
-        }
-
-        QPushButton#langSkBtn:hover {
-            background-color: #3EAC91;
-            color: white;
-        }
-
-        QPushButton#langSkBtn:pressed {
-            background-color: #2e8c76;
-        }
-        """)
-
-        self.langEnBtn = QPushButton("EN", widget)
+        self.langEnBtn = QPushButton("en", widget)
         self.langEnBtn.setObjectName("langEnBtn")
         self.langEnBtn.setMaximumWidth(40)
 
-        self.langEnBtn.setStyleSheet("""
-        QPushButton#langEnBtn {
-            background-color: transparent;
-            border: 1px solid #3EAC91;
-            color: #3EAC91;
-            border-radius: 4px;
-            padding: 4px 8px;
-        }
-
-        QPushButton#langEnBtn:hover {
-            background-color: #3EAC91;
-            color: white;
-        }
-
-        QPushButton#langEnBtn:pressed {
-            background-color: #2e8c76;
-        }
-        """)
-
         layout.addWidget(self.langSkBtn)
         layout.addWidget(self.langEnBtn)
+
+        current_lang = get_language()
+        self.langSkBtn.setProperty("selected", current_lang == "sk")
+        self.langEnBtn.setProperty("selected", current_lang == "en")
 
         return widget
 
@@ -269,8 +235,8 @@ class LoginAuth(QWidget):
         self.startRegistration.clicked.connect(self.start_registration.emit)
         self.forgotPasswordLink.clicked.connect(self.forgot_password_signal.emit)
 
-        self.langSkBtn.clicked.connect(lambda: self._change_language("sk"))
-        self.langEnBtn.clicked.connect(lambda: self._change_language("en"))
+        self.langSkBtn.clicked.connect(lambda: self._change_language(self.langSkBtn, "sk"))
+        self.langEnBtn.clicked.connect(lambda: self._change_language(self.langEnBtn, "en"))
 
     def _start_welcome_animation(self):
         left_final_pos = self.titleLabelLeft.pos()
@@ -394,9 +360,18 @@ class LoginAuth(QWidget):
         self.forgotPasswordLink.setText(translate("LoginAuth", "Forgot your password? Click here"))
         self.startRegistration.setText(translate("LoginAuth", "Don't have an account? Sign up"))
 
-    def _change_language(self, lang: str):
+    def _change_language(self, button: QPushButton, lang: str):
+        other = self.langEnBtn if button is self.langSkBtn else self.langSkBtn
+        other.setProperty("selected", False)
+        other.style().unpolish(other)
+        other.style().polish(other)
+
+        button.setProperty("selected", True)
+        button.style().unpolish(button)
+        button.style().polish(button)
+
         set_language(lang)
-        get_translation_manager().switch_language(lang)  
+        get_translation_manager().switch_language(lang)
         self._retranslate_ui()
 
     def showEvent(self, event):

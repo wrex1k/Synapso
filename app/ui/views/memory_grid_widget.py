@@ -3,20 +3,16 @@ from __future__ import annotations
 import pygame
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QImage, QMouseEvent, QPixmap
-from PySide6.QtWidgets import QLabel, QVBoxLayout
+from PySide6.QtWidgets import QLabel
 
 from app.core.registry import registry
 from app.utils.logger import get_logger
-from app.ui.styles.colors import FONT_PRIMARY, OFF_WHITE, PRIMARY_LIGHT, GRAY, INCORRECT_COLOR
-from app.ui.styles.games import (
-    MEMORY_GRID_PANEL_STYLE,
-    get_memory_grid_counter_style,
-    get_memory_grid_phase_style,
-    format_ratio_counter,
-)
+from app.ui.styles.colors import *
+from app.ui.styles.games import get_memory_grid_counter_style, get_memory_grid_phase_style, format_ratio_counter
 from app.ui.views.base_game_widget import BaseGameWidget
 
 logger = get_logger(__name__)
+
 
 _GRID_CELL_OFF = (169, 169, 169)
 _GRID_CELL_ON = (62, 172, 145)
@@ -113,7 +109,6 @@ class MemoryGridWidget(BaseGameWidget):
 
         self._lbl_grid = QLabel()
         self._lbl_grid.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._lbl_grid.setStyleSheet(MEMORY_GRID_PANEL_STYLE + " padding: 14px;")
         self._lbl_grid.setCursor(Qt.CursorShape.PointingHandCursor)
         self._lbl_grid.mousePressEvent = self._on_grid_clicked
         root.addWidget(self._lbl_grid, 0, Qt.AlignmentFlag.AlignHCenter)

@@ -9,8 +9,10 @@ from supabase_auth import User
 
 from app.ui.components.navbar import NavbarWidget
 from app.ui.components.sidebar import SidebarWidget
+from app.ui.views.about import AboutView
 from app.ui.views.games import GamesView
 from app.ui.views.profile import ProfileView
+from app.ui.views.settings import SettingsView
 from app.utils.ui_helpers import draw_background
 from app.utils.logger import get_logger
 
@@ -93,8 +95,8 @@ class AppWidget(QWidget):
         self.dashboard_page = QWidget()
         self.games_page = GamesView(user_id=self._user.id)
         self.statistics_page = QWidget()
-        self.settings_page = QWidget()
-        self.info_page = QWidget()
+        self.settings_page = SettingsView()
+        self.info_page = AboutView(user_id=self._user.id)
         self.profile_page = ProfileView(user=self._user)
 
         for page in (

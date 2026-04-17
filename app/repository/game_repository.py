@@ -270,7 +270,7 @@ def fetch_games() -> list[dict]:
         result = (
             get_client()
             .table("games")
-            .select("id, name, description, is_active")
+            .select("id, name, is_active")
             .order("id")
             .execute()
         )
