@@ -322,23 +322,6 @@ class DashboardController(QObject):
         )
         return runs
 
-    def _get_runs_this_week(self) -> int:
-        now = datetime.now(timezone.utc)
-        week_ago = now - timedelta(days=7)
-
-        count = sum(
-            1
-            for dt, _, _ in self._get_all_runs_sorted_desc()
-            if dt and dt >= week_ago
-        )
-
-        logger.debug(
-            "DashboardController._get_runs_this_week: week_ago=%s count=%d",
-            week_ago.isoformat(),
-            count,
-        )
-        return count
-
     def _get_all_runs_sorted_desc(self) -> list[tuple[datetime | None, str, dict]]:
         runs: list[tuple[datetime | None, str, dict]] = []
 

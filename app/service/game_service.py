@@ -7,10 +7,10 @@ from datetime import datetime, timezone
 
 from app.games.core.base_game import BaseGame
 from app.games.core.tutorial import TutorialRunner
-from app.repository.run_repository import abandon_run, create_run, save_run, save_trials
+from app.repository.run_repository import abandon_run, create_run, fetch_pi_run_stats_per_game, save_run, save_trials
 from app.repository.tutorial_repository import set_tutorial_completed
 from app.repository.stats_repository import fetch_player_game_stats, upsert_player_game_stats
-from app.service.pi_system import TrialResult as PITrialResult, process_run, calculate_pi_trial_raw
+from app.service.pi_system import TrialResult as PITrialResult, normalize_pi, process_run
 from app.utils.logger import logger
 
 
@@ -23,10 +23,12 @@ def _compute_player_stats_update(
     avg_reaction_time_ms: float | None = None,
     quality_score: float | None = None,
     consistency_score: float | None = None,
+    pi_run_normalized: float = 0.0,
 ) -> dict:
     """Compute the new player_game_stats values after a completed run."""
     if current:
         old_bank = current.get("accumulated_pi", 0.0)
+        old_pi_norm = current.get("accumulated_pi_normalized") or 0.0
         total_runs = current.get("total_runs", 0)
         total_trials = current.get("total_trials", 0)
         best_pi = current.get("best_pi_run")
@@ -36,6 +38,7 @@ def _compute_player_stats_update(
         old_consistency = current.get("consistency_average") or 0.0
     else:
         old_bank = 0.0
+        old_pi_norm = 0.0
         total_runs = 0
         total_trials = 0
         best_pi = None
@@ -50,6 +53,7 @@ def _compute_player_stats_update(
         return (old_val * total_runs + new_val) / (total_runs + 1)
 
     new_bank = _running_avg(old_bank, pi_run)
+    new_pi_norm = _running_avg(old_pi_norm, pi_run_normalized)
     new_best_pi = pi_run if (best_pi is None or pi_run > best_pi) else best_pi
 
     now = datetime.now(timezone.utc).isoformat()
@@ -58,6 +62,7 @@ def _compute_player_stats_update(
 
     return {
         "accumulated_pi": new_bank,
+        "accumulated_pi_normalized": new_pi_norm,
         "total_runs": total_runs + 1,
         "total_trials": total_trials + max(0, int(trial_count)),
         "best_pi_run": new_best_pi,
@@ -212,6 +217,14 @@ class GameService:
                 if stage != "tutorial":
                     try:
                         current = fetch_player_game_stats(self.game.user_id, self.game.game_slug)
+                        try:
+                            pi_stats = fetch_pi_run_stats_per_game(self.game.game_slug)
+                            pi_run_normalized = normalize_pi(
+                                run_result.pi_run, pi_stats["mean"], pi_stats["std"]
+                            )
+                        except Exception as e_norm:
+                            logger.warning("Could not normalize pi_run: %s", e_norm)
+                            pi_run_normalized = 0.0
                         new_stats = _compute_player_stats_update(
                             current=current,
                             pi_run=run_result.pi_run,
@@ -220,6 +233,7 @@ class GameService:
                             avg_reaction_time_ms=run_result.avg_reaction_time,
                             quality_score=run_result.quality_score,
                             consistency_score=run_result.consistency_score,
+                            pi_run_normalized=pi_run_normalized,
                         )
                         upsert_player_game_stats(self.game.user_id, self.game.game_slug, new_stats)
                     except Exception as e:

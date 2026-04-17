@@ -94,11 +94,15 @@ class AppWidget(QWidget):
         return b
 
     def _init_pages(self):
-        self.dashboard_page = DashboardView(user=self._user)
-        self.games_page = GamesView(user_id=self._user.id)
-        self.statistics_page = StatisticsView(user_id=self._user.id)
-        self.settings_page = SettingsView()
-        self.info_page = AboutView(user_id=self._user.id)
+        self._page_factories = {
+            "dashboard": lambda: DashboardView(user=self._user),
+            "games": lambda: GamesView(user_id=self._user.id),
+            "statistics": lambda: StatisticsView(user_id=self._user.id),
+            "settings": lambda: SettingsView(),
+            "info": lambda: AboutView(user_id=self._user.id),
+        }
+        self._page_instances: dict[str, QWidget] = {}
+
         self.profile_page = ProfileView(user=self._user)
         self.profile_controller = ProfileController(
             view=self.profile_page,
@@ -106,16 +110,7 @@ class AppWidget(QWidget):
             navbar=self.navbarWidget,
             on_logout=self._emit_logout,
         )
-
-        for page in (
-            self.dashboard_page,
-            self.games_page,
-            self.statistics_page,
-            self.settings_page,
-            self.info_page,
-            self.profile_page,
-        ):
-            self.contentWidget.addWidget(page)
+        self.contentWidget.addWidget(self.profile_page)
 
         self.pages = {
             "dashboard": self.dashboardButton,
@@ -124,19 +119,28 @@ class AppWidget(QWidget):
             "settings": self.settingsButton,
             "info": self.infoButton,
         }
-        self.page_map = {
-            "dashboard": self.dashboard_page,
-            "games": self.games_page,
-            "statistics": self.statistics_page,
-            "settings": self.settings_page,
-            "info": self.info_page,
-        }
 
-        self.games_page.launch_game_requested.connect(self._show_fullscreen_game)
-        try:
-            self.dashboard_page.continue_game_requested.connect(lambda slug: self.games_page._launch_play(slug))
-        except Exception:
-            logger.exception("Failed to connect dashboard continue signal to games launcher")
+    def _get_or_create_page(self, name: str) -> QWidget:
+        if name not in self._page_instances:
+            page = self._page_factories[name]()
+            self._page_instances[name] = page
+            self.contentWidget.addWidget(page)
+            if name == "games":
+                page.launch_game_requested.connect(self._show_fullscreen_game)
+                if "dashboard" in self._page_instances:
+                    dashboard = self._page_instances["dashboard"]
+                    try:
+                        dashboard.continue_game_requested.connect(lambda slug, g=page: g._launch_play(slug))
+                    except Exception:
+                        logger.exception("Failed to connect dashboard continue signal to games launcher")
+            elif name == "dashboard":
+                if "games" in self._page_instances:
+                    games = self._page_instances["games"]
+                    try:
+                        page.continue_game_requested.connect(lambda slug, g=games: g._launch_play(slug))
+                    except Exception:
+                        logger.exception("Failed to connect dashboard continue signal to games launcher")
+        return self._page_instances[name]
 
     def _connect_signals(self):
         self.logoutButton.clicked.connect(self._on_logout_clicked)
@@ -159,7 +163,7 @@ class AppWidget(QWidget):
             button.update()
 
         self.contentWidget.setCurrentWidget(
-            self.page_map.get(page_name, self.dashboard_page)
+            self._get_or_create_page(page_name)
         )
 
     def _go_to_profile(self):

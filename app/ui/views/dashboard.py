@@ -348,25 +348,6 @@ class DashboardView(QWidget):
         self._welcome_refs[key] = value
         return wrapper
 
-    def _build_metric_row(self, label_text: str, value_text: str, key: str) -> QWidget:
-        row_widget = QWidget()
-        row_layout = QHBoxLayout(row_widget)
-        row_layout.setContentsMargins(0, 2, 0, 2)
-        row_layout.setSpacing(0)
-
-        label = QLabel(label_text)
-        label.setObjectName("dashboardMetricLabel")
-
-        value = QLabel(value_text)
-        value.setObjectName("dashboardMetricValue")
-
-        row_layout.addWidget(label)
-        row_layout.addStretch()
-        row_layout.addWidget(value)
-
-        self._activity_refs[key] = value
-        return row_widget
-
     def _build_badge_row(self, label_text: str, value_text: str, color: str) -> tuple[QWidget, QLabel]:
         row = QWidget()
         row_layout = QHBoxLayout(row)

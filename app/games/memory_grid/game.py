@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+from enum import Enum, auto
 
 from app.games.core.base_game import BaseGame, TrialResult
 from app.games.memory_grid.config import LEVEL_PARAMS, MAX_LEVEL, MIN_LEVEL
@@ -142,48 +143,152 @@ class MemoryGridGame(BaseGame):
             self.level -= 1
 
 
+class _MGPhase(Enum):
+    WARMUP = auto()
+    SMALL_GRID = auto()
+    LARGER_GRID = auto()
+    PASSED = auto()
+    FAILED = auto()
+
+
 class MemoryGridTutorialRunner:
-    """Tutorial progression by grid sizes 3x3 -> 4x4 -> 5x5."""
+    """
+    3-phase tutorial (each trial takes 5-7 s, so phases are kept short):
+      WARMUP       – 3×3 grid (level 1).  2 correct / max 5 trials.
+      SMALL_GRID   – 3×3 grid (level 1).  2 consecutive correct / max 7 trials.
+      LARGER_GRID  – 4×4 grid (level 2).  2 correct (total) / max 7 trials.
+    """
+
+    _WARMUP_REQUIRED_CORRECT = 2
+    _WARMUP_MAX_TRIALS = 5
+    _SMALL_REQUIRED_STREAK = 2
+    _SMALL_MAX_TRIALS = 7
+    _LARGER_REQUIRED_CORRECT = 2
+    _LARGER_MAX_TRIALS = 7
+
+    _LEVEL_SMALL  = 1
+    _LEVEL_LARGER = 2
 
     def __init__(self, game: MemoryGridGame):
         self.game = game
-        self._passed = False
-        self._tutorial_levels = [1, 2, 3]
-        self._index = 0
+        self._phase = _MGPhase.WARMUP
+        self._phase_trials: list = []
+        self._failed_reason: str = ""
 
     @property
     def passed(self) -> bool:
-        return self._passed
+        return self._phase == _MGPhase.PASSED
+
+    @property
+    def failed(self) -> bool:
+        return self._phase == _MGPhase.FAILED
 
     def configure(self):
         self.game.total_trials = 10**9
-        self._index = 0
-        self._passed = False
-        self.game.level = self._tutorial_levels[self._index]
-        self.game.initial_level = self.game.level
+        self._phase = _MGPhase.WARMUP
+        self._phase_trials = []
+        self._failed_reason = ""
+        self.game.level = self._LEVEL_SMALL
+        self.game.initial_level = self._LEVEL_SMALL
         self.game.begin_run()
 
     def check_after_trial(self) -> bool:
-        if not self.game.trials:
+        if self._phase in (_MGPhase.PASSED, _MGPhase.FAILED):
+            return self.passed
+        latest = self.game.trials[-1] if self.game.trials else None
+        if not latest:
             return False
-
-        self._index += 1
-        if self._index >= len(self._tutorial_levels):
-            self._passed = True
-            return True
-
-        next_level = self._tutorial_levels[self._index]
-        self.game.level = next_level
-        self.game.initial_level = next_level
+        self._phase_trials.append(latest)
+        if self._phase == _MGPhase.WARMUP:
+            return self._check_warmup()
+        if self._phase == _MGPhase.SMALL_GRID:
+            return self._check_small()
+        if self._phase == _MGPhase.LARGER_GRID:
+            return self._check_larger()
         return False
 
     def get_progress_text(self) -> str:
-        current = min(self._index + 1, len(self._tutorial_levels))
-        total = len(self._tutorial_levels)
-        return f"Grid {current}/{total}"
+        pt = self._phase_trials
+        if self._phase == _MGPhase.WARMUP:
+            correct = sum(1 for t in pt if t.is_correct)
+            return f"Warm-up: {correct}/{self._WARMUP_REQUIRED_CORRECT}"
+        if self._phase == _MGPhase.SMALL_GRID:
+            return f"3\u00d73 streak: {self._trailing_streak(pt)}/{self._SMALL_REQUIRED_STREAK}"
+        if self._phase == _MGPhase.LARGER_GRID:
+            correct = sum(1 for t in pt if t.is_correct)
+            return f"4\u00d74: {correct}/{self._LARGER_REQUIRED_CORRECT}"
+        if self._phase == _MGPhase.PASSED:
+            return "\u2713 Tutorial passed!"
+        if self._phase == _MGPhase.FAILED:
+            return f"\u2717 Failed: {self._failed_reason}"
+        return ""
 
     def get_progress_pct(self) -> int:
-        total = len(self._tutorial_levels)
-        if total == 0:
-            return 0
-        return int(min(self._index, total) / total * 100)
+        if self._phase == _MGPhase.PASSED:
+            return 100
+        base_map = {
+            _MGPhase.WARMUP:       0,
+            _MGPhase.SMALL_GRID:  33,
+            _MGPhase.LARGER_GRID: 66,
+        }
+        base = base_map.get(self._phase, 0)
+        pt = self._phase_trials
+        if self._phase == _MGPhase.WARMUP:
+            within = min(sum(1 for t in pt if t.is_correct) / self._WARMUP_REQUIRED_CORRECT, 1.0)
+        elif self._phase == _MGPhase.SMALL_GRID:
+            within = min(self._trailing_streak(pt) / self._SMALL_REQUIRED_STREAK, 1.0)
+        elif self._phase == _MGPhase.LARGER_GRID:
+            within = min(sum(1 for t in pt if t.is_correct) / self._LARGER_REQUIRED_CORRECT, 1.0)
+        else:
+            within = 0.0
+        return int(base + within * 33)
+
+    def _check_warmup(self) -> bool:
+        pt = self._phase_trials
+        correct = sum(1 for t in pt if t.is_correct)
+        if correct >= self._WARMUP_REQUIRED_CORRECT:
+            self._enter_phase(_MGPhase.SMALL_GRID, self._LEVEL_SMALL)
+        elif len(pt) >= self._WARMUP_MAX_TRIALS:
+            self._fail(f"only {correct}/{len(pt)} correct in warm-up")
+        return False
+
+    def _check_small(self) -> bool:
+        pt = self._phase_trials
+        streak = self._trailing_streak(pt)
+        if streak >= self._SMALL_REQUIRED_STREAK:
+            self._enter_phase(_MGPhase.LARGER_GRID, self._LEVEL_LARGER)
+        elif len(pt) >= self._SMALL_MAX_TRIALS:
+            self._fail(f"no {self._SMALL_REQUIRED_STREAK}-streak in {self._SMALL_MAX_TRIALS} trials")
+        return False
+
+    def _check_larger(self) -> bool:
+        pt = self._phase_trials
+        correct = sum(1 for t in pt if t.is_correct)
+        if correct >= self._LARGER_REQUIRED_CORRECT:
+            self._phase = _MGPhase.PASSED
+            self._phase_trials = []
+            return True
+        if len(pt) >= self._LARGER_MAX_TRIALS:
+            self._fail(f"only {correct}/{len(pt)} correct on 4\u00d74")
+        return False
+
+    def _enter_phase(self, phase: _MGPhase, level: int) -> None:
+        self._phase = phase
+        self._phase_trials = []
+        self.game.level = level
+        self.game.initial_level = level
+
+    def _fail(self, reason: str) -> None:
+        self._failed_reason = reason
+        self._phase = _MGPhase.FAILED
+        self._phase_trials = []
+
+    @staticmethod
+    def _trailing_streak(trials) -> int:
+        streak = 0
+        for t in reversed(trials):
+            if t.is_correct:
+                streak += 1
+            else:
+                break
+        return streak

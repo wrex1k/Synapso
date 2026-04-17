@@ -65,6 +65,7 @@ _COUNTDOWN = "countdown"
 _STIMULUS = "stimulus"
 _FEEDBACK = "feedback"
 _RESULT = "result"
+_FAILED = "failed"
 
 _FEEDBACK_MS = 800
 _RESULT_MS = 1800
@@ -79,7 +80,7 @@ _KEY_MAP = {
 class ShapePreview(QLabel):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self.setMinimumSize(390, 390)
+        self.setMinimumSize(320, 320)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._blocks: list[tuple[int, int]] = []
         self._rotation: float = 0.0
@@ -107,7 +108,7 @@ class MentalRotationWidget(BaseGameWidget):
     _correct_color_hex = CORRECT_COLOR
 
     def _build_ui(self) -> None:
-        root = self._build_hud_header("Mental Rotation", margins=(110, 90, 110, 80))
+        root = self._build_hud_header("Mental Rotation", margins=(130, 90, 130, 80))
         root.addStretch(1)
 
         self._lbl_feedback = QLabel("")
@@ -119,7 +120,7 @@ class MentalRotationWidget(BaseGameWidget):
         root.addSpacing(16)
 
         shape_row = QHBoxLayout()
-        shape_row.setSpacing(120)
+        shape_row.setSpacing(60)
         shape_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._left_shape = ShapePreview()
         self._right_shape = ShapePreview()
@@ -185,7 +186,13 @@ class MentalRotationWidget(BaseGameWidget):
 
         elif state == _RESULT:
             self._lbl_feedback.setText(
-                f'<span style="color:{PRIMARY_LIGHT}; font-size:32px; font-weight:700;">Tutorial Complete!</span>'
+                f'<span style="color:{PRIMARY_LIGHT}; font-size:46px; font-weight:700;">Tutorial Complete!</span>'
+            )
+            self._timer.start(_RESULT_MS)
+
+        elif state == _FAILED:
+            self._lbl_feedback.setText(
+                f'<span style="color:{INCORRECT_COLOR}; font-size:46px; font-weight:700;">Tutorial Failed</span>'
             )
             self._timer.start(_RESULT_MS)
 
@@ -212,7 +219,7 @@ class MentalRotationWidget(BaseGameWidget):
 
         if self._state == _FEEDBACK:
             if self._mode == "tutorial" and self._runner is not None and getattr(self._runner, "failed", False):
-                self._finish_session(completed=False)
+                self._go(_FAILED)
                 return
             nxt = self._after_feedback
             self._after_feedback = None
@@ -224,6 +231,9 @@ class MentalRotationWidget(BaseGameWidget):
 
         if self._state == _RESULT:
             self._finish_session(completed=True)
+
+        if self._state == _FAILED:
+            self._finish_session(completed=False)
 
     def keyPressEvent(self, event) -> None:
         if self._state == _STIMULUS and self._trial_params is not None:
@@ -245,8 +255,6 @@ class MentalRotationWidget(BaseGameWidget):
             f'<span style="color:{color}; font-size:28px; font-weight:600;">{symbol} {text}</span>'
         )
 
-        self._hud_update(show_next_trial=False)
-
         if self._mode == "tutorial" and self._runner is not None:
             if self._runner.check_after_trial():
                 if self._service:
@@ -259,6 +267,7 @@ class MentalRotationWidget(BaseGameWidget):
                     self._keep_thread(registry.run_thread(_save_tutorial, lambda _: None))
                 self._after_feedback = _RESULT
 
+        self._hud_update(show_next_trial=False)
         self._go(_FEEDBACK)
 
 

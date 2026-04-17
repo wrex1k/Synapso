@@ -18,6 +18,8 @@ _GRID_CELL_ON = (62, 172, 145)
 _GRID_CELL_SELECTED = (75, 166, 144)
 _GRID_CELL_WRONG = (240, 66, 66)
 _GRID_CELL_RADIUS = 12
+_GRID_CELL_BORDER_COLOR = (75, 166, 144)  # PRIMARY_LIGHT
+_GRID_CELL_BORDER_WIDTH = 2
 _GRID_PADDING = 14
 _GRID_GAP = 8
 
@@ -67,6 +69,7 @@ _MEMORIZE = "memorize"
 _RECALL = "recall"
 _FEEDBACK = "feedback"
 _RESULT = "result"
+_FAILED = "failed"
 
 _COUNTDOWN_MS = 900
 
@@ -301,8 +304,6 @@ class MemoryGridWidget(BaseGameWidget):
         self._wrong_positions = self._selected_positions - self._target_positions
         self._refresh_grid()
 
-        self._hud_update(show_next_trial=False)
-
         if self._mode == "tutorial" and self._runner is not None:
             if self._runner.check_after_trial():
                 if self._service:
@@ -314,6 +315,8 @@ class MemoryGridWidget(BaseGameWidget):
 
                     self._keep_thread(registry.run_thread(_save_tutorial, lambda _: None))
                 self._after_feedback = _RESULT
+
+        self._hud_update(show_next_trial=False)
 
         self._timer.start(_FEEDBACK_MS)
 
@@ -352,12 +355,20 @@ class MemoryGridWidget(BaseGameWidget):
             return
 
         if self._state == _FEEDBACK:
+            if self._mode == "tutorial" and self._runner is not None and getattr(self._runner, "failed", False):
+                self._state = _FAILED
+                self._lbl_phase.setText("Tutorial Failed")
+                self._lbl_phase.setStyleSheet(get_memory_grid_phase_style(INCORRECT_COLOR, 46, 700))
+                self._lbl_counter.hide()
+                self._timer.start(_RESULT_MS)
+                return
             nxt = self._after_feedback
             self._after_feedback = None
             if nxt == _RESULT:
                 self._state = _RESULT
                 self._lbl_phase.setText("Tutorial Complete!")
-                self._lbl_phase.setStyleSheet(get_memory_grid_phase_style(PRIMARY_LIGHT, 44, 700))
+                self._lbl_phase.setStyleSheet(get_memory_grid_phase_style(PRIMARY_LIGHT, 46, 700))
+                self._lbl_counter.hide()
                 self._timer.start(_RESULT_MS)
             else:
                 self._begin_trial()
@@ -365,3 +376,6 @@ class MemoryGridWidget(BaseGameWidget):
 
         if self._state == _RESULT:
             self._finish_session(completed=True)
+
+        if self._state == _FAILED:
+            self._finish_session(completed=False)

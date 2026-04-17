@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QMargins, QPointF, Qt, QThread
+from PySide6.QtCore import QEvent, QMargins, QPointF, Qt, QThread
 from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 from PySide6.QtCharts import QBarCategoryAxis, QBarSeries, QBarSet, QChart, QChartView, QLineSeries, QValueAxis
@@ -13,9 +13,11 @@ from app.models.user import User
 from app.repository.activity_repository import get_time_played
 from app.repository.run_repository import fetch_user_run_history
 from app.repository.stats_repository import fetch_all_user_stats, fetch_player_game_stats
+from app.ui.styles.colors import GAME_COLORS
 from app.ui.styles.statistics import STATISTICS_STYLES
 from app.utils.logger import get_logger
 from app.utils.ui_helpers import build_header
+from translations.translation import translate
 
 logger = get_logger(__name__)
 
@@ -27,11 +29,6 @@ _GAME_LABELS = {
     "stroop": "Stroop",
     "memory_grid": "Memory Grid",
     "mental_rotation": "Mental Rotation",
-}
-_GAME_COLORS_HEX = {
-    "stroop": "#3EAC91",
-    "memory_grid": "#4FC3F7",
-    "mental_rotation": "#FFB74D",
 }
 
 
@@ -139,11 +136,10 @@ class StatisticsView(QWidget):
         root.setSpacing(28)
 
         header, self._page_title_lbl, self._page_subtitle_lbl = build_header(
-            "Statistics",
-            "Your performance analytics and progress over time"
+            translate("StatisticsView", "Statistics"),
+            translate("StatisticsView", "Your performance analytics and progress over time")
         )
         root.addWidget(header)
-        root.addWidget(self._build_summary_row())
 
         content_row = QHBoxLayout()
         content_row.setSpacing(20)
@@ -162,7 +158,7 @@ class StatisticsView(QWidget):
         right_col.setSpacing(16)
         right_col.setContentsMargins(0, 0, 0, 0)
         right_col.addWidget(self._build_insights_card(), 1)
-        right_col.addWidget(self._build_comparison_card(), 1)
+        right_col.addWidget(self._build_comparison_card(), 2)
         content_row.addLayout(right_col, 1)
 
         root.addLayout(content_row, 1)
@@ -173,12 +169,7 @@ class StatisticsView(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(16)
 
-        cards = [
-            ("Total runs", "—", "All completed sessions", "_sum_total_runs_lbl"),
-            ("Average PI", "—", "Across all games", "_avg_pi_lbl"),
-            ("Accuracy", "—", "Overall average", "_avg_acc_lbl"),
-            ("Avg reaction", "—", "Mean response time", "_avg_rt_lbl"),
-        ]
+        cards = []
 
         for title, value, subtitle, attr in cards:
             lbl = QLabel(value)
@@ -195,7 +186,7 @@ class StatisticsView(QWidget):
         card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setContentsMargins(28, 28, 28, 28)
         layout.setSpacing(6)
 
         title = QLabel(title_text)
@@ -218,24 +209,21 @@ class StatisticsView(QWidget):
         card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(20, 20, 20, 14)
+        layout.setContentsMargins(28, 28, 28, 28)
         layout.setSpacing(8)
 
-        title = QLabel("Performance Trend")
+        title = QLabel(translate("StatisticsView", "Performance Trend"))
         title.setObjectName("statChartTitle")
-
-        subtitle = QLabel("Performance index across your recent sessions")
-        subtitle.setObjectName("statChartSubtitle")
+        self._trend_title_lbl = title
 
         layout.addWidget(title)
-        layout.addWidget(subtitle)
 
         self._trend_chart_placeholder = QWidget()
         self._trend_chart_placeholder.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._trend_chart_layout = QVBoxLayout(self._trend_chart_placeholder)
         self._trend_chart_layout.setContentsMargins(0, 0, 0, 0)
 
-        empty = QLabel("Loading...")
+        empty = QLabel(translate("StatisticsView", "Loading..."))
         empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
         empty.setObjectName("statChartSubtitle")
         self._trend_chart_layout.addWidget(empty)
@@ -260,29 +248,31 @@ class StatisticsView(QWidget):
     def _build_insights_card(self) -> QWidget:
         card = QWidget()
         card.setObjectName("statGameCard")
-        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setContentsMargins(28, 28, 28, 28)
         layout.setSpacing(12)
 
-        title = QLabel("Quick Insights")
+        title = QLabel(translate("StatisticsView", "Quick Insights"))
         title.setObjectName("statGameTitle")
+        self._insights_title_lbl = title
         layout.addWidget(title)
-        layout.addWidget(_make_divider())
 
         insight_rows = [
-            ("Best game", "_ins_best_game"),
-            ("Strongest metric", "_ins_best_metric"),
-            ("Needs improvement", "_ins_worst_metric"),
-            ("Total time played", "_ins_time_played"),
+            ("Best game", "_ins_best_game", "_ins_best_game_key"),
+            ("Strongest metric", "_ins_best_metric", "_ins_best_metric_key"),
+            ("Needs improvement", "_ins_worst_metric", "_ins_worst_metric_key"),
         ]
 
-        for label_text, attr in insight_rows:
+        for label_text, attr, key_attr in insight_rows:
             val_lbl = QLabel("—")
             val_lbl.setObjectName("statGameMetricValue")
             setattr(self, attr, val_lbl)
-            layout.addWidget(self._build_metric_row_with_lbl(label_text, val_lbl))
+            lbl = QLabel(translate("StatisticsView", label_text))
+            lbl.setObjectName("statGameMetricLabel")
+            setattr(self, key_attr, lbl)
+            layout.addWidget(self._build_metric_row_with_lbl(lbl, val_lbl))
 
         layout.addStretch()
         return card
@@ -292,24 +282,21 @@ class StatisticsView(QWidget):
         card.setObjectName("statChartCard")
 
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(20, 20, 20, 14)
+        layout.setContentsMargins(28, 28, 28, 28)
         layout.setSpacing(8)
 
-        title = QLabel("Game Comparison")
+        title = QLabel(translate("StatisticsView", "Game Comparison"))
         title.setObjectName("statChartTitle")
-
-        subtitle = QLabel("Accuracy, quality and consistency by game")
-        subtitle.setObjectName("statChartSubtitle")
+        self._comparison_title_lbl = title
 
         layout.addWidget(title)
-        layout.addWidget(subtitle)
 
         self._comparison_placeholder = QWidget()
         self._comparison_placeholder.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._comparison_layout = QVBoxLayout(self._comparison_placeholder)
         self._comparison_layout.setContentsMargins(0, 0, 0, 0)
 
-        empty = QLabel("Loading...")
+        empty = QLabel(translate("StatisticsView", "Loading..."))
         empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
         empty.setObjectName("statChartSubtitle")
         self._comparison_layout.addWidget(empty)
@@ -319,7 +306,7 @@ class StatisticsView(QWidget):
         return card
 
     def _build_game_card(self, slug: str) -> tuple[QWidget, dict]:
-        color_hex = _GAME_COLORS_HEX[slug]
+        color_hex = GAME_COLORS[slug]
         title_text = _GAME_LABELS[slug]
 
         card = QWidget()
@@ -327,7 +314,7 @@ class StatisticsView(QWidget):
         card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(20, 18, 20, 18)
+        layout.setContentsMargins(28, 28, 28, 28)
         layout.setSpacing(10)
 
         header_row = QHBoxLayout()
@@ -360,21 +347,21 @@ class StatisticsView(QWidget):
             val_lbl = QLabel("—")
             val_lbl.setObjectName("statGameMetricValue")
             labels[key] = val_lbl
-            layout.addWidget(self._build_metric_row_with_lbl(label_text, val_lbl))
+            lbl = QLabel(translate("StatisticsView", label_text))
+            lbl.setObjectName("statGameMetricLabel")
+            labels[f"_lbl_{key}"] = lbl
+            layout.addWidget(self._build_metric_row_with_lbl(lbl, val_lbl))
 
         layout.addStretch()
         return card, labels
 
-    def _build_metric_row_with_lbl(self, label_text: str, value_lbl: QLabel) -> QWidget:
+    def _build_metric_row_with_lbl(self, label_lbl: QLabel, value_lbl: QLabel) -> QWidget:
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
         row_layout.setContentsMargins(0, 2, 0, 2)
         row_layout.setSpacing(0)
 
-        label = QLabel(label_text)
-        label.setObjectName("statGameMetricLabel")
-
-        row_layout.addWidget(label)
+        row_layout.addWidget(label_lbl)
         row_layout.addStretch()
         row_layout.addWidget(value_lbl)
 
@@ -385,6 +372,36 @@ class StatisticsView(QWidget):
     def showEvent(self, event):
         super().showEvent(event)
         self._load_data()
+
+    def changeEvent(self, event) -> None:
+        super().changeEvent(event)
+        if event.type() != QEvent.Type.LanguageChange:
+            return
+        self._retranslate_ui()
+
+    def _retranslate_ui(self) -> None:
+        self._page_title_lbl.setText(translate("StatisticsView", "Statistics"))
+        self._page_subtitle_lbl.setText(
+            translate("StatisticsView", "Your performance analytics and progress over time")
+        )
+        self._trend_title_lbl.setText(translate("StatisticsView", "Performance Trend"))
+        self._insights_title_lbl.setText(translate("StatisticsView", "Quick Insights"))
+        self._comparison_title_lbl.setText(translate("StatisticsView", "Game Comparison"))
+
+        self._ins_best_game_key.setText(translate("StatisticsView", "Best game"))
+        self._ins_best_metric_key.setText(translate("StatisticsView", "Strongest metric"))
+        self._ins_worst_metric_key.setText(translate("StatisticsView", "Needs improvement"))
+
+        for labels in self._game_cards.values():
+            labels["_lbl_runs"].setText(translate("StatisticsView", "Runs"))
+            labels["_lbl_avg_pi"].setText(translate("StatisticsView", "Avg PI"))
+            labels["_lbl_best_pi"].setText(translate("StatisticsView", "Best PI"))
+            labels["_lbl_accuracy"].setText(translate("StatisticsView", "Accuracy"))
+            labels["_lbl_avg_rt"].setText(translate("StatisticsView", "Avg RT"))
+
+        self._populate_trend_chart()
+        self._populate_comparison_chart()
+        self._populate_insights()
 
     def _keep_thread(self, thread: QThread) -> None:
         self._threads.append(thread)
@@ -437,22 +454,8 @@ class StatisticsView(QWidget):
     # ── populate ───────────────────────────────────────────────────
 
     def _populate_summary(self) -> None:
-        games_data = self._all_stats.get("games", [])
-
-        total_runs = sum(g.get("total_runs") or 0 for g in games_data)
-        self._sum_total_runs_lbl.setText(_fmt_int(total_runs))
-
-        pi_vals = [g["accumulated_pi"] for g in games_data if g.get("accumulated_pi") is not None]
-        avg_pi = sum(pi_vals) / len(pi_vals) if pi_vals else None
-        self._avg_pi_lbl.setText(_fmt_float(avg_pi))
-
-        acc_vals = [g["avg_accuracy_overall"] for g in games_data if g.get("avg_accuracy_overall") is not None]
-        avg_acc = sum(acc_vals) / len(acc_vals) if acc_vals else None
-        self._avg_acc_lbl.setText(_fmt_pct(avg_acc))
-
-        rt_vals = [g["avg_reaction_time_ms"] for g in games_data if g.get("avg_reaction_time_ms") is not None]
-        avg_rt = sum(rt_vals) / len(rt_vals) if rt_vals else None
-        self._avg_rt_lbl.setText(_fmt_ms(avg_rt))
+        # Summary widgets removed — nothing to populate here.
+        return
 
     def _populate_game_cards(self) -> None:
         for slug, labels in self._game_cards.items():
@@ -489,9 +492,9 @@ class StatisticsView(QWidget):
             norm_acc = max(all_acc)
             norm_rt  = min(all_rt) if all_rt else None
             if norm_rt is not None and norm_acc >= 0.75:
-                self._ins_best_metric.setText("Accuracy")
+                self._ins_best_metric.setText(translate("StatisticsView", "Accuracy"))
             elif norm_rt is not None and norm_rt < 600:
-                self._ins_best_metric.setText("Reaction time")
+                self._ins_best_metric.setText(translate("StatisticsView", "Reaction time"))
             else:
                 self._ins_best_metric.setText("—")
         else:
@@ -508,8 +511,6 @@ class StatisticsView(QWidget):
             self._ins_worst_metric.setText(_GAME_LABELS.get(slug, slug))
         else:
             self._ins_worst_metric.setText("—")
-
-        self._ins_time_played.setText(_fmt_time(self._time_played))
 
     def _populate_trend_chart(self) -> None:
         # Clear the placeholder
@@ -533,7 +534,7 @@ class StatisticsView(QWidget):
 
             series = QLineSeries()
             series.setName(_GAME_LABELS[slug])
-            pen = QPen(QColor(_GAME_COLORS_HEX[slug]), 2.6)
+            pen = QPen(QColor(GAME_COLORS[slug]), 2.6)
             pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
             series.setPen(pen)
@@ -548,13 +549,13 @@ class StatisticsView(QWidget):
             all_vals.extend(pi_values)
 
         if has_data:
-            ax_x = _value_axis("Run #", min(max_x, 8))
+            ax_x = _value_axis(translate("StatisticsView", "Run #"), min(max_x, 8))
             ax_x.setRange(1, max(max_x, 2))
             ax_x.setLabelFormat("%d")
 
             y_min = min(all_vals) * 0.9
             y_max = max(all_vals) * 1.1
-            ax_y = _value_axis("PI")
+            ax_y = _value_axis(translate("StatisticsView", "PI"))
             ax_y.setRange(round(y_min, 1), round(y_max, 1))
 
             chart.addAxis(ax_x, Qt.AlignmentFlag.AlignBottom)
@@ -568,7 +569,7 @@ class StatisticsView(QWidget):
             self._chart_refs.extend([chart, view])
             self._trend_chart_layout.addWidget(view)
         else:
-            lbl = QLabel("No run data yet")
+            lbl = QLabel(translate("StatisticsView", "No run data yet"))
             lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
             lbl.setObjectName("statChartSubtitle")
             self._trend_chart_layout.addWidget(lbl)
@@ -582,7 +583,7 @@ class StatisticsView(QWidget):
 
         slugs_with_data = [s for s in _GAME_SLUGS if self._per_game.get(s) is not None]
         if not slugs_with_data:
-            lbl = QLabel("No data yet")
+            lbl = QLabel(translate("StatisticsView", "No data yet"))
             lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
             lbl.setObjectName("statChartSubtitle")
             self._comparison_layout.addWidget(lbl)
@@ -605,18 +606,18 @@ class StatisticsView(QWidget):
 
         chart = _setup_chart()
 
-        accuracy_set = QBarSet("Accuracy")
-        accuracy_set.setColor(QColor(_GAME_COLORS_HEX["stroop"]))
+        accuracy_set = QBarSet(translate("StatisticsView", "Accuracy"))
+        accuracy_set.setColor(QColor(GAME_COLORS["stroop"]))
         accuracy_set.setBorderColor(QColor(0, 0, 0, 0))
         accuracy_set.append(accuracy_vals)
 
-        quality_set = QBarSet("Quality")
-        quality_set.setColor(QColor(_GAME_COLORS_HEX["memory_grid"]))
+        quality_set = QBarSet(translate("StatisticsView", "Quality"))
+        quality_set.setColor(QColor(GAME_COLORS["memory_grid"]))
         quality_set.setBorderColor(QColor(0, 0, 0, 0))
         quality_set.append(quality_vals)
 
-        consistency_set = QBarSet("Consistency")
-        consistency_set.setColor(QColor(_GAME_COLORS_HEX["mental_rotation"]))
+        consistency_set = QBarSet(translate("StatisticsView", "Consistency"))
+        consistency_set.setColor(QColor(GAME_COLORS["mental_rotation"]))
         consistency_set.setBorderColor(QColor(0, 0, 0, 0))
         consistency_set.append(consistency_vals)
 
@@ -635,7 +636,7 @@ class StatisticsView(QWidget):
         axis_x.setGridLineColor(QColor(255, 255, 255, 10))
         axis_x.setLinePenColor(QColor(255, 255, 255, 18))
 
-        axis_y = _value_axis("%", 6)
+        axis_y = _value_axis("", 6)
         axis_y.setRange(0, 100)
 
         chart.addAxis(axis_x, Qt.AlignmentFlag.AlignBottom)

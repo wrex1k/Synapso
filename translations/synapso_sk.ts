@@ -343,8 +343,8 @@
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="61"/>
-        <source>The Memory Grid measures visual working memory and attention. The task is to remember a pattern in a grid and reproduce it as accurately as possible.</source>
-        <translation>Memory Grid meria vizuálnu pracovnú pamäť a pozornosť. Úlohou je zapamätať si vzor v mriežke a reprodukovať ho čo najpresnejšie.</translation>
+        <source>The Memory Grid measures visual working memory and attention span. The task is to observe and memorize highlighted tiles in a grid, then reproduce the exact pattern by clicking on the correct tiles as accurately and quickly as possible.</source>
+        <translation>Memory Grid meria vizuálnu pracovnú pamäť a rozsah pozornosti. Úlohou je pozorovať a zapamätať si zvýraznené políčka v mriežke, potom reprodukovať vzor kliknutím na správne políčka čo najrýchlejšie a najpresnejšie.</translation>
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="65"/>
@@ -985,7 +985,7 @@
     <message>
         <location filename="../app/ui/views/about.py" line="422"/>
         <source>&lt;b&gt;Synapso&lt;/b&gt; is a cognitive training app designed to improve memory, attention, focus, and mental flexibility through interactive brain games.&lt;br&gt;&lt;br&gt;&lt;b&gt;Games:&lt;/b&gt;&lt;br&gt;• &lt;b&gt;Memory Grid&lt;/b&gt; — Train working memory with pattern recall&lt;br&gt;• &lt;b&gt;Mental Rotation&lt;/b&gt; — Improve spatial reasoning&lt;br&gt;• &lt;b&gt;Stroop Test&lt;/b&gt; — Enhance focus and cognitive control&lt;br&gt;&lt;br&gt;Track your performance, monitor progress, and train your brain consistently.</source>
-        <translation>&lt;b&gt;Synapso&lt;/b&gt; je aplikácia na kognitívny tréning navrhnutá na zlepšenie pamäti, pozornosti, sústredenia a mentálnej flexibility prostredníctvom interaktívnych mozgových hier.&lt;br&gt;&lt;br&gt;&lt;b&gt;Hry:&lt;/b&gt;&lt;br&gt;• &lt;b&gt;Memory Grid&lt;/b&gt; — Trénuj pracovnú pamäť pomocou zapamätávania si vzorov&lt;br&gt;• &lt;b&gt;Mental Rotation&lt;/b&gt; — Zlepši priestorové myslenie&lt;br&gt;• &lt;b&gt;Stroop Test&lt;/b&gt; — Posilni sústredenie a kognitívnu kontrolu&lt;br&gt;&lt;br&gt;Sleduj svoj výkon, monitoruj pokrok a trénuj mozog pravidelne.</translation>
+        <translation>&lt;b&gt;Synapso&lt;/b&gt; je aplikácia na kognitívny tréning navrhnutá na zlepšenie pamäti, pozornosti, sústredenia a mentálnej flexibility prostredníctvom interaktívnych hier.&lt;br&gt;&lt;br&gt;&lt;b&gt;Hry:&lt;/b&gt;&lt;br&gt;• &lt;b&gt;Memory Grid&lt;/b&gt; — Trénuj pracovnú pamäť pomocou zapamätávania si vzorov&lt;br&gt;• &lt;b&gt;Mental Rotation&lt;/b&gt; — Zlepši priestorové myslenie&lt;br&gt;• &lt;b&gt;Stroop Test&lt;/b&gt; — Posilni sústredenie a kognitívnu kontrolu&lt;br&gt;&lt;br&gt;Sleduj svoj výkon, monitoruj pokrok a trénuj mozog pravidelne.</translation>
     </message>
     <message>
         <location filename="../app/ui/views/about.py" line="434"/>
@@ -1461,6 +1461,122 @@ Všetky tvoje údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
         <location filename="../app/ui/views/dashboard.py" line="1299"/>
         <source>{count} days</source>
         <translation>{count} dní</translation>
+    </message>
+</context>
+<context>
+    <name>StatisticsView</name>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="139"/>
+        <location filename="../app/ui/views/statistics.py" line="383"/>
+        <source>Statistics</source>
+        <translation>Štatistiky</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="140"/>
+        <location filename="../app/ui/views/statistics.py" line="385"/>
+        <source>Your performance analytics and progress over time</source>
+        <translation>Tvoja výkonnostná analýza a pokrok v čase</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="215"/>
+        <location filename="../app/ui/views/statistics.py" line="387"/>
+        <source>Performance Trend</source>
+        <translation>Výkonnostný trend</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="226"/>
+        <location filename="../app/ui/views/statistics.py" line="299"/>
+        <source>Loading...</source>
+        <translation>Načítavam...</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="257"/>
+        <location filename="../app/ui/views/statistics.py" line="388"/>
+        <source>Quick Insights</source>
+        <translation>Rýchly prehľad</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="391"/>
+        <source>Best game</source>
+        <translation>Najlepšia hra</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="392"/>
+        <source>Strongest metric</source>
+        <translation>Najsilnejšia metrika</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="393"/>
+        <source>Needs improvement</source>
+        <translation>Potrebuje zlepšenie</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="288"/>
+        <location filename="../app/ui/views/statistics.py" line="389"/>
+        <source>Game Comparison</source>
+        <translation>Porovnanie hier</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="396"/>
+        <source>Runs</source>
+        <translation>Hry</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="397"/>
+        <source>Avg PI</source>
+        <translation>Priem. PI</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="398"/>
+        <source>Best PI</source>
+        <translation>Najlepší PI</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="399"/>
+        <location filename="../app/ui/views/statistics.py" line="495"/>
+        <location filename="../app/ui/views/statistics.py" line="609"/>
+        <source>Accuracy</source>
+        <translation>Presnosť</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="400"/>
+        <source>Avg RT</source>
+        <translation>Priem. RT</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="497"/>
+        <source>Reaction time</source>
+        <translation>Reakčný čas</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="552"/>
+        <source>Run #</source>
+        <translation>Hra</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="558"/>
+        <source>PI</source>
+        <translation>PI</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="572"/>
+        <source>No run data yet</source>
+        <translation>Zatiaľ žiadne behy</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="586"/>
+        <source>No data yet</source>
+        <translation>Zatiaľ žiadne dáta</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="614"/>
+        <source>Quality</source>
+        <translation>Kvalita</translation>
+    </message>
+    <message>
+        <location filename="../app/ui/views/statistics.py" line="619"/>
+        <source>Consistency</source>
+        <translation>Konzistentnosť</translation>
     </message>
 </context>
 </TS>

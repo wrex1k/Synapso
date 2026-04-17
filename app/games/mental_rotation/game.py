@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+from enum import Enum, auto
 
 from app.games.core.base_game import BaseGame, TrialResult
 from app.games.mental_rotation.config import LEVEL_PARAMS, MAX_LEVEL, MIN_LEVEL, SHAPES
@@ -17,6 +18,9 @@ class MentalRotationGame(BaseGame):
 
     def _level_params(self) -> dict:
         return LEVEL_PARAMS.get(self.level, LEVEL_PARAMS[MIN_LEVEL])
+
+    def create_tutorial_runner(self) -> "MentalRotationTutorialRunner":
+        return MentalRotationTutorialRunner(self)
 
     def start_trial(self) -> dict:
         p = self._level_params()
@@ -98,3 +102,187 @@ class MentalRotationGame(BaseGame):
             self.level += 1
         elif performance <= 0.5 and self.level > self.min_level:
             self.level -= 1
+
+
+class _MRPhase(Enum):
+    WARMUP = auto()
+    ROTATION_CHECK = auto()
+    MIRROR_TEST = auto()
+    SPEED_CHECK = auto()
+    PASSED = auto()
+    FAILED = auto()
+
+
+class MentalRotationTutorialRunner:
+    _WARMUP_REQUIRED_CORRECT = 3
+    _WARMUP_MAX_TRIALS = 8
+    _ROTATION_REQUIRED_STREAK = 3
+    _ROTATION_MAX_TRIALS = 10
+    _MIRROR_MIN_TRIALS = 6
+    _MIRROR_REQUIRED_ACCURACY = 0.70
+    _MIRROR_MAX_TRIALS = 14
+    _SPEED_REQUIRED_STREAK = 3
+    _SPEED_MAX_RT_RATIO = 0.70   # respond within 70% of stimulus window
+    _SPEED_MAX_TRIALS = 10
+
+    _LEVEL_WARMUP    = 1   # 0%  mirror, 15-45°,   2000 ms
+    _LEVEL_ROTATION  = 2   # 20% mirror, 45-75°,   1800 ms
+    _LEVEL_MIRROR    = 4   # 40% mirror, 105-135°, 1400 ms
+    _LEVEL_SPEED     = 3   # 30% mirror, 75-105°,  1600 ms
+
+    def __init__(self, game: MentalRotationGame):
+        self.game = game
+        self._phase = _MRPhase.WARMUP
+        self._phase_trials: list = []
+        self._failed_reason: str = ""
+
+    @property
+    def passed(self) -> bool:
+        return self._phase == _MRPhase.PASSED
+
+    @property
+    def failed(self) -> bool:
+        return self._phase == _MRPhase.FAILED
+
+    def configure(self):
+        self.game.total_trials = 10**9
+        self._phase = _MRPhase.WARMUP
+        self._phase_trials = []
+        self._failed_reason = ""
+        self.game.level = self._LEVEL_WARMUP
+        self.game.initial_level = self._LEVEL_WARMUP
+        self.game.begin_run()
+
+    def check_after_trial(self) -> bool:
+        if self._phase in (_MRPhase.PASSED, _MRPhase.FAILED):
+            return self.passed
+        latest = self.game.trials[-1] if self.game.trials else None
+        if not latest:
+            return False
+        self._phase_trials.append(latest)
+        if self._phase == _MRPhase.WARMUP:
+            return self._check_warmup()
+        if self._phase == _MRPhase.ROTATION_CHECK:
+            return self._check_rotation()
+        if self._phase == _MRPhase.MIRROR_TEST:
+            return self._check_mirror()
+        if self._phase == _MRPhase.SPEED_CHECK:
+            return self._check_speed()
+        return False
+
+    def get_progress_text(self) -> str:
+        pt = self._phase_trials
+        if self._phase == _MRPhase.WARMUP:
+            correct = sum(1 for t in pt if t.is_correct)
+            return f"Warm-up: {correct}/{self._WARMUP_REQUIRED_CORRECT}"
+        if self._phase == _MRPhase.ROTATION_CHECK:
+            return f"Rotation streak: {self._trailing_streak(pt)}/{self._ROTATION_REQUIRED_STREAK}"
+        if self._phase == _MRPhase.MIRROR_TEST:
+            n = len(pt)
+            correct = sum(1 for t in pt if t.is_correct)
+            pct = int(100 * correct / n) if n else 0
+            return f"Mirror: {pct}% ({n}/{self._MIRROR_MIN_TRIALS} trials)"
+        if self._phase == _MRPhase.SPEED_CHECK:
+            return f"Speed streak: {self._fast_correct_streak(pt)}/{self._SPEED_REQUIRED_STREAK}"
+        if self._phase == _MRPhase.PASSED:
+            return "\u2713 Tutorial passed!"
+        if self._phase == _MRPhase.FAILED:
+            return f"\u2717 Failed: {self._failed_reason}"
+        return ""
+
+    def get_progress_pct(self) -> int:
+        if self._phase == _MRPhase.PASSED:
+            return 100
+        base_map = {
+            _MRPhase.WARMUP:         0,
+            _MRPhase.ROTATION_CHECK: 25,
+            _MRPhase.MIRROR_TEST:    50,
+            _MRPhase.SPEED_CHECK:    75,
+        }
+        base = base_map.get(self._phase, 0)
+        pt = self._phase_trials
+        if self._phase == _MRPhase.WARMUP:
+            within = min(sum(1 for t in pt if t.is_correct) / self._WARMUP_REQUIRED_CORRECT, 1.0)
+        elif self._phase == _MRPhase.ROTATION_CHECK:
+            within = min(self._trailing_streak(pt) / self._ROTATION_REQUIRED_STREAK, 1.0)
+        elif self._phase == _MRPhase.MIRROR_TEST:
+            within = min(len(pt) / self._MIRROR_MIN_TRIALS, 1.0)
+        elif self._phase == _MRPhase.SPEED_CHECK:
+            within = min(self._fast_correct_streak(pt) / self._SPEED_REQUIRED_STREAK, 1.0)
+        else:
+            within = 0.0
+        return int(base + within * 25)
+
+    def _check_warmup(self) -> bool:
+        pt = self._phase_trials
+        correct = sum(1 for t in pt if t.is_correct)
+        if correct >= self._WARMUP_REQUIRED_CORRECT:
+            self._enter_phase(_MRPhase.ROTATION_CHECK, self._LEVEL_ROTATION)
+        elif len(pt) >= self._WARMUP_MAX_TRIALS:
+            self._fail(f"only {correct}/{len(pt)} correct in warm-up")
+        return False
+
+    def _check_rotation(self) -> bool:
+        pt = self._phase_trials
+        streak = self._trailing_streak(pt)
+        if streak >= self._ROTATION_REQUIRED_STREAK:
+            self._enter_phase(_MRPhase.MIRROR_TEST, self._LEVEL_MIRROR)
+        elif len(pt) >= self._ROTATION_MAX_TRIALS:
+            self._fail(f"no {self._ROTATION_REQUIRED_STREAK}-streak in {self._ROTATION_MAX_TRIALS} trials")
+        return False
+
+    def _check_mirror(self) -> bool:
+        pt = self._phase_trials
+        n = len(pt)
+        if n < self._MIRROR_MIN_TRIALS:
+            return False
+        correct = sum(1 for t in pt if t.is_correct)
+        accuracy = correct / n
+        if accuracy >= self._MIRROR_REQUIRED_ACCURACY:
+            self._enter_phase(_MRPhase.SPEED_CHECK, self._LEVEL_SPEED)
+        elif n >= self._MIRROR_MAX_TRIALS:
+            self._fail(f"mirror accuracy {int(accuracy * 100)}% after {n} trials")
+        return False
+
+    def _check_speed(self) -> bool:
+        pt = self._phase_trials
+        streak = self._fast_correct_streak(pt)
+        if streak >= self._SPEED_REQUIRED_STREAK:
+            self._phase = _MRPhase.PASSED
+            self._phase_trials = []
+            return True
+        if len(pt) >= self._SPEED_MAX_TRIALS:
+            self._fail(f"no fast streak of {self._SPEED_REQUIRED_STREAK} in {self._SPEED_MAX_TRIALS} trials")
+        return False
+
+    def _enter_phase(self, phase: _MRPhase, level: int) -> None:
+        self._phase = phase
+        self._phase_trials = []
+        self.game.level = level
+        self.game.initial_level = level
+
+    def _fail(self, reason: str) -> None:
+        self._failed_reason = reason
+        self._phase = _MRPhase.FAILED
+        self._phase_trials = []
+
+    @staticmethod
+    def _trailing_streak(trials) -> int:
+        streak = 0
+        for t in reversed(trials):
+            if t.is_correct:
+                streak += 1
+            else:
+                break
+        return streak
+
+    def _fast_correct_streak(self, trials) -> int:
+        streak = 0
+        for t in reversed(trials):
+            if not t.is_correct:
+                break
+            stim_ms = t.stimulus_params.get("stimulus_duration", 0)
+            if stim_ms > 0 and t.reaction_time_ms > stim_ms * self._SPEED_MAX_RT_RATIO:
+                break
+            streak += 1
+        return streak

@@ -1,19 +1,26 @@
 from PySide6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QCursor, QFont, QIcon
-from PySide6.QtWidgets import QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtGui import QCursor, QIcon
+from PySide6.QtWidgets import (
+    QGraphicsOpacityEffect,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
 from app.ui.components.input_field import InputField
 from app.utils.event_filters import context_menu_event_filter, enter_key_event_filter, password_event_filter
 from app.utils.logger import logger
+from app.utils.settings import get_language, set_language
 from app.utils.ui_helpers import draw_background, update_button_state
-from app.utils.settings import set_language, get_language
 from translations.translation import get_translation_manager, translate
 
 """
 LoginAuth view manages the login screen, including the welcome animation, form input,
 and error display. It emits signals for login attempts and navigation to registration and forgot password views.
 """
-
 
 
 class LoginAuth(QWidget):
@@ -35,14 +42,18 @@ class LoginAuth(QWidget):
         self.is_logging_in = False
         self._animations_started = False
 
+        self._title_anim_offset = 120
+        self._title_spacing = 30
+
         self._build_ui()
         self._setup_connections()
-
         self._retranslate_ui()
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+
+        layout.addWidget(self._create_language_section(), 0, Qt.AlignmentFlag.AlignLeft)
 
         contentFrame = QWidget(self)
         contentFrame.setObjectName("contentFrame")
@@ -52,19 +63,15 @@ class LoginAuth(QWidget):
         contentLayout.setSpacing(0)
 
         contentLayout.addStretch()
-
-        layout.addWidget(self._create_language_section(), 0, Qt.AlignmentFlag.AlignLeft)
         contentLayout.addWidget(self._create_welcome_section(), 0, Qt.AlignmentFlag.AlignHCenter)
         contentLayout.addSpacing(100)
         contentLayout.addWidget(self._create_input_fields(), 0, Qt.AlignmentFlag.AlignHCenter)
         contentLayout.addSpacing(50)
         contentLayout.addWidget(self._create_switch_section(), 0, Qt.AlignmentFlag.AlignHCenter)
-
         contentLayout.addStretch()
 
         layout.addWidget(contentFrame)
 
-    """ Language switching """
     def _create_language_section(self) -> QWidget:
         widget = QWidget(self)
         widget.setObjectName("languageWidget")
@@ -88,27 +95,30 @@ class LoginAuth(QWidget):
 
         return widget
 
-    def _create_welcome_section(self) -> QFrame:
+    def _create_welcome_section(self) -> QWidget:
         frame = QWidget(self)
         frame.setObjectName("welcomeFrame")
         frame.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
 
         layout = QHBoxLayout(frame)
-        layout.setSpacing(30)
+        layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.titleLabelLeft = QLabel(frame)
+        self.animCanvas = QWidget(frame)
+        self.animCanvas.setObjectName("animCanvas")
+        self.animCanvas.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.titleLabelLeft = QLabel(self.animCanvas)
         self.titleLabelLeft.setObjectName("titleLabelLeft")
         self.titleLabelLeft.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
         self.titleLabelLeft.setMaximumSize(QSize(16777215, 100))
 
-        self.titleLabelRight = QLabel(frame)
+        self.titleLabelRight = QLabel(self.animCanvas)
         self.titleLabelRight.setObjectName("titleLabelRight")
         self.titleLabelRight.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
         self.titleLabelRight.setMaximumSize(QSize(16777215, 100))
 
-        layout.addWidget(self.titleLabelLeft, 0, Qt.AlignmentFlag.AlignBottom)
-        layout.addWidget(self.titleLabelRight, 0, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
+        layout.addWidget(self.animCanvas)
 
         self.welcomeOpacity = QGraphicsOpacityEffect(self.titleLabelLeft)
         self.titleLabelLeft.setGraphicsEffect(self.welcomeOpacity)
@@ -121,7 +131,36 @@ class LoginAuth(QWidget):
         self.welcomeFrame = frame
         return frame
 
-    def _create_input_fields(self) -> QFrame:
+    def _update_welcome_layout_geometry(self):
+        self.titleLabelLeft.adjustSize()
+        self.titleLabelRight.adjustSize()
+
+        offset = self._title_anim_offset
+        spacing = self._title_spacing
+
+        left_w = self.titleLabelLeft.sizeHint().width()
+        left_h = self.titleLabelLeft.sizeHint().height()
+        right_w = self.titleLabelRight.sizeHint().width()
+        right_h = self.titleLabelRight.sizeHint().height()
+
+        canvas_h = max(left_h, right_h, 100)
+        canvas_w = left_w + right_w + spacing + (offset * 2)
+
+        self.animCanvas.setFixedSize(canvas_w, canvas_h)
+
+        left_y = (canvas_h - left_h) // 2
+        right_y = (canvas_h - right_h) // 2
+
+        self._left_final_pos = QPoint(offset, left_y)
+        self._right_final_pos = QPoint(offset + left_w + spacing, right_y)
+
+        self.titleLabelLeft.resize(left_w, left_h)
+        self.titleLabelRight.resize(right_w, right_h)
+
+        self.titleLabelLeft.move(self._left_final_pos)
+        self.titleLabelRight.move(self._right_final_pos)
+
+    def _create_input_fields(self) -> QWidget:
         frame = QWidget(self)
         frame.setObjectName("frame")
         frame.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Maximum)
@@ -132,35 +171,43 @@ class LoginAuth(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # email field
         self.emailField = InputField(label_text="", placeholder="", object_name="emailEdit", parent=frame)
         self.emailField.installEventFilter(self)
         layout.addWidget(self.emailField, 0, Qt.AlignmentFlag.AlignHCenter)
-
         self.emailEdit = self.emailField.line_edit
 
-
         layout.addSpacing(25)
-        # password field
-        self.passwordField = InputField(label_text="", placeholder="", is_password=True, object_name="passwordEdit", parent=frame)
+
+        self.passwordField = InputField(
+            label_text="",
+            placeholder="",
+            is_password=True,
+            object_name="passwordEdit",
+            parent=frame,
+        )
         self.passwordField.installEventFilter(self)
         layout.addWidget(self.passwordField, 0, Qt.AlignmentFlag.AlignHCenter)
-
         self.passwordEdit = self.passwordField.line_edit
 
         layout.addSpacing(10)
-        self._create_forgot_password_link(frame)
-        layout.addWidget(self.forgotPasswordLink, 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
 
-        layout.addSpacing(60)        
+        forgot_password_frame = self._create_forgot_password_link(frame)
+        layout.addWidget(forgot_password_frame, 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+
+        layout.addSpacing(60)
+
         self._create_sign_in_button(frame)
         layout.addWidget(self.signInFrame, 0, Qt.AlignmentFlag.AlignHCenter)
-        
+
+        self.formOpacity = QGraphicsOpacityEffect(frame)
+        frame.setGraphicsEffect(self.formOpacity)
+        self.formOpacity.setOpacity(0)
+
         self.formFrame = frame
         return frame
 
-    def _create_sign_in_button(self, frame: QFrame) -> QPushButton:
-        frame = QWidget(self)
+    def _create_sign_in_button(self, parent: QWidget) -> QWidget:
+        frame = QWidget(parent)
         frame.setObjectName("singInFrame")
         frame.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Maximum)
         frame.setMaximumWidth(720)
@@ -168,8 +215,7 @@ class LoginAuth(QWidget):
         layout = QVBoxLayout(frame)
         layout.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignHCenter)
         layout.setContentsMargins(0, 0, 0, 0)
-        
-        # sign in button
+
         self.signInButton = QPushButton(translate("LoginAuth", "Sign in"), frame)
         self.signInButton.setObjectName("primaryButton")
         self.signInButton.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
@@ -177,16 +223,10 @@ class LoginAuth(QWidget):
         self.signInButton.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         layout.addWidget(self.signInButton, 0, Qt.AlignmentFlag.AlignHCenter)
 
-        # opacity for animation sign in section
-        self.signInOpacity = QGraphicsOpacityEffect(frame)
-        frame.setGraphicsEffect(self.signInOpacity)
-        self.signInOpacity.setOpacity(0)
-
         self.signInFrame = frame
         return frame
 
-    def _create_forgot_password_link(self, frame: QFrame) -> QFrame:
-        # forgot password link button
+    def _create_forgot_password_link(self, frame: QWidget) -> QWidget:
         self.forgotPasswordLink = QPushButton(translate("LoginAuth", "Forgot your password? Click here"), frame)
         self.forgotPasswordLink.setObjectName("forgotPasswordLink")
         self.forgotPasswordLink.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -200,25 +240,22 @@ class LoginAuth(QWidget):
         forgotPasswordLayout = QHBoxLayout(forgotPasswordFrame)
         forgotPasswordLayout.setContentsMargins(0, 0, 0, 0)
         forgotPasswordLayout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-
         forgotPasswordLayout.addWidget(self.forgotPasswordLink)
+
         return forgotPasswordFrame
 
-    def _create_switch_section(self) -> QFrame:
+    def _create_switch_section(self) -> QWidget:
         frame = QWidget(self)
         frame.setObjectName("switchToFrame")
         frame.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
 
         layout = QHBoxLayout(frame)
 
-        # switch to registration button
         self.startRegistration = QPushButton(translate("LoginAuth", "Don't have an account? Sign up"), frame)
         self.startRegistration.setObjectName("startRegistration")
         self.startRegistration.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-
         layout.addWidget(self.startRegistration)
 
-        # setup opacity for animation
         self.switchOpacity = QGraphicsOpacityEffect(frame)
         frame.setGraphicsEffect(self.switchOpacity)
         self.switchOpacity.setOpacity(0)
@@ -238,59 +275,62 @@ class LoginAuth(QWidget):
         self.langEnBtn.clicked.connect(lambda: self._change_language(self.langEnBtn, "en"))
 
     def _start_welcome_animation(self):
-        left_final_pos = self.titleLabelLeft.pos()
-        right_final_pos = self.titleLabelRight.pos()
-        offset = 120
-        welcome_start_pos = QPoint(left_final_pos.x() - offset, left_final_pos.y())
-        logo_start_pos = QPoint(right_final_pos.x() + offset, right_final_pos.y())
+        self._update_welcome_layout_geometry()
 
-        self.titleLabelLeft.move(welcome_start_pos)
-        self.titleLabelRight.move(logo_start_pos)
+        left_final_pos = self._left_final_pos
+        right_final_pos = self._right_final_pos
+        offset = self._title_anim_offset
+
+        left_start_pos = QPoint(left_final_pos.x() - offset, left_final_pos.y())
+        right_start_pos = QPoint(right_final_pos.x() + offset, right_final_pos.y())
+
+        self.titleLabelLeft.move(left_start_pos)
+        self.titleLabelRight.move(right_start_pos)
 
         self.welcomePosAnim = QPropertyAnimation(self.titleLabelLeft, b"pos")
-        self.welcomePosAnim.setDuration(1000)
-        self.welcomePosAnim.setStartValue(welcome_start_pos)
+        self.welcomePosAnim.setDuration(900)
+        self.welcomePosAnim.setStartValue(left_start_pos)
         self.welcomePosAnim.setEndValue(left_final_pos)
-        self.welcomePosAnim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self.welcomePosAnim.setEasingCurve(QEasingCurve.Type.OutBack)
 
         self.welcomeOpacityAnim = QPropertyAnimation(self.welcomeOpacity, b"opacity")
-        self.welcomeOpacityAnim.setDuration(400)
+        self.welcomeOpacityAnim.setDuration(350)
         self.welcomeOpacityAnim.setStartValue(0.0)
         self.welcomeOpacityAnim.setEndValue(1.0)
         self.welcomeOpacityAnim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
         self.logoPosAnim = QPropertyAnimation(self.titleLabelRight, b"pos")
-        self.logoPosAnim.setDuration(1200)
-        self.logoPosAnim.setStartValue(logo_start_pos)
+        self.logoPosAnim.setDuration(1000)
+        self.logoPosAnim.setStartValue(right_start_pos)
         self.logoPosAnim.setEndValue(right_final_pos)
-        self.logoPosAnim.setEasingCurve(QEasingCurve.Type.OutElastic)
+        self.logoPosAnim.setEasingCurve(QEasingCurve.Type.OutBack)
 
         self.logoOpacityAnim = QPropertyAnimation(self.logoOpacity, b"opacity")
-        self.logoOpacityAnim.setDuration(400)
+        self.logoOpacityAnim.setDuration(350)
         self.logoOpacityAnim.setStartValue(0.0)
         self.logoOpacityAnim.setEndValue(1.0)
         self.logoOpacityAnim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
-        self.formAnim = QPropertyAnimation(self.signInOpacity, b"opacity")
-        self.formAnim.setDuration(1000)
+        self.formAnim = QPropertyAnimation(self.formOpacity, b"opacity")
+        self.formAnim.setDuration(700)
         self.formAnim.setStartValue(0.0)
         self.formAnim.setEndValue(1.0)
         self.formAnim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
         self.switchAnim = QPropertyAnimation(self.switchOpacity, b"opacity")
-        self.switchAnim.setDuration(800)
+        self.switchAnim.setDuration(600)
         self.switchAnim.setStartValue(0.0)
         self.switchAnim.setEndValue(1.0)
         self.switchAnim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
         self.welcomePosAnim.start()
-        QTimer.singleShot(120, self.welcomeOpacityAnim.start)
+        QTimer.singleShot(100, self.welcomeOpacityAnim.start)
 
-        QTimer.singleShot(200, self.logoPosAnim.start)
-        QTimer.singleShot(320, self.logoOpacityAnim.start)
+        QTimer.singleShot(150, self.logoPosAnim.start)
+        QTimer.singleShot(250, self.logoOpacityAnim.start)
 
-        QTimer.singleShot(800, self.formAnim.start)
-        QTimer.singleShot(1200, self.switchAnim.start)
+        QTimer.singleShot(1250, self.formAnim.start)
+        QTimer.singleShot(1750, self.switchAnim.start)
 
     def show_login_error(self, message: str):
         self.state = "error"
@@ -338,26 +378,36 @@ class LoginAuth(QWidget):
         self.is_logging_in = False
 
         update_button_state(
-        self.signInButton,
-        "idle",
-        idle_text=translate("LoginAuth", "Sign in"),
-        loading_text=translate("LoginAuth", "Signing in…"),
-        auto_reset_ms=None,
-    )
-        
+            self.signInButton,
+            "idle",
+            idle_text=translate("LoginAuth", "Sign in"),
+            loading_text=translate("LoginAuth", "Signing in…"),
+            auto_reset_ms=None,
+        )
+
     def _retranslate_ui(self):
         self.titleLabelLeft.setText(translate("LoginAuth", "welcome in"))
         self.titleLabelRight.setText(translate("LoginAuth", "Synapso"))
 
         self.emailField.setTitle(translate("LoginAuth", "Email"))
         self.emailField.setPlaceholderText(translate("LoginAuth", "john.doe@example.com"))
-        
+
         self.passwordField.setTitle(translate("LoginAuth", "Password"))
         self.passwordField.setPlaceholderText("••••••••••••••")
 
         self.signInButton.setText(translate("LoginAuth", "Sign in"))
         self.forgotPasswordLink.setText(translate("LoginAuth", "Forgot your password? Click here"))
         self.startRegistration.setText(translate("LoginAuth", "Don't have an account? Sign up"))
+
+        current_lang = get_language()
+        self.langSkBtn.setProperty("selected", current_lang == "sk")
+        self.langEnBtn.setProperty("selected", current_lang == "en")
+        self.langSkBtn.style().unpolish(self.langSkBtn)
+        self.langSkBtn.style().polish(self.langSkBtn)
+        self.langEnBtn.style().unpolish(self.langEnBtn)
+        self.langEnBtn.style().polish(self.langEnBtn)
+
+        self._update_welcome_layout_geometry()
 
     def _change_language(self, button: QPushButton, lang: str):
         other = self.langEnBtn if button is self.langSkBtn else self.langSkBtn
@@ -376,8 +426,11 @@ class LoginAuth(QWidget):
     def showEvent(self, event):
         super().showEvent(event)
         self._retranslate_ui()
+
         if not self._animations_started:
             self._animations_started = True
+            self.formOpacity.setOpacity(0)
+            self.switchOpacity.setOpacity(0)
             QTimer.singleShot(50, self._start_welcome_animation)
 
     def eventFilter(self, watched, event):

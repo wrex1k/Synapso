@@ -238,8 +238,8 @@ class RegistrationController(QObject):
     def _finish_success(self, user: User):
         """Finalize successful registration and continue app flow."""
         logger.info("Registration process completed (user_id: ..%s)", user.id[-10:])
-        self._auth_view.reset_ui()
         self.on_complete(user)
+        self._auth_view.reset_ui()
 
     @Slot(str)
     def _finish_error(self, msg: str):

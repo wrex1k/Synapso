@@ -4,14 +4,14 @@ RunRepository manages game run and trial data in Supabase:
 - abandon_run:                    mark a run as abandoned
 - save_run:                       finalize a run with aggregate metrics
 - save_trials:                    persist individual trial rows
-- fetch_pi_run_values:            raw PI run values for normalization
-- fetch_pi_normalized_raw_values: normalized PI values for normalization
+- fetch_pi_normalized_raw_values: normalized PI values for baseline computation
+- fetch_pi_run_stats_per_game:    mean/std of pi_run values for normalization
 - fetch_user_run_history:         recent completed runs for a user/game
 """
 from datetime import datetime, timezone
 import uuid
 
-from app.repository.supabase_client import get_client, get_service_client, with_retry
+from app.repository.supabase_client import get_client, get_service_client
 from app.utils.logger import logger
 from app.games.core.base_game import GAME_ID_MAP
 
@@ -34,7 +34,7 @@ def create_run(user_id: str, game_slug: str, stage: str, started_at: datetime):
             "status": "running",
         }
 
-        client = get_client()
+        client = get_service_client() or get_client()
         result = client.table("runs").insert(payload).execute()
 
         if result.data:
@@ -50,7 +50,7 @@ def create_run(user_id: str, game_slug: str, stage: str, started_at: datetime):
 def abandon_run(run_id: str) -> None:
     """Mark a run as abandoned in the database."""
     try:
-        get_client().table("runs").update({
+        (get_service_client() or get_client()).table("runs").update({
             "status": "abandoned",
             "ended_at": datetime.now(timezone.utc).isoformat(),
         }).eq("run_id", run_id).execute()
@@ -98,7 +98,7 @@ def save_run(
             "status": status_normalized,
         }
 
-        client = get_client()
+        client = get_service_client() or get_client()
 
         if run_id:
             result = client.table("runs").update(update_data).eq("run_id", effective_run_id).execute()
@@ -224,13 +224,17 @@ def fetch_pi_normalized_raw_values(game_slug: str) -> list[float]:
         return []
 
 
-def fetch_pi_run_values(game_slug: str) -> list[float]:
-    """Return all pi_run values for completed runs of the given game."""
+def fetch_pi_run_stats_per_game(game_slug: str) -> dict:
+    """Return mean and stddev of pi_run for all completed runs of the given game.
+
+    Returns {"mean": float, "std": float}. If fewer than 2 runs exist, std is 0.0
+    which triggers the normalize_pi() fallback (returns 0.0 for all players).
+    """
     try:
         game_id = GAME_ID_MAP.get(game_slug, 1)
         client = get_client()
         if not client:
-            return []
+            return {"mean": 0.0, "std": 0.0}
         result = (
             client.table("runs")
             .select("pi_run")
@@ -238,15 +242,20 @@ def fetch_pi_run_values(game_slug: str) -> list[float]:
             .eq("status", "completed")
             .execute()
         )
-        return [
+        values = [
             r["pi_run"]
             for r in (result.data or [])
             if r.get("pi_run") is not None
         ]
+        if len(values) < 2:
+            return {"mean": 0.0, "std": 0.0}
+        import statistics as _stats
+        return {"mean": _stats.mean(values), "std": _stats.stdev(values)}
     except Exception as e:
-        logger.warning("Failed to fetch pi_run values for '%s': %s", game_slug, e)
-        return []
-    
+        logger.warning("Failed to fetch pi_run stats for '%s': %s", game_slug, e)
+        return {"mean": 0.0, "std": 0.0}
+
+
 def fetch_user_run_history(user_id: str, game_slug: str, limit: int = 20) -> list[dict]:
     """Return the most recent completed runs for a user and game, in chronological order."""
     try:

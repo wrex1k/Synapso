@@ -324,17 +324,6 @@ def _clear_session_tokens():
     worker = ClearTokensWorker()
     _thread_pool.start(worker)
 
-# check all session tokens in keyring
-def check_session_tokens():
-    access_token = _get_access_token()
-    refresh_token = _get_refresh_token()
-    if access_token and refresh_token:
-        logger.debug("Session tokens found in keyring")
-        return True
-    logger.debug("Session tokens missing in keyring")
-    return False
-
-
 # fetch email from Supabase auth table
 def get_auth_email() -> str | None:
     access_token = _get_access_token()
