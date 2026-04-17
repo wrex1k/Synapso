@@ -62,7 +62,6 @@ def _render_shape_pixmap(
     image = QImage(raw, final.get_width(), final.get_height(), QImage.Format.Format_RGBA8888)
     return QPixmap.fromImage(image.copy())
 
-_IDLE = "idle"
 _COUNTDOWN = "countdown"
 _STIMULUS = "stimulus"
 _FEEDBACK = "feedback"
@@ -112,15 +111,16 @@ class MentalRotationWidget(BaseGameWidget):
     def _build_ui(self) -> None:
         root = self._build_hud_header("Mental Rotation", margins=(130, 90, 130, 80))
         root.addStretch(1)
+        root.addSpacing(10)
 
         self._lbl_feedback = QLabel("")
         self._lbl_feedback.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._lbl_feedback.setTextFormat(Qt.TextFormat.RichText)
         self._lbl_feedback.setStyleSheet("background: transparent;")
-        self._lbl_feedback.setMinimumHeight(56)
+        self._lbl_feedback.setFixedHeight(52)
         root.addWidget(self._lbl_feedback)
 
-        root.addSpacing(16)
+        root.addSpacing(6)
 
         shape_row = QHBoxLayout()
         shape_row.setSpacing(60)
@@ -133,10 +133,10 @@ class MentalRotationWidget(BaseGameWidget):
 
         root.addStretch(1)
 
-        _word = f'<span style="color:{FONT_PRIMARY};">{translate("MentalRotationWidget", "shapes are the same")}</span>'
+        _word = f'<span style="color:{FONT_PRIMARY};">{translate("MentalRotationWidget", "shapes are the same or different")}</span>'
         self._build_hud_footer(
             root,
-            translate("MentalRotationWidget", "Press the key if the {word}").format(word=_word),
+            translate("MentalRotationWidget", "Decide if the {word}").format(word=_word),
         )
 
     def _show_countdown(self):
@@ -144,8 +144,10 @@ class MentalRotationWidget(BaseGameWidget):
         self._state = _COUNTDOWN
         self._hud_update(show_next_trial=True)
         self._bar_timer.setValue(0)
-        self._left_shape.set_shape([], 0.0, False)
-        self._right_shape.set_shape([], 0.0, False)
+        self._lbl_feedback.setMaximumHeight(16777215)
+        self._lbl_feedback.setMinimumHeight(0)
+        self._left_shape.hide()
+        self._right_shape.hide()
         self._lbl_feedback.setText(
             f'<span style="color:{OFF_WHITE}; font-size:80px; font-weight:700;">{self._countdown_value}</span>'
         )
@@ -168,6 +170,9 @@ class MentalRotationWidget(BaseGameWidget):
         self._timer.stop()
 
         if state == _STIMULUS:
+            self._lbl_feedback.setFixedHeight(52)
+            self._left_shape.show()
+            self._right_shape.show()
             p = self._trial_params
             blocks = p.get("shape_blocks", [])
             angle = float(p.get("rotation_angle", 0))
@@ -254,7 +259,7 @@ class MentalRotationWidget(BaseGameWidget):
 
         color = CORRECT_COLOR if result.is_correct else INCORRECT_COLOR
         symbol = "✓" if result.is_correct else "✗"
-        text = "Correct" if result.is_correct else "Incorrect"
+        text = translate("MentalRotationWidget", "Correct") if result.is_correct else translate("MentalRotationWidget", "Incorrect")
         self._lbl_feedback.setText(
             f'<span style="color:{color}; font-size:28px; font-weight:600;">{symbol} {text}</span>'
         )

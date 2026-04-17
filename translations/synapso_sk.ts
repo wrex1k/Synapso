@@ -5,8 +5,8 @@
     <name>BaseTutorialWidget</name>
     <message>
         <location filename="../app/ui/views/base_tutorial.py" line="56"/>
-        <source>Don&apos;t worry - a brief tutorial will guide you before starting.</source>
-        <translation>Neboj sa - pred začiatkom ťa prevedie krátky tutoriál.</translation>
+        <source>Don&apos;t worry – a brief tutorial will guide you before starting.</source>
+        <translation>Nemaj obavy – pred začiatkom ťa prevedie krátky tutoriál.</translation>
     </message>
     <message>
         <location filename="../app/ui/views/base_tutorial.py" line="124"/>
@@ -169,7 +169,7 @@
         <location filename="../app/ui/views/forgot_password.py" line="411"/>
         <location filename="translation.py" line="104"/>
         <source>Please wait before sending another reset request</source>
-        <translation>Počkajte pred odoslaním ďalšej žiadosti o obnovenie hesla</translation>
+        <translation>Pred odoslaním ďalšej žiadosti o obnovenie hesla chvíľu počkaj</translation>
     </message>
     <message>
         <location filename="../app/ui/views/forgot_password.py" line="514"/>
@@ -263,8 +263,8 @@
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="423"/>
-        <source>Average performance index</source>
-        <translation>Priemerný výkonnostný index</translation>
+        <source>Average quality</source>
+        <translation>Priemerná kvalita</translation>
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="427"/>
@@ -313,13 +313,13 @@
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="576"/>
-        <source>you are {value}pi higher than global avg</source>
-        <translation>máš o {value} PI viac ako globálny priemer</translation>
+        <source>your quality is {value} above global avg</source>
+        <translation>si o {value} kvalitnejší ako globálny priemer</translation>
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="580"/>
-        <source>you are {value}pi lower than global avg</source>
-        <translation>máš o {value} PI menej ako globálny priemer</translation>
+        <source>your quality is {value} below global avg</source>
+        <translation>si o {value} menej kvalitnejší ako globálny priemer</translation>
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="648"/>
@@ -338,8 +338,8 @@
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="57"/>
-        <source>The Stroop test measures attention, processing speed, and cognitive control. The task is to name the color of a word, not the word itself, which creates mental interference.</source>
-        <translation>Stroop test meria pozornosť, rýchlosť spracovania a kognitívnu kontrolu. Úlohou je pomenovať farbu slova, nie samotné slovo, čo vytvára mentálnu interferenciu.</translation>
+        <source>The Stroop Test measures attention, processing speed, and cognitive control. The task is to name the color of a word, not the word itself, which creates mental interference.</source>
+        <translation>Stroop Test meria pozornosť, rýchlosť spracovania a kognitívnu kontrolu. Úlohou je pomenovať farbu slova, nie samotné slovo, čo vytvára mentálnu interferenciu.</translation>
     </message>
     <message>
         <location filename="../app/ui/views/games.py" line="61"/>
@@ -453,20 +453,20 @@
 
     <message>
         <location filename="../app/ui/views/memory_grid_tutorial.py" line="72"/>
-        <source>• Memorize the highlighted tiles</source>
-        <translation>• Zapamätaj si zvýraznené políčka</translation>
+        <source>• Memorize the highlighted tiles.</source>
+        <translation>• Zapamätaj si zvýraznené políčka.</translation>
     </message>
 
     <message>
         <location filename="../app/ui/views/memory_grid_tutorial.py" line="78"/>
-        <source>• Click on the grid cells to select the ones you remember</source>
-        <translation>• Klikni na políčka v mriežke, ktoré si pamätáš</translation>
+        <source>• Click on the grid cells to select the ones you remember.</source>
+        <translation>• Klikni na políčka v mriežke, ktoré si pamätáš.</translation>
     </message>
 
     <message>
         <location filename="../app/ui/views/memory_grid_tutorial.py" line="89"/>
         <source>• Each response calculates difficulty&lt;span style=&quot;color:{color};&quot;&gt; - response correct!&lt;/span&gt;</source>
-        <translation>• Každá odpoveď ovplyvňuje náročnosť&lt;span style=&quot;color:{color};&quot;&gt; - správna odpoveď!&lt;/span&gt;</translation>
+        <translation>• Každá odpoveď ovplyvňuje náročnosť&lt;span style=&quot;color:{color};&quot;&gt; - odpovedaj správne!&lt;/span&gt;</translation>
     </message>
 
     <message>
@@ -477,8 +477,8 @@
 
     <message>
         <location filename="../app/ui/views/memory_grid_tutorial.py" line="113"/>
-        <source>Let&apos;s learn how the &lt;span style=&quot;color:#3EAC91;&quot;&gt;Memory Grid&lt;/span&gt; works. Memorize the pattern!</source>
-        <translation>Pozrime sa, ako funguje &lt;span style=&quot;color:#3EAC91;&quot;&gt;Memory Grid&lt;/span&gt;. Zapamätaj si vzor!</translation>
+        <source>Let&apos;s learn how the &lt;span style=&quot;color:#3EAC91;&quot;&gt;Memory Grid&lt;/span&gt; works. This will only take a minute!</source>
+        <translation>Pozrime sa, ako funguje &lt;span style=&quot;color:#3EAC91;&quot;&gt;Memory Grid&lt;/span&gt;. Zaberie to len minútu!</translation>
     </message>
 
 </context>
@@ -513,7 +513,7 @@
     <message>
         <location filename="../app/ui/views/mental_rotation_tutorial.py" line="97"/>
         <source>Compare the &lt;span style=&quot;color:{color};&quot;&gt;shapes&lt;/span&gt; and decide if they are the &lt;span style=&quot;color:{color};&quot;&gt;same&lt;/span&gt; or &lt;span style=&quot;color:{color};&quot;&gt;mirrored&lt;/span&gt;.&lt;br&gt;&lt;span style=&quot;color:{color};&quot;&gt;Rotate&lt;/span&gt; them mentally to find out.</source>
-        <translation>Porovnaj &lt;span style=&quot;color:{color};&quot;&gt;tvary&lt;/span&gt; a rozhodmi sa, či sú &lt;span style=&quot;color:{color};&quot;&gt;rovnaké&lt;/span&gt; alebo &lt;span style=&quot;color:{color};&quot;&gt;zrkadlové&lt;/span&gt;.&lt;br&gt;&lt;span style=&quot;color:{color};&quot;&gt;Mentálne ich otočte&lt;/span&gt;, aby si to zistil.</translation>
+        <translation>Porovnaj &lt;span style=&quot;color:{color};&quot;&gt;tvary&lt;/span&gt; a rozhodni sa, či sú &lt;span style=&quot;color:{color};&quot;&gt;rovnaké&lt;/span&gt; alebo &lt;span style=&quot;color:{color};&quot;&gt;zrkadlové&lt;/span&gt;.&lt;br&gt;&lt;span style=&quot;color:{color};&quot;&gt;Mentálne ich otoč&lt;/span&gt;, aby si to zistil.</translation>
     </message>
 
     <message>
@@ -525,7 +525,7 @@
     <message>
         <location filename="../app/ui/views/mental_rotation_tutorial.py" line="110"/>
         <source>• Press</source>
-        <translation>• Stlačte</translation>
+        <translation>• Stlač</translation>
     </message>
 
     <message>
@@ -539,31 +539,21 @@
         <source>if one is mirrored.</source>
         <translation>ak je jeden zrkadlový.</translation>
     </message>
-
     <message>
         <location filename="../app/ui/views/mental_rotation_tutorial.py" line="138"/>
         <source>• Each response calculates difficulty&lt;span style=&quot;color:{color};&quot;&gt; - response correct!&lt;/span&gt;</source>
-        <translation>• Každá odpoveď ovplyvňuje náročnosť&lt;span style=&quot;color:{color};&quot;&gt; - správna odpoveď!&lt;/span&gt;</translation>
+        <translation>• Každá odpoveď ovplyvňuje náročnosť&lt;span style=&quot;color:{color};&quot;&gt; - odpovedaj správne!&lt;/span&gt;</translation>
     </message>
-
     <message>
         <location filename="../app/ui/views/mental_rotation_tutorial.py" line="150"/>
         <source>• Complete &lt;span style=&quot;color:#3EAC91;&quot;&gt;20 shapes&lt;/span&gt; to finish the run.</source>
         <translation>• Dokonči &lt;span style=&quot;color:#3EAC91;&quot;&gt;20 tvarov&lt;/span&gt; pre ukončenie hry.</translation>
     </message>
-
-    <message>
-        <location filename="../app/ui/views/mental_rotation_tutorial.py" line="159"/>
-        <source>Don&apos;t worry - a brief tutorial will guide you before starting.</source>
-        <translation>Nemaj obavy – pred začiatkom ťa prevedie krátky tutoriál.</translation>
-    </message>
-
     <message>
         <location filename="../app/ui/views/mental_rotation_tutorial.py" line="165"/>
-        <source>Let&apos;s learn how the &lt;span style=&quot;color:#3EAC91;&quot;&gt;Mental Rotation&lt;/span&gt; works. Compare both shapes!</source>
-        <translation>Pozrime sa, ako funguje &lt;span style=&quot;color:#3EAC91;&quot;&gt;Mental Rotation&lt;/span&gt;. Porovnaj oba tvary!</translation>
+        <source>Let&apos;s learn how the &lt;span style=&quot;color:#3EAC91;&quot;&gt;Mental Rotation&lt;/span&gt; works. This will only take a minute!</source>
+        <translation>Pozrime sa, ako funguje &lt;span style=&quot;color:#3EAC91;&quot;&gt;Mental Rotation&lt;/span&gt;. Zaberie to len minútu!</translation>
     </message>
-
     <message>
         <location filename="../app/ui/views/mental_rotation_tutorial.py" line="198"/>
         <source>Correct answer:</source>
@@ -644,7 +634,7 @@
     <message>
         <location filename="../app/ui/views/register_auth.py" line="300"/>
         <source>By registering, you agree to the Privacy Policy.</source>
-        <translation>Registráciou súhlasíte so spracovaním osobných údajov.</translation>
+        <translation>Registráciou súhlasíš so Zásadami ochrany osobných údajov.</translation>
     </message>
     <message>
         <location filename="../app/ui/views/register_auth.py" line="239"/>
@@ -671,7 +661,7 @@
     <message>
         <location filename="../app/ui/views/register_personal.py" line="371"/>
         <source>Share a bit about yourself! Add your name, email, and date of birth. Don&apos;t forget to upload your photo with the &apos;Upload Image&apos; button.</source>
-        <translation>Povedzte nám o sebe niečo viac! Pridajte svoje meno, email a dátum narodenia. Nezabudnite nahrať svoju fotografiu pomocou tlačidla „Nahrať obrázok“.</translation>
+        <translation>Povedz nám o sebe niečo viac! Pridaj svoje meno, e-mail a dátum narodenia. Nezabudni nahrať svoju fotografiu pomocou tlačidla „Nahrať obrázok“.</translation>
     </message>
     <message>
         <location filename="../app/ui/views/register_personal.py" line="373"/>
@@ -818,8 +808,8 @@
 
     <message>
         <location filename="../app/ui/views/stroop_tutorial.py" line="46"/>
-        <source>Stroop test</source>
-        <translation>Stroop test</translation>
+        <source>Stroop Test</source>
+        <translation>Stroop Test</translation>
     </message>
 
     <message>
@@ -838,7 +828,7 @@
         <location filename="../app/ui/views/stroop_tutorial.py" line="70"/>
         <location filename="../app/ui/views/stroop_tutorial.py" line="100"/>
         <source>• Press</source>
-        <translation>• Stlačte</translation>
+        <translation>• Stlač</translation>
     </message>
 
     <message>
@@ -880,7 +870,7 @@
     <message>
         <location filename="../app/ui/views/stroop_tutorial.py" line="136"/>
         <source>• Each response calculates difficulty&lt;span style=&quot;color:{color};&quot;&gt; - response correct!&lt;/span&gt;</source>
-        <translation>• Každá odpoveď ovplyvňuje náročnosť&lt;span style=&quot;color:{color};&quot;&gt; - správna odpoveď!&lt;/span&gt;</translation>
+        <translation>• Každá odpoveď ovplyvňuje náročnosť&lt;span style=&quot;color:{color};&quot;&gt; - odpovedaj správne!&lt;/span&gt;</translation>
     </message>
 
     <message>
@@ -891,8 +881,8 @@
 
     <message>
         <location filename="../app/ui/views/stroop_tutorial.py" line="160"/>
-        <source>Let&apos;s learn how the &lt;span style=&quot;color:#3EAC91;&quot;&gt;Stroop&lt;/span&gt; test works. This will only take a minute!</source>
-        <translation>Pozrime sa, ako funguje &lt;span style=&quot;color:#3EAC91;&quot;&gt;Stroop test&lt;/span&gt;. Zaberie to len minútu!</translation>
+        <source>Let&apos;s learn how the &lt;span style=&quot;color:#3EAC91;&quot;&gt;Stroop&lt;/span&gt; Test works. This will only take a minute!</source>
+        <translation>Pozrime sa, ako funguje &lt;span style=&quot;color:#3EAC91;&quot;&gt;Stroop Test&lt;/span&gt;. Zaberie to len minútu!</translation>
     </message>
 
     <message>
@@ -945,7 +935,7 @@
         <location filename="../app/utils/validator.py" line="94"/>
         <location filename="translation.py" line="102"/>
         <source>You must be at least %1 years old to register</source>
-        <translation>Na registráciu musíte mať aspoň %1 rokov</translation>
+        <translation>Na registráciu musíš mať aspoň %1 rokov</translation>
     </message>
     <message>
         <location filename="../app/utils/validator.py" line="60"/>
@@ -972,7 +962,7 @@
         <location filename="../app/utils/validator.py" line="89"/>
         <location filename="../app/utils/validator.py" line="98"/>
         <source>Please enter a valid birth date</source>
-        <translation>Prosím, zadajte platný dátum narodenia</translation>
+        <translation>Prosím, zadaj platný dátum narodenia</translation>
     </message>
 </context>
 <context>
@@ -1030,7 +1020,7 @@
         <message>
             <location filename="../app/ui/views/about.py" line="336"/>
             <source>Your report was successfully sent. Thank you!</source>
-            <translation>Vaša správa bola úspešne odoslaná. Ďakujeme!</translation>
+            <translation>Tvoja správa bola úspešne odoslaná. Ďakujeme!</translation>
         </message>
 </context>
 <context>
@@ -1444,8 +1434,8 @@ Všetky tvoje údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
     </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="1226"/>
-        <source>Stroop</source>
-        <translation>Stroop</translation>
+        <source>Stroop Test</source>
+        <translation>Stroop Test</translation>
     </message>
     <message>
         <location filename="../app/ui/views/dashboard.py" line="1226"/>
@@ -1537,7 +1527,7 @@ Všetky tvoje údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
         <location filename="../app/ui/views/statistics.py" line="226"/>
         <location filename="../app/ui/views/statistics.py" line="299"/>
         <source>Loading...</source>
-        <translation>Načítavam...</translation>
+        <translation>Načítava sa...</translation>
     </message>
     <message>
         <location filename="../app/ui/views/statistics.py" line="257"/>
@@ -1639,7 +1629,17 @@ Všetky tvoje údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
     <message>
         <location filename="translation.py"/>
         <source>ink color</source>
-        <translation>farby atramentu</translation>
+        <translation>farby textu</translation>
+    </message>
+    <message>
+        <location filename="translation.py"/>
+        <source>Correct</source>
+        <translation>Správne</translation>
+    </message>
+    <message>
+        <location filename="translation.py"/>
+        <source>Incorrect</source>
+        <translation>Nesprávne</translation>
     </message>
 </context>
 <context>
@@ -1654,18 +1654,38 @@ Všetky tvoje údaje budú natrvalo odstránené. Túto akciu nemožno vrátiť.
         <source>grid squares</source>
         <translation>políčka mriežky</translation>
     </message>
+    <message>
+        <location filename="translation.py"/>
+        <source>Correct</source>
+        <translation>Správne</translation>
+    </message>
+    <message>
+        <location filename="translation.py"/>
+        <source>Incorrect</source>
+        <translation>Nesprávne</translation>
+    </message>
 </context>
 <context>
     <name>MentalRotationWidget</name>
     <message>
         <location filename="translation.py"/>
-        <source>Press the key if the {word}</source>
-        <translation>Stlač kláves, ak sú {word}</translation>
+        <source>Decide if the {word}</source>
+        <translation>Rozhodni, či sú {word}</translation>
     </message>
     <message>
         <location filename="translation.py"/>
-        <source>shapes are the same</source>
-        <translation>tvary rovnaké</translation>
+        <source>shapes are the same or different</source>
+        <translation>tvary rovnaké alebo rozdielne</translation>
+    </message>
+    <message>
+        <location filename="translation.py"/>
+        <source>Correct</source>
+        <translation>Správne</translation>
+    </message>
+    <message>
+        <location filename="translation.py"/>
+        <source>Incorrect</source>
+        <translation>Nesprávne</translation>
     </message>
 </context>
 </TS>

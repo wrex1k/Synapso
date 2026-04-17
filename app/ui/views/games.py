@@ -57,8 +57,8 @@ _WIDGET_FACTORIES = {
 
 _GAME_TEXTS = {
     "stroop": {
-        "title": "Stroop test",
-        "desc": "The Stroop test measures attention, processing speed, and cognitive control. The task is to name the color of a word, not the word itself, which creates mental interference.",
+        "title": "Stroop Test",
+        "desc": "The Stroop Test measures attention, processing speed, and cognitive control. The task is to name the color of a word, not the word itself, which creates mental interference.",
     },
     "memory_grid": {
         "title": "Memory Grid",
@@ -80,7 +80,7 @@ _ACTIVITY_ROWS = [
 _STAT_CARDS = [
     ("rt", "Average reaction time"),
     ("acc", "Average accuracy"),
-    ("pi", "Average performance index"),
+    ("quality", "Average quality"),
 ]
 
 class _RealtimeWorker(QObject):
@@ -148,6 +148,9 @@ class GamesView(QWidget):
         self._avatar_cache: dict[str, QPixmap] = {}
         self._current_user_rank: int | None = None
 
+        self._lb_render_gen: int = 0
+        self._lb_avatar_slots: dict[tuple[int, int], QLabel] = {}
+
         self._build_ui()
         self._retranslate_ui()
         self._keep_thread(registry.run_thread(fetch_games, self._on_games_loaded))
@@ -163,6 +166,10 @@ class GamesView(QWidget):
         pix = QPixmap()
         if pix.loadFromData(data):
             self._avatar_cache[avatar_path] = pix
+            if self._game_keys:
+                db_id = self._game_db_ids.get(self._game_keys[self._current_index])
+                if db_id is not None:
+                    self._load_leaderboard_for(db_id)
 
     def _build_ui(self):
         root = QVBoxLayout(self)
@@ -457,7 +464,7 @@ class GamesView(QWidget):
         stat_title_texts = {
             "rt": translate("GamesView", "Average reaction time"),
             "acc": translate("GamesView", "Average accuracy"),
-            "pi": translate("GamesView", "Average performance index"),
+            "quality": translate("GamesView", "Average quality"),
         }
 
         if hasattr(panel, "_info_title_lbl"):
@@ -482,6 +489,9 @@ class GamesView(QWidget):
                 title_lbl = panel._stat_title_lbls.get(suffix)
                 if title_lbl is not None:
                     title_lbl.setText(stat_title_texts.get(suffix, _title_text))
+
+        if hasattr(panel, "_last_stats") and panel._last_stats:
+            self._on_stats_loaded(panel._game_slug, panel._last_stats)
 
     def _retranslate_ui(self) -> None:
         self._page_title_lbl.setText(translate("GamesView", "Games"))
@@ -559,6 +569,8 @@ class GamesView(QWidget):
         if not panel:
             return
 
+        panel._last_stats = stats
+
         num_lbls: list[QLabel] = panel._num_lbls
         if num_lbls:
             num_lbls[0].setText(str(stats.get("players_playing", "—")))
@@ -610,21 +622,21 @@ class GamesView(QWidget):
         else:
             delta.setText("")
 
-        avg_score = stats.get("avg_score")
-        val, delta = stat_lbls["pi"]
-        val.setText(f"{avg_score:.2f}pi" if avg_score is not None else "—")
-        score_diff = stats.get("score_diff")
-        if score_diff is not None:
-            is_better = score_diff > 0
+        avg_quality = stats.get("avg_quality")
+        val, delta = stat_lbls["quality"]
+        val.setText(f"{avg_quality:.0f}" if avg_quality is not None else "—")
+        quality_diff = stats.get("quality_diff")
+        if quality_diff is not None:
+            is_better = quality_diff > 0
             direction = "↑" if is_better else "↓"
             color = f"{SUCCESS}" if is_better else f"{DANGER}"
             if is_better:
-                message = translate("GamesView", "you are {value}pi higher than global avg").format(
-                    value=f"{abs(score_diff):.1f}"
+                message = translate("GamesView", "your quality is {value} above global avg").format(
+                    value=f"{abs(quality_diff):.1f}"
                 )
             else:
-                message = translate("GamesView", "you are {value}pi lower than global avg").format(
-                    value=f"{abs(score_diff):.1f}"
+                message = translate("GamesView", "your quality is {value} below global avg").format(
+                    value=f"{abs(quality_diff):.1f}"
                 )
             delta.setText(f'<span style="color:{color}; font-weight: 600;">{direction}</span>&nbsp;<span style="color:#FAFAFA;">{message}</span>')
         else:
@@ -649,6 +661,12 @@ class GamesView(QWidget):
         user_rank = data.get("user_rank")
         self._current_user_rank = user_rank
 
+        # Invalidate all in-flight avatar fetches from the previous render.
+        # Any callback that still arrives will look up its (old_gen, slot_idx)
+        # key, find nothing, and return without touching any widget.
+        self._lb_render_gen += 1
+        self._lb_avatar_slots.clear()
+
         self._lb_container.setUpdatesEnabled(False)
         try:
             while self._lb_layout.count() > 1:
@@ -657,15 +675,15 @@ class GamesView(QWidget):
                 if w:
                     w.deleteLater()
 
-            for entry in entries:
-                row_widget = self._build_lb_row(entry)
+            for slot_idx, entry in enumerate(entries):
+                row_widget = self._build_lb_row(entry, slot_idx)
                 self._lb_layout.insertWidget(self._lb_layout.count() - 1, row_widget)
         finally:
             self._lb_container.setUpdatesEnabled(True)
 
         self._set_user_rank_text(user_rank)
 
-    def _build_lb_row(self, entry: dict) -> QWidget:
+    def _build_lb_row(self, entry: dict, slot_idx: int) -> QWidget:
         is_online = entry.get("is_online", False)
 
         # Leaderboard Widget
@@ -709,9 +727,9 @@ class GamesView(QWidget):
         layout.addLayout(middle_col)
         layout.addStretch()
 
-        # PPI on the right
-        accumulated_pi = entry.get('accumulated_pi', 0)
-        score_lbl = QLabel(f"{accumulated_pi:.2f}pi")
+        # Skill Rating on the right
+        skill_rating = entry.get('skill_rating', 1000)
+        score_lbl = QLabel(f"{int(skill_rating)}")
         score_lbl.setObjectName("leaderboardRowValue")
         score_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         layout.addWidget(score_lbl)
@@ -724,14 +742,27 @@ class GamesView(QWidget):
             avatar_lbl.setScaledContents(True)
             image_to_rounded(avatar_lbl)
         else:
+            render_gen = self._lb_render_gen
+            self._lb_avatar_slots[(render_gen, slot_idx)] = avatar_lbl
             self._keep_thread(registry.run_thread(
                 lambda p=requested_avatar: fetch_avatar(p),
-                lambda data, lbl=avatar_lbl, p=requested_avatar: self._apply_lb_avatar(lbl, data, p),
+                lambda data, p=requested_avatar, gen=render_gen, idx=slot_idx: (
+                    self._apply_lb_avatar(p, data, gen, idx)
+                ),
             ))
 
         return row
 
-    def _apply_lb_avatar(self, lbl: QLabel, data: bytes | None, avatar_path: str | None = None) -> None:
+    def _apply_lb_avatar(
+        self,
+        avatar_path: str,
+        data: bytes | None,
+        render_gen: int,
+        slot_idx: int,
+    ) -> None:
+        lbl = self._lb_avatar_slots.pop((render_gen, slot_idx), None)
+        if lbl is None:
+            return
         if not data:
             fallback = QPixmap(":/images/graphics/avatar.png")
             if not fallback.isNull():
@@ -741,8 +772,7 @@ class GamesView(QWidget):
             return
         pix = QPixmap()
         if pix.loadFromData(data):
-            if avatar_path:
-                self._avatar_cache[avatar_path] = pix
+            self._avatar_cache[avatar_path] = pix
             lbl.setPixmap(pix)
             lbl.setScaledContents(True)
             image_to_rounded(lbl)
@@ -987,6 +1017,11 @@ class GamesView(QWidget):
     def showEvent(self, event):
         super().showEvent(event)
         self._retranslate_ui()
+
+    def hideEvent(self, event) -> None:
+        super().hideEvent(event)
+        self._lb_render_gen += 1
+        self._lb_avatar_slots.clear()
 
     def closeEvent(self, event):
         self._stop_all_realtime()

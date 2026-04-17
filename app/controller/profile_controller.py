@@ -11,6 +11,7 @@ from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 from app.repository.user_repository import save_user, delete_user, upload_avatar_blob, check_username_exists
+from app.repository.supabase_client import get_client
 from app.utils.validator import validate_username, validate_birthdate, validate_password, validate_passwords_match
 from translations.translation import translate
 
@@ -165,7 +166,10 @@ class ProfileController(QObject):
         user_id = self.user.id
 
         def _upload():
-            return upload_avatar_blob(user_id, image_bytes)
+            path = upload_avatar_blob(user_id, image_bytes)
+            if path:
+                get_client().table("users").update({"avatar_path": path}).eq("id", user_id).execute()
+            return path
 
         def _done(avatar_path):
             if avatar_path:

@@ -607,6 +607,18 @@ class DashboardView(QWidget):
 
         self._chart_refs.extend([chart, series, scatter, view])
 
+        text_items: list[tuple[int, float, object]] = []
+
+        def _reposition_labels() -> None:
+            plot_rect = chart.plotArea()
+            for i, value, text_item in text_items:
+                point_pos = chart.mapToPosition(QPointF(i, value), series)
+                text_rect = text_item.boundingRect()
+                x = point_pos.x() - text_rect.width() / 2
+                y = point_pos.y() - text_rect.height() - 10
+                y = max(plot_rect.top(), y)
+                text_item.setPos(x, y)
+
         def _add_point_labels() -> None:
             if not view.scene():
                 return
@@ -614,22 +626,19 @@ class DashboardView(QWidget):
             font = get_general_sans(9)
 
             for i, value in enumerate(values, start=1):
-                point_pos = chart.mapToPosition(QPointF(i, value), series)
-
                 text_item = view.scene().addText(f"{value:.2f}")
                 text_item.setFont(font)
                 text_item.setDefaultTextColor(QColor("#EAEAEA"))
                 text_item.setZValue(9999)
-
-                text_rect = text_item.boundingRect()
-                text_item.setPos(
-                    point_pos.x() - (text_rect.width() / 2),
-                    point_pos.y() - text_rect.height() - 10,
-                )
-
+                text_items.append((i, value, text_item))
                 self._chart_refs.append(text_item)
 
+            _reposition_labels()
+
+        # Create labels after the chart is first laid out …
         QTimer.singleShot(0, _add_point_labels)
+        # … and reposition them every time the plot area changes (resize, DPI, re-render).
+        chart.plotAreaChanged.connect(lambda _rect: _reposition_labels())
 
     def _populate_highlights(self) -> None:
         model = self._controller.get_highlights_model()

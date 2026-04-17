@@ -50,7 +50,7 @@ class BaseTutorialWidget(QWidget):
         raise NotImplementedError
 
     def _get_tip_text(self) -> str:
-        return translate("BaseTutorialWidget", "Don't worry - a brief tutorial will guide you before starting.")
+        return translate("BaseTutorialWidget", "Don't worry – a brief tutorial will guide you before starting.")
 
     def _build_ui(self):
         root = QVBoxLayout(self)

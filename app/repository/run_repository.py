@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 
 
 
-def create_run(user_id: str, game_slug: str, stage: str, started_at: datetime):
+def create_run(user_id: str, game_slug: str, stage: str, started_at: datetime, run_id: str | None = None):
     set_last_backend_op(f"create_run:{game_slug}")
     try:
         game_id = GAME_ID_MAP.get(game_slug, 1)
@@ -37,6 +37,9 @@ def create_run(user_id: str, game_slug: str, stage: str, started_at: datetime):
             "started_at": started_at.isoformat(),
             "status": "running",
         }
+
+        if run_id:
+            payload["run_id"] = run_id
 
         client = get_client()
         result = client.table("runs").insert(payload).execute()
@@ -93,13 +96,13 @@ def save_run(
         update_data = {
             "ended_at": now.isoformat(),
             "pi_run": metrics.get("pi_run", 0.0),
-            "pi_run_normalized_raw": metrics.get("pi_run_normalized_raw", 0.0),
             "final_level": metrics.get("final_level", 1),
             "avg_reaction_time_ms": metrics.get("avg_reaction_time_ms"),
             "avg_accuracy": metrics.get("avg_accuracy"),
             "total_trials": metrics.get("total_trials", len(trials)),
             "quality_score": metrics.get("quality_score", 0.0),
             "consistency_score": metrics.get("consistency_score", 0.0),
+            "rating_eligible": metrics.get("rating_eligible", False),
             "status": status_normalized,
         }
 
@@ -184,16 +187,8 @@ def save_trials(run_id: str, game_slug: str, trials: list) -> None:
 
             if hasattr(trial, "pi_trial") and trial.pi_trial is not None:
                 base_row["pi_trial"] = trial.pi_trial
-            if hasattr(trial, "pi_adjusted") and trial.pi_adjusted is not None:
-                base_row["pi_adjusted"] = trial.pi_adjusted
             if hasattr(trial, "accuracy") and trial.accuracy is not None:
                 base_row["accuracy"] = trial.accuracy
-            if hasattr(trial, "consecutive_bad_count"):
-                base_row["consecutive_bad_count"] = trial.consecutive_bad_count
-            if hasattr(trial, "consecutive_correct_count"):
-                base_row["consecutive_correct_count"] = trial.consecutive_correct_count
-            if hasattr(trial, "rt_exceeded_threshold"):
-                base_row["rt_exceeded_threshold"] = trial.rt_exceeded_threshold
 
             rows.append(base_row)
 
@@ -206,77 +201,22 @@ def save_trials(run_id: str, game_slug: str, trials: list) -> None:
         logger.exception("Failed to save trials for run=%s: %s", run_id, e)
 
 
-def fetch_pi_normalized_raw_values(game_slug: str) -> list[float]:
-    """Return all pi_run_normalized_raw values for completed runs of the given game."""
-    try:
-        game_id = GAME_ID_MAP.get(game_slug, 1)
-        client = get_client()
-        if not client:
-            return []
-        result = (
-            client.table("runs")
-            .select("pi_run_normalized_raw")
-            .eq("game_id", game_id)
-            .eq("status", "completed")
-            .execute()
-        )
-        return [
-            r["pi_run_normalized_raw"]
-            for r in (result.data or [])
-            if r.get("pi_run_normalized_raw") is not None
-        ]
-    except Exception as e:
-        logger.warning("Failed to fetch pi_run_normalized_raw values for '%s': %s", game_slug, e)
-        return []
-
-
-def fetch_pi_run_stats_per_game(game_slug: str) -> dict:
-    """Return mean and stddev of pi_run for all completed runs of the given game.
-
-    Returns {"mean": float, "std": float}. If fewer than 2 runs exist, std is 0.0
-    which triggers the normalize_pi() fallback (returns 0.0 for all players).
-    """
-    try:
-        game_id = GAME_ID_MAP.get(game_slug, 1)
-        client = get_client()
-        if not client:
-            return {"mean": 0.0, "std": 0.0}
-        result = (
-            client.table("runs")
-            .select("pi_run")
-            .eq("game_id", game_id)
-            .eq("status", "completed")
-            .execute()
-        )
-        values = [
-            r["pi_run"]
-            for r in (result.data or [])
-            if r.get("pi_run") is not None
-        ]
-        if len(values) < 2:
-            return {"mean": 0.0, "std": 0.0}
-        import statistics as _stats
-        return {"mean": _stats.mean(values), "std": _stats.stdev(values)}
-    except Exception as e:
-        logger.warning("Failed to fetch pi_run stats for '%s': %s", game_slug, e)
-        return {"mean": 0.0, "std": 0.0}
-
-
 def fetch_user_run_history(user_id: str, game_slug: str, limit: int = 20) -> list[dict]:
-    """Return the most recent completed runs for a user and game, in chronological order."""
+    """Return the most recent completed training runs for a user and game, in chronological order."""
     try:
         game_id = GAME_ID_MAP.get(game_slug, 1)
         client = get_client()
         result = (
             client.table("runs")
             .select(
-                "run_id, started_at, ended_at, pi_run, pi_run_normalized_raw, "
+                "run_id, started_at, ended_at, pi_run, "
                 "final_level, avg_reaction_time_ms, avg_accuracy, total_trials, "
-                "quality_score, consistency_score"
+                "quality_score, consistency_score, rating_eligible"
             )
             .eq("user_id", user_id)
             .eq("game_id", game_id)
             .eq("status", "completed")
+            .eq("stage", "training")
             .order("started_at", desc=True)
             .limit(limit)
             .execute()
@@ -286,6 +226,62 @@ def fetch_user_run_history(user_id: str, game_slug: str, limit: int = 20) -> lis
     except Exception as e:
         logger.warning(
             "Failed to fetch run history for user=..%s, game_slug=%s: %s",
+            user_id[-10:], game_slug, e,
+        )
+        return []
+
+
+def fetch_recent_completed_training_runs(
+    user_id: str, game_slug: str, limit: int = 5,
+) -> list[dict]:
+    """Return the last N completed training runs (by ended_at asc) for consistency computation."""
+    try:
+        game_id = GAME_ID_MAP.get(game_slug, 1)
+        client = get_client()
+        result = (
+            client.table("runs")
+            .select("pi_run, avg_accuracy, avg_reaction_time_ms")
+            .eq("user_id", user_id)
+            .eq("game_id", game_id)
+            .eq("status", "completed")
+            .eq("stage", "training")
+            .order("ended_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        rows = result.data or []
+        return list(reversed(rows))
+    except Exception as e:
+        logger.warning(
+            "Failed to fetch recent training runs for user=..%s, game=%s: %s",
+            user_id[-10:], game_slug, e,
+        )
+        return []
+
+
+def fetch_rating_eligible_pi_runs(
+    user_id: str, game_slug: str, limit: int = 7,
+) -> list[float]:
+    """Return the last N rating-eligible pi_run values (most recent first)."""
+    try:
+        game_id = GAME_ID_MAP.get(game_slug, 1)
+        client = get_client()
+        result = (
+            client.table("runs")
+            .select("pi_run")
+            .eq("user_id", user_id)
+            .eq("game_id", game_id)
+            .eq("status", "completed")
+            .eq("stage", "training")
+            .eq("rating_eligible", True)
+            .order("ended_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        return [r["pi_run"] for r in (result.data or []) if r.get("pi_run") is not None]
+    except Exception as e:
+        logger.warning(
+            "Failed to fetch rating-eligible runs for user=..%s, game=%s: %s",
             user_id[-10:], game_slug, e,
         )
         return []

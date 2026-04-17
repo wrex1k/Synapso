@@ -69,13 +69,13 @@ class MemoryGridTutorial(BaseTutorialWidget):
         ).format(color=FONT_PRIMARY)
 
     def _build_card_bullets(self, bullets_layout: QVBoxLayout) -> None:
-        b1 = QLabel(translate("MemoryGridTutorial", "• Memorize the highlighted tiles"))
+        b1 = QLabel(translate("MemoryGridTutorial", "• Memorize the highlighted tiles."))
         b1.setTextFormat(Qt.TextFormat.RichText)
         b1.setObjectName("tutorialBaseText")
         b1.setWordWrap(True)
         bullets_layout.addWidget(b1)
 
-        b2 = QLabel(translate("MemoryGridTutorial", "• Click on the grid cells to select the ones you remember"))
+        b2 = QLabel(translate("MemoryGridTutorial", "• Click on the grid cells to select the ones you remember."))
         b2.setTextFormat(Qt.TextFormat.RichText)
         b2.setObjectName("tutorialBaseText")
         b2.setWordWrap(True)

@@ -20,9 +20,6 @@ _GRID_CELL_ON = (62, 172, 145)
 _GRID_CELL_SELECTED = (75, 166, 144)
 _GRID_CELL_WRONG = (240, 66, 66)
 _GRID_CELL_RADIUS = 12
-_GRID_CELL_BORDER_COLOR = (75, 166, 144)  # PRIMARY_LIGHT
-_GRID_CELL_BORDER_WIDTH = 2
-_GRID_PADDING = 14
 _GRID_GAP = 8
 
 
@@ -93,6 +90,7 @@ class MemoryGridWidget(BaseGameWidget):
     def _build_ui(self) -> None:
         root = self._build_hud_header("Memory Grid", margins=(130, 90, 130, 80))
         root.addStretch(1)
+        root.addSpacing(30)
 
         self._lbl_phase = QLabel("")
         self._lbl_phase.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -242,10 +240,7 @@ class MemoryGridWidget(BaseGameWidget):
         self._lbl_counter.show()
         self._lbl_phase.setFixedHeight(52)
 
-        self._lbl_phase.setText(
-            f'<span style="color:{FONT_PRIMARY};">Memorize</span> '
-            f'<span style="color:{OFF_WHITE};">pattern</span>'
-        )
+        self._lbl_phase.setText("")
         self._lbl_phase.setStyleSheet(get_memory_grid_phase_style(OFF_WHITE, 30, 500))
         target_count = int(self._trial_params.get("target_count", 0))
         self._lbl_counter.setText(
@@ -295,7 +290,7 @@ class MemoryGridWidget(BaseGameWidget):
         self._state = _FEEDBACK
         color = PRIMARY_LIGHT if result.is_correct else INCORRECT_COLOR
         symbol = "✓" if result.is_correct else "✗"
-        text = "Correct" if result.is_correct else "Incorrect"
+        text = translate("MemoryGridWidget", "Correct") if result.is_correct else translate("MemoryGridWidget", "Incorrect")
         self._lbl_phase.setText(
             f'<span style="color:{color}; font-size:30px; font-weight:600;">{symbol} {text}</span>'
         )

@@ -15,18 +15,41 @@ class MentalRotationGame(BaseGame):
             min_level=MIN_LEVEL,
             max_level=MAX_LEVEL,
         )
+        self._last_shape_id: str | None = None
+        self._last_mirrored_history: list[bool] = []
 
     def _level_params(self) -> dict:
         return LEVEL_PARAMS.get(self.level, LEVEL_PARAMS[MIN_LEVEL])
+
+    def begin_run(self) -> None:
+        super().begin_run()
+        self._last_shape_id = None
+        self._last_mirrored_history = []
 
     def create_tutorial_runner(self) -> "MentalRotationTutorialRunner":
         return MentalRotationTutorialRunner(self)
 
     def start_trial(self) -> dict:
-        p = self._level_params()
-        shape_id = random.choice(p["shape_ids"])
-        rotation_angle = random.randint(int(p["angle_min"]), int(p["angle_max"]))
-        mirrored = random.random() < float(p["mirror_prob"])
+        level_params = self._level_params()
+
+        shape_ids = level_params["shape_ids"]
+        candidates = [s for s in shape_ids if s != self._last_shape_id]
+        if not candidates:
+            candidates = shape_ids
+        shape_id = random.choice(candidates)
+        self._last_shape_id = shape_id
+
+        rotation_angle = random.randint(int(level_params["angle_min"]), int(level_params["angle_max"]))
+
+        mirror_prob = float(level_params["mirror_prob"])
+        if len(self._last_mirrored_history) >= 3 and len(set(self._last_mirrored_history[-3:])) == 1:
+            forced = not self._last_mirrored_history[-1]
+            mirrored = forced
+        else:
+            mirrored = random.random() < mirror_prob
+        self._last_mirrored_history.append(mirrored)
+        if len(self._last_mirrored_history) > 6:
+            self._last_mirrored_history.pop(0)
 
         correct_key = "f" if mirrored else "k"
 
@@ -36,7 +59,7 @@ class MentalRotationGame(BaseGame):
             "rotation_angle": rotation_angle,
             "mirrored": mirrored,
             "correct_key": correct_key,
-            "stimulus_duration": int(p["display_ms"]),
+            "stimulus_duration": int(level_params["display_ms"]),
             "level": self.level,
             "trial_index": self.current_trial_index,
             "total_trials": self.total_trials,

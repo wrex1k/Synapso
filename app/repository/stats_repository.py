@@ -41,11 +41,16 @@ def _fetch_player_stats(client, game_db_id: int) -> list[dict]:
     """Fetch the player_game_stats rows for a game, used to compute leaderboard and averages."""
     res = (
         client.table("player_game_stats")
-        .select("user_id, accumulated_pi, avg_reaction_time_ms, avg_accuracy_overall")
+        .select("user_id, avg_reaction_time_ms, avg_accuracy, quality_average, skill_rating")
         .eq("game_id", game_db_id)
         .execute()
     )
-    return res.data or []
+    rows = res.data or []
+    for row in rows:
+        q = row.get("quality_average")
+        if q is not None and 0 < q <= 1:
+            row["quality_average"] = q * 100
+    return rows
 
 
 def _avg_and_user_diff(rows: list[dict], field: str, user_id: str | None) -> tuple[float | None, float | None]:
@@ -77,16 +82,16 @@ def fetch_game_stats(game_db_id: int, user_id: str | None = None) -> dict:
         counts = _fetch_run_counts(client, game_db_id, today_start, week_start)
         pgs_rows = _fetch_player_stats(client, game_db_id)
 
-        avg_score, score_diff = _avg_and_user_diff(pgs_rows, "accumulated_pi", user_id)
-        if score_diff is not None:
-            score_diff = round(score_diff, 2)
+        avg_quality, quality_diff = _avg_and_user_diff(pgs_rows, "quality_average", user_id)
+        if quality_diff is not None:
+            quality_diff = round(quality_diff, 1)
 
         avg_reaction_time, rt_diff_ms = _avg_and_user_diff(pgs_rows, "avg_reaction_time_ms", user_id)
         acc_rows = [
             {
                 "user_id": r["user_id"],
-                "avg_accuracy": (r["avg_accuracy_overall"] * 100)
-                if r.get("avg_accuracy_overall") is not None
+                "avg_accuracy": (r["avg_accuracy"] * 100)
+                if r.get("avg_accuracy") is not None
                 else None,
             }
             for r in pgs_rows
@@ -95,8 +100,8 @@ def fetch_game_stats(game_db_id: int, user_id: str | None = None) -> dict:
 
         return {
             **counts,
-            "avg_score": avg_score,
-            "score_diff": score_diff,
+            "avg_quality": avg_quality,
+            "quality_diff": quality_diff,
             "avg_reaction_time_ms": avg_reaction_time,
             "rt_diff_ms": rt_diff_ms,
             "avg_accuracy": avg_accuracy,
@@ -112,8 +117,8 @@ def fetch_game_stats(game_db_id: int, user_id: str | None = None) -> dict:
             "games_today": 0,
             "games_this_week": 0,
             "total_games": 0,
-            "avg_score": None,
-            "score_diff": None,
+            "avg_quality": None,
+            "quality_diff": None,
             "avg_reaction_time_ms": None,
             "rt_diff_ms": None,
             "avg_accuracy": None,
@@ -128,9 +133,9 @@ def fetch_leaderboard(game_db_id: int, user_id: str, limit: int | None = None) -
 
         query = (
             client.table("player_game_stats")
-            .select("user_id, accumulated_pi, users!inner(username, avatar_path)")
+            .select("user_id, skill_rating, users!inner(username, avatar_path)")
             .eq("game_id", game_db_id)
-            .order("accumulated_pi", desc=True)
+            .order("skill_rating", desc=True)
         )
         if limit is not None:
             query = query.limit(limit)
@@ -161,11 +166,11 @@ def fetch_leaderboard(game_db_id: int, user_id: str, limit: int | None = None) -
         for rank, row in enumerate(data, 1):
             uid = row["user_id"]
             user_info = row.get("users") or {}
-            pi_val = row.get("accumulated_pi", 0.0)
+            rating_val = row.get("skill_rating", 1000)
             entries.append({
                 "user_id": uid,
                 "username": user_info.get("username", "Player"),
-                "accumulated_pi": round(float(pi_val) if pi_val else 0.0, 2),
+                "skill_rating": round(float(rating_val) if rating_val else 1000, 0),
                 "is_online": uid in online_ids,
                 "avatar_path": user_info.get("avatar_path") or "default.webp",
             })
@@ -251,14 +256,24 @@ def fetch_player_game_stats(user_id: str, game_slug: str) -> dict | None:
         res = (
             client.table("player_game_stats")
             .select(
-                "accumulated_pi, total_runs, total_trials, best_pi_run, "
-                "avg_reaction_time_ms, avg_accuracy_overall, quality_average, consistency_average"
+                "total_runs, total_trials, best_pi_run, "
+                "avg_reaction_time_ms, avg_accuracy, quality_average, "
+                "consistency_average, skill_rating"
             )
             .eq("user_id", user_id)
             .eq("game_id", game_id)
             .execute()
         )
-        return res.data[0] if res.data else None
+        row = res.data[0] if res.data else None
+        if row is not None:
+            # Compatibility: pre-backfill rows may store on 0-1 scale
+            q = row.get("quality_average")
+            if q is not None and 0 < q <= 1:
+                row["quality_average"] = q * 100
+            c = row.get("consistency_average")
+            if c is not None and 0 < c <= 1:
+                row["consistency_average"] = c * 100
+        return row
     except Exception as e:
         logger.warning(
             "Failed to fetch player_game_stats for user=..%s, game_slug=%s: %s",
@@ -293,13 +308,23 @@ def fetch_all_user_stats(user_id: str) -> dict:
         result = (
             client.table("player_game_stats")
             .select(
-                "game_id, accumulated_pi, total_runs, total_trials, best_pi_run, "
-                "avg_reaction_time_ms, avg_accuracy_overall, quality_average, consistency_average"
+                "game_id, total_runs, total_trials, best_pi_run, "
+                "avg_reaction_time_ms, avg_accuracy, quality_average, "
+                "consistency_average, skill_rating"
             )
             .eq("user_id", user_id)
             .execute()
         )
-        return {"games": result.data or []}
+        rows = result.data or []
+        # Compatibility: pre-backfill rows may store on 0-1 scale
+        for row in rows:
+            q = row.get("quality_average")
+            if q is not None and 0 < q <= 1:
+                row["quality_average"] = q * 100
+            c = row.get("consistency_average")
+            if c is not None and 0 < c <= 1:
+                row["consistency_average"] = c * 100
+        return {"games": rows}
     except Exception as e:
         logger.warning("Failed to fetch all stats for user=..%s: %s", user_id[-10:], e)
         return {"games": []}

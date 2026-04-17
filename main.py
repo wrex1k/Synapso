@@ -1,8 +1,16 @@
 import ctypes
 import os
 import sys
+from pathlib import Path
 
+from dotenv import load_dotenv
 from app.utils.logging_config import setup_logging, get_logger
+
+if getattr(sys, "frozen", False):
+    load_dotenv(dotenv_path=Path(sys.executable).parent / ".env", override=False)
+else:
+    load_dotenv(override=False)
+
 setup_logging()
 
 _logger = get_logger("synapso.main")
@@ -16,22 +24,22 @@ from PySide6.QtWidgets import QApplication
 import resources_rc
 
 from app.core.app import App
-from app.utils.cursor import create_custom_cursor
 from app.ui.styles.fonts import load_fonts
 
 from app.utils.settings import get_language
+from app.utils.window import window_resize
+from app.utils.cursor import create_custom_cursor
+
 from translations.translation import init_translations
 
-from app.utils.dev import simulate_resolution
+def get_resource_path(relative: str) -> str:
+    if getattr(sys, "frozen", False):
+        return os.path.join(sys._MEIPASS, relative)
+    return os.path.join(os.path.dirname(__file__), relative)
 
 
 def _get_app_icon() -> QIcon:
-    if hasattr(sys, "_MEIPASS"):
-        base = sys._MEIPASS
-    else:
-        base = os.path.dirname(os.path.abspath(__file__))
-
-    ico_path = os.path.join(base, "resources", "images", "graphics", "logo.ico")
+    ico_path = get_resource_path("resources/images/graphics/logo.ico")
 
     if os.path.isfile(ico_path):
         return QIcon(ico_path)
@@ -81,9 +89,11 @@ def main():
 
     _logger.info("Creating main application window")
     window = App()
-    window.show()
 
-    simulate_resolution(window, "1600x1000")
+    window.setMinimumSize(1600, 1000)
+    window_resize(window, 1600, 1000)
+
+    window.show()
 
     _logger.info("Entering Qt event loop")
     add_breadcrumb("app", "Qt event loop started")

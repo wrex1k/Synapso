@@ -9,7 +9,6 @@ from PySide6.QtCharts import QBarCategoryAxis, QBarSeries, QBarSet, QChart, QCha
 
 from app.core.registry import registry
 from app.games.core.base_game import GAME_ID_MAP
-from app.models.user import User
 from app.repository.activity_repository import get_time_played
 from app.repository.run_repository import fetch_user_run_history
 from app.repository.stats_repository import fetch_all_user_stats, fetch_player_game_stats
@@ -21,12 +20,11 @@ from translations.translation import translate
 
 logger = get_logger(__name__)
 
-_ACCENT = "#3EAC91"
 _TEXT_GRAY = "#A9A9A9"
 
 _GAME_SLUGS = ["stroop", "memory_grid", "mental_rotation"]
 _GAME_LABELS = {
-    "stroop": "Stroop",
+    "stroop": "Stroop Test",
     "memory_grid": "Memory Grid",
     "mental_rotation": "Mental Rotation",
 }
@@ -50,17 +48,6 @@ def _fmt_pct(v: float | None) -> str:
 
 def _fmt_ms(v: float | None) -> str:
     return f"{int(v)} ms" if v is not None else "—"
-
-
-def _fmt_time(seconds: int) -> str:
-    if not seconds:
-        return "0 min"
-    h, rem = divmod(int(seconds), 3600)
-    m = rem // 60
-    if h:
-        return f"{h}h {m}m"
-    return f"{m} min"
-
 
 def _make_divider() -> QFrame:
     line = QFrame()
@@ -120,15 +107,12 @@ class StatisticsView(QWidget):
         self._chart_refs: list = []
         self._threads: list[QThread] = []
 
-        # data state
         self._time_played: int = 0
         self._all_stats: dict = {"games": []}
         self._per_game: dict[str, dict | None] = {}
         self._run_histories: dict[str, list] = {}
 
         self._build_ui()
-
-    # ── layout ────────────────────────────────────────────────────
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
@@ -336,7 +320,7 @@ class StatisticsView(QWidget):
 
         metric_defs = [
             ("Runs", "runs"),
-            ("Avg PI", "avg_pi"),
+            ("Skill Rating", "skill_rating"),
             ("Best PI", "best_pi"),
             ("Accuracy", "accuracy"),
             ("Avg RT", "avg_rt"),
@@ -394,7 +378,6 @@ class StatisticsView(QWidget):
 
         for labels in self._game_cards.values():
             labels["_lbl_runs"].setText(translate("StatisticsView", "Runs"))
-            labels["_lbl_avg_pi"].setText(translate("StatisticsView", "Avg PI"))
             labels["_lbl_best_pi"].setText(translate("StatisticsView", "Best PI"))
             labels["_lbl_accuracy"].setText(translate("StatisticsView", "Accuracy"))
             labels["_lbl_avg_rt"].setText(translate("StatisticsView", "Avg RT"))
@@ -445,7 +428,6 @@ class StatisticsView(QWidget):
         self._per_game = result["per_game"]
         self._run_histories = result["histories"]
 
-        self._populate_summary()
         self._populate_game_cards()
         self._populate_insights()
         self._populate_trend_chart()
@@ -453,29 +435,25 @@ class StatisticsView(QWidget):
 
     # ── populate ───────────────────────────────────────────────────
 
-    def _populate_summary(self) -> None:
-        # Summary widgets removed — nothing to populate here.
-        return
-
     def _populate_game_cards(self) -> None:
         for slug, labels in self._game_cards.items():
             stats = self._per_game.get(slug)
             if stats is None:
                 continue
             labels["runs"].setText(_fmt_int(stats.get("total_runs")))
-            labels["avg_pi"].setText(_fmt_float(stats.get("accumulated_pi")))
+            labels["skill_rating"].setText(_fmt_int(stats.get("skill_rating")))
             labels["best_pi"].setText(_fmt_float(stats.get("best_pi_run")))
-            labels["accuracy"].setText(_fmt_pct(stats.get("avg_accuracy_overall")))
+            labels["accuracy"].setText(_fmt_pct(stats.get("avg_accuracy")))
             labels["avg_rt"].setText(_fmt_ms(stats.get("avg_reaction_time_ms")))
 
     def _populate_insights(self) -> None:
         games_data = self._all_stats.get("games", [])
         id_to_slug = {v: k for k, v in GAME_ID_MAP.items()}
 
-        # Best game by accumulated_pi
+        # Best game by skill_rating
         best_game_row = max(
-            (g for g in games_data if g.get("accumulated_pi") is not None),
-            key=lambda g: g["accumulated_pi"],
+            (g for g in games_data if g.get("skill_rating") is not None),
+            key=lambda g: g["skill_rating"],
             default=None,
         )
         if best_game_row:
@@ -484,7 +462,7 @@ class StatisticsView(QWidget):
         else:
             self._ins_best_game.setText("—")
 
-        best_acc = max((g.get("avg_accuracy_overall") or 0.0 for g in games_data), default=0.0)
+        best_acc = max((g.get("avg_accuracy") or 0.0 for g in games_data), default=0.0)
         rt_values = [
             g["avg_reaction_time_ms"]
             for g in games_data
@@ -501,10 +479,10 @@ class StatisticsView(QWidget):
         else:
             self._ins_best_metric.setText(translate("StatisticsView", "Reaction time"))
 
-        # Needs improvement: lowest accumulated_pi game
+        # Needs improvement: lowest skill_rating game
         worst_game_row = min(
-            (g for g in games_data if g.get("accumulated_pi") is not None),
-            key=lambda g: g["accumulated_pi"],
+            (g for g in games_data if g.get("skill_rating") is not None),
+            key=lambda g: g["skill_rating"],
             default=None,
         )
         if worst_game_row and worst_game_row != best_game_row:
@@ -597,12 +575,16 @@ class StatisticsView(QWidget):
 
         for slug in slugs_with_data:
             stats = self._per_game[slug]
-            acc = stats.get("avg_accuracy_overall")
+            acc = stats.get("avg_accuracy")
             accuracy_vals.append(round((acc * 100) if acc is not None else 0, 1))
             qual = stats.get("quality_average")
-            quality_vals.append(round((qual * 100) if qual is not None else 0, 1))
+            if qual is not None and 0 < qual <= 1:
+                qual = qual * 100
+            quality_vals.append(round(qual if qual is not None else 0, 1))
             cons = stats.get("consistency_average")
-            consistency_vals.append(round((cons * 100) if cons is not None else 0, 1))
+            if cons is not None and 0 < cons <= 1:
+                cons = cons * 100
+            consistency_vals.append(round(cons if cons is not None else 0, 1))
             labels.append(_GAME_LABELS[slug].replace(" ", "\n"))
 
         chart = _setup_chart()

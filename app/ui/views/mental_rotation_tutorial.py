@@ -151,9 +151,6 @@ class MentalRotationTutorial(BaseTutorialWidget):
         b4.setWordWrap(True)
         bullets_layout.addWidget(b4)
 
-    def _get_tip_text(self) -> str:
-        return translate("MentalRotationTutorial", "Don't worry - a brief tutorial will guide you before starting.")
-
     def _get_practice_subtitle_html(self) -> str:
         return translate(
             "MentalRotationTutorial",

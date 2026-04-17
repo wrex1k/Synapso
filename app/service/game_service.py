@@ -7,10 +7,13 @@ from datetime import datetime, timezone
 
 from app.games.core.base_game import BaseGame
 from app.games.core.tutorial import TutorialRunner
-from app.repository.run_repository import abandon_run, create_run, fetch_pi_run_stats_per_game, save_run, save_trials
+from app.repository.run_repository import (
+    abandon_run, create_run, save_run, save_trials,
+    fetch_recent_completed_training_runs, fetch_rating_eligible_pi_runs,
+)
 from app.repository.tutorial_repository import set_tutorial_completed
 from app.repository.stats_repository import fetch_player_game_stats, upsert_player_game_stats
-from app.service.pi_system import TrialResult as PITrialResult, normalize_pi, process_run
+from app.service.pi_system import TrialResult as PITrialResult, process_run, calculate_skill_rating
 from app.utils.logger import get_logger
 from app.utils.breadcrumbs import add_breadcrumb
 from app.utils.crash_handler import set_last_backend_op
@@ -27,55 +30,54 @@ def _compute_player_stats_update(
     avg_reaction_time_ms: float | None = None,
     quality_score: float | None = None,
     consistency_score: float | None = None,
-    pi_run_normalized: float = 0.0,
+    skill_rating: int = 1000,
 ) -> dict:
     """Compute the new player_game_stats values after a completed run."""
     if current:
-        old_avg_pi = current.get("accumulated_pi", 0.0)
-        old_avg_pi_normalized = current.get("accumulated_pi_normalized") or 0.0
         total_runs = current.get("total_runs", 0)
         total_trials = current.get("total_trials", 0)
         best_pi = current.get("best_pi_run")
         old_rt = current.get("avg_reaction_time_ms") or 0.0
-        old_acc = current.get("avg_accuracy_overall") or 0.0
+        old_acc = current.get("avg_accuracy") or 0.0
         old_quality = current.get("quality_average") or 0.0
         old_consistency = current.get("consistency_average") or 0.0
+        # Compatibility: pre-backfill rows may store on 0-1 scale
+        if 0 < old_quality <= 1:
+            old_quality = old_quality * 100
+        if 0 < old_consistency <= 1:
+            old_consistency = old_consistency * 100
     else:
-        old_avg_pi = 0.0
-        old_avg_pi_normalized = 0.0
         total_runs = 0
         total_trials = 0
         best_pi = None
         old_rt = old_acc = old_quality = old_consistency = 0.0
 
     def _running_avg(old_val: float, new_val: float | None) -> float:
-        """Count-weighted running average. Bootstraps from new_val on the first run only."""
         if new_val is None:
             return old_val
         if total_runs == 0:
             return new_val
         return (old_val * total_runs + new_val) / (total_runs + 1)
 
-    new_avg_pi = _running_avg(old_avg_pi, pi_run)
-    new_avg_pi_normalized = _running_avg(old_avg_pi_normalized, pi_run_normalized)
     new_best_pi = pi_run if (best_pi is None or pi_run > best_pi) else best_pi
-
     now = datetime.now(timezone.utc).isoformat()
 
-    logger.info("\nPI UPDATE:\n pi_run=%.2f  |  old_avg=%.2f  new_avg=%.2f  (runs=%d)", pi_run, old_avg_pi, new_avg_pi, total_runs)
+    logger.info(
+        "\nSTATS UPDATE: pi_run=%.2f | runs=%d | skill_rating=%d",
+        pi_run, total_runs, skill_rating,
+    )
 
     return {
-        "accumulated_pi": new_avg_pi,
-        "accumulated_pi_normalized": new_avg_pi_normalized,
         "total_runs": total_runs + 1,
         "total_trials": total_trials + max(0, int(trial_count)),
         "best_pi_run": new_best_pi,
         "last_run_at": now,
         "updated_at": now,
         "avg_reaction_time_ms": _running_avg(old_rt, avg_reaction_time_ms),
-        "avg_accuracy_overall": _running_avg(old_acc, avg_accuracy),
+        "avg_accuracy": _running_avg(old_acc, avg_accuracy),
         "quality_average": _running_avg(old_quality, quality_score),
         "consistency_average": _running_avg(old_consistency, consistency_score),
+        "skill_rating": skill_rating,
     }
 
 
@@ -152,6 +154,16 @@ class GameService:
         add_breadcrumb("game", "Finishing run", game=self.game.game_slug, run_id=(self._run_id or "?")[-8:])
         metrics = self.game.end_run()
 
+        # Fetch recent runs for consistency computation
+        recent_runs = None
+        if stage == "training":
+            try:
+                recent_runs = fetch_recent_completed_training_runs(
+                    self.game.user_id, self.game.game_slug, limit=5,
+                )
+            except Exception as e:
+                logger.warning("Could not fetch recent runs for consistency: %s", e)
+
         pi_trials = []
         for idx, trial in enumerate(self.game.trials, 1):
             trial_level = int(trial.stimulus_params.get("level", self.game.level))
@@ -170,6 +182,8 @@ class GameService:
             game_slug=self.game.game_slug,
             run_id=self._run_id or "unknown",
             trials=pi_trials,
+            stage=stage,
+            recent_runs=recent_runs,
         )
 
         if len(self.game.trials) != len(run_result.trials):
@@ -179,11 +193,7 @@ class GameService:
             )
         for game_trial, pi_trial in zip(self.game.trials, run_result.trials):
             game_trial.pi_trial = pi_trial.pi_trial
-            game_trial.pi_adjusted = pi_trial.pi_adjusted
             game_trial.accuracy = pi_trial.accuracy
-            game_trial.consecutive_bad_count = pi_trial.consecutive_bad_count
-            game_trial.consecutive_correct_count = pi_trial.consecutive_correct_count
-            game_trial.rt_exceeded_threshold = pi_trial.rt_exceeded_threshold
 
         normalized_metrics = {
             "avg_reaction_time_ms": metrics.get("avg_reaction_time_ms", 0.0),
@@ -191,9 +201,9 @@ class GameService:
             "final_level": self.game.level,
             "total_trials": len(self.game.trials),
             "pi_run": run_result.pi_run,
-            "pi_run_normalized_raw": run_result.pi_run_normalized_raw,
             "quality_score": run_result.quality_score,
             "consistency_score": run_result.consistency_score,
+            "rating_eligible": run_result.rating_eligible,
         }
 
         logger.info(
@@ -224,14 +234,17 @@ class GameService:
                 if stage != "tutorial":
                     try:
                         current = fetch_player_game_stats(self.game.user_id, self.game.game_slug)
+
+                        # Compute skill_rating from rating-eligible runs
                         try:
-                            pi_stats = fetch_pi_run_stats_per_game(self.game.game_slug)
-                            pi_run_normalized = normalize_pi(
-                                run_result.pi_run, pi_stats["mean"], pi_stats["std"]
+                            eligible_pis = fetch_rating_eligible_pi_runs(
+                                self.game.user_id, self.game.game_slug, limit=7,
                             )
-                        except Exception as e_norm:
-                            logger.warning("Could not normalize pi_run: %s", e_norm)
-                            pi_run_normalized = 0.0
+                            skill_rating = calculate_skill_rating(eligible_pis)
+                        except Exception as e_rating:
+                            logger.warning("Could not compute skill_rating: %s", e_rating)
+                            skill_rating = current.get("skill_rating", 1000) if current else 1000
+
                         new_stats = _compute_player_stats_update(
                             current=current,
                             pi_run=run_result.pi_run,
@@ -240,7 +253,7 @@ class GameService:
                             avg_reaction_time_ms=run_result.avg_reaction_time,
                             quality_score=run_result.quality_score,
                             consistency_score=run_result.consistency_score,
-                            pi_run_normalized=pi_run_normalized,
+                            skill_rating=skill_rating,
                         )
                         upsert_player_game_stats(self.game.user_id, self.game.game_slug, new_stats)
                     except Exception as e:
@@ -252,7 +265,7 @@ class GameService:
         return {
             **metrics,
             "pi_run": round(run_result.pi_run, 2),
-            "pi_run_normalized_raw": round(run_result.pi_run_normalized_raw, 2),
-            "quality_score": round(run_result.quality_score, 3),
-            "consistency_score": round(run_result.consistency_score, 3),
+            "quality_score": round(run_result.quality_score, 1),
+            "consistency_score": round(run_result.consistency_score, 1),
+            "rating_eligible": run_result.rating_eligible,
         }

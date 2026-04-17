@@ -26,7 +26,7 @@ class PhaseRequirements:
     congruent_required_streak: int = 3
     congruent_max_trials: int = 10
     incongruent_min_trials: int = 6
-    incongruent_required_accuracy: float = 0.7
+    incongruent_required_accuracy: float = 0.65
     incongruent_max_trials: int = 14
     speed_required_streak: int = 3
     speed_max_rt_ratio: float = 0.7
@@ -40,6 +40,7 @@ class TutorialRunner:
         self.phase_results: list[PhaseResult] = []
         self._phase_trials: list = []
         self._failed_reason: str = ""
+        self._phase_peak_within: float = 0.0
 
     @property
     def passed(self) -> bool:
@@ -117,8 +118,10 @@ class TutorialRunner:
             within = min(len(pt) / self.req.incongruent_min_trials, 1.0)
         elif self.phase == TutorialPhase.SPEED_CHECK:
             within = min(self._fast_correct_streak(pt) / self.req.speed_required_streak, 1.0)
+            within = max(within, self._phase_peak_within)
         else:
             within = 0.0
+        self._phase_peak_within = max(self._phase_peak_within, within)
         return int(base + within * 25)
 
     def get_phase_summary(self) -> list[dict]:
@@ -181,6 +184,7 @@ class TutorialRunner:
     def _enter_phase(self, phase: TutorialPhase) -> None:
         self.phase = phase
         self._phase_trials = []
+        self._phase_peak_within = 0.0
 
     def _complete_phase(self, passed: bool, note: str = "") -> None:
         self.phase_results.append(

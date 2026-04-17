@@ -327,20 +327,20 @@ GAMES_FONT_STYLES = f"""
 
     QLabel#rtCardTitle,
     QLabel#accCardTitle,
-    QLabel#piCardTitle {{
+    QLabel#qualityCardTitle {{
         font-size: {SIZE_H3}px;
         font-weight: {WEIGHT_SEMIBOLD};
     }}
 
     QLabel#rtCardValue,
     QLabel#accCardValue,
-    QLabel#piCardValue {{
+    QLabel#qualityCardValue {{
         font-size: {SIZE_H3}px;
     }}
 
     QLabel#rtCardGlobal,
     QLabel#accCardGlobal,
-    QLabel#piCardGlobal {{
+    QLabel#qualityCardGlobal {{
         font-size: {SIZE_MEDIUM}px;
         font-weight: {WEIGHT_REGULAR};
     }}

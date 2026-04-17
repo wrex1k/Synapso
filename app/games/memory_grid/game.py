@@ -44,13 +44,42 @@ class MemoryGridGame(BaseGame):
                 logger.debug("Ignoring malformed cell token: %r", part)
         return parsed
 
+    @staticmethod
+    def _generate_pattern(grid_size: int, count: int, cluster_factor: float) -> list[int]:
+        all_cells = list(range(grid_size * grid_size))
+        if cluster_factor <= 0.0 or count >= len(all_cells):
+            return sorted(random.sample(all_cells, count))
+
+        def _neighbors(cell: int) -> list[int]:
+            r, c = divmod(cell, grid_size)
+            result = []
+            for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < grid_size and 0 <= nc < grid_size:
+                    result.append(nr * grid_size + nc)
+            return result
+
+        selected: set[int] = {random.choice(all_cells)}
+        remaining: set[int] = set(all_cells) - selected
+
+        while len(selected) < count and remaining:
+            frontier = [n for cell in selected for n in _neighbors(cell) if n in remaining]
+            if frontier and random.random() < cluster_factor:
+                pick = random.choice(frontier)
+            else:
+                pick = random.choice(list(remaining))
+            selected.add(pick)
+            remaining.discard(pick)
+
+        return sorted(selected)
+
     def start_trial(self) -> dict:
         p = self._level_params()
         grid_size = p["grid_size"]
         target_count = random.randint(p["pattern_min"], p["pattern_max"])
-        max_cells = grid_size * grid_size
+        cluster_factor = float(p.get("cluster_factor", 0.0))
 
-        pattern_positions = sorted(random.sample(range(max_cells), target_count))
+        pattern_positions = self._generate_pattern(grid_size, target_count, cluster_factor)
 
         return {
             "grid_size": grid_size,

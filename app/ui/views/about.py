@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer
@@ -21,9 +22,13 @@ BUILT_WITH = [
     ("Supabase", "2.28.0"),
 ]
 
+def get_project_root() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS)
+    return Path(__file__).parent.parent.parent.parent
 
 def _parse_all_changelogs() -> list[dict]:
-    root = Path(__file__).parent.parent.parent.parent
+    root = get_project_root()
     lang = get_language()
     localized_path = root / f"CHANGELOG.{lang}.md"
     default_path = root / "CHANGELOG.md"

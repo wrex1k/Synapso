@@ -1,11 +1,19 @@
 import os
+import sys
+from pathlib import Path
 
 from dotenv import load_dotenv
 from supabase import Client, create_client
 
 from app.utils.logger import logger
 
-"""Supabase client initialization and management."""
+
+def _load_env() -> None:
+    if getattr(sys, "frozen", False):
+        env_path = Path(sys.executable).parent / ".env"
+        load_dotenv(dotenv_path=env_path, override=False)
+    else:
+        load_dotenv(override=False)
 
 _client: Client | None = None
 _service_client: Client | None = None
@@ -18,7 +26,7 @@ def get_client() -> Client:
     global _client
     
     if _client is None:
-        load_dotenv()
+        _load_env()
 
         url = os.getenv("SUPABASE_URL")
         key = os.getenv("SUPABASE_ANON_KEY")
@@ -65,7 +73,7 @@ def get_service_client() -> Client | None:
     global _service_client
 
     if _service_client is None:
-        load_dotenv()
+        _load_env()
         url = os.getenv("SUPABASE_URL")
         key = os.getenv("SUPABASE_SERVICE_KEY")
         if not url or not key:
@@ -78,7 +86,7 @@ def get_service_client() -> Client | None:
 
 async def create_realtime_client():
     """Create a fresh async Supabase client for Realtime subscriptions."""
-    load_dotenv()
+    _load_env()
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_ANON_KEY")
     if not url or not key:

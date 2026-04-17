@@ -1,21 +1,20 @@
-# Python cache
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 
-# Environment variables
+# Environment
 .env
+.env.*
 
-# IDE / editor configs
-.vscode/
-.idea/
-
-# Virtual environments
+# Virtual env
 venv/
 env/
+.venv/
 
-# Supabase - keep only functions
-supabase/**
-!supabase/functions/**
+# IDE
+.vscode/
+.idea/
 
 # Logs
 logs/
@@ -25,22 +24,33 @@ tools/
 
 resources_rc.py
 # Resources
+# Build
+build/
+dist/
+*.spec
+
+# Executables
+*.exe
+*.msi
+
+# Qt
 resources_rc.py
 
-# Project tools / scripts
-tools/
+# Translations
+translations/*.qm
 
-# Simulator data and tools
-app/utils/dev/simulator/
+# Supabase
+supabase/*
+!supabase/functions/
+
+# Dev tools
+tools/
+app/utils/dev/
 
 # Tests
 tests/
 pytest.ini
 
-# Auto-generated files
-translations/synapso_*.qm
-
-# Ignore pylint config and report file
-pylint.py
+# Lint
 .pylintrc
 pylint_report.txt

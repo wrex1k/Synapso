@@ -47,27 +47,25 @@ class StroopWidget(BaseGameWidget):
         return bool(getattr(self._service, "_run_id", None))
 
     def _build_ui(self) -> None:
-        root = self._build_hud_header("Stroop test", margins=(150, 100, 150, 80))
-        root.addStretch(2)
-
-        centre_box = QVBoxLayout()
-        centre_box.setSpacing(12)
-        centre_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        root = self._build_hud_header("Stroop Test", margins=(130, 90, 130, 80))
+        root.addStretch(1)
+        root.addSpacing(30)
 
         self._lbl_feedback = QLabel()
         self._lbl_feedback.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._lbl_feedback.setTextFormat(Qt.TextFormat.RichText)
         self._lbl_feedback.setStyleSheet("background: transparent;")
-        self._lbl_feedback.setMinimumHeight(50)
-        centre_box.addWidget(self._lbl_feedback)
+        self._lbl_feedback.setFixedHeight(52)
+        root.addWidget(self._lbl_feedback)
+
+        root.addSpacing(18)
 
         self._lbl_main = QLabel()
         self._lbl_main.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._lbl_main.setMinimumHeight(86)
-        centre_box.addWidget(self._lbl_main)
+        root.addWidget(self._lbl_main)
 
-        root.addLayout(centre_box)
-        root.addStretch(2)
+        root.addStretch(1)
 
         _word = f'<span style="color:{FONT_PRIMARY};">{translate("StroopWidget", "ink color")}</span>'
         self._build_hud_footer(
@@ -99,7 +97,7 @@ class StroopWidget(BaseGameWidget):
     def _show_feedback(self, correct: bool) -> None:
         color = PRIMARY_LIGHT if correct else INCORRECT_COLOR
         symbol = "✓" if correct else "✗"
-        text = "Correct" if correct else "Incorrect"
+        text = translate("StroopWidget", "Correct") if correct else translate("StroopWidget", "Incorrect")
         self._lbl_feedback.setText(
             f'<span style="color:{color}; font-size:38px; font-weight:600;">{symbol} {text}</span>'
         )
@@ -107,6 +105,9 @@ class StroopWidget(BaseGameWidget):
     def _show_countdown(self) -> None:
         self._countdown_value = 3
         self._hud_update(show_next_trial=True)
+        self._lbl_feedback.setMaximumHeight(16777215)
+        self._lbl_feedback.setMinimumHeight(0)
+        self._lbl_main.hide()
         self._go(_COUNTDOWN)
 
     def _begin_trial(self) -> None:
@@ -139,6 +140,8 @@ class StroopWidget(BaseGameWidget):
         self._timer.stop()
 
         if state == _STIMULUS:
+            self._lbl_feedback.setFixedHeight(52)
+            self._lbl_main.show()
             self._clear_feedback()
             p = self._trial_params
             r, g, b = p["ink_color_rgb"]
@@ -160,8 +163,9 @@ class StroopWidget(BaseGameWidget):
             self._timer.start(_RESULT_MS)
 
         elif state == _COUNTDOWN:
-            self._clear_feedback()
-            self._set_main_text(str(self._countdown_value), self._hex_to_rgb(OFF_WHITE), 80, 700)
+            self._lbl_feedback.setText(
+                f'<span style="color:{OFF_WHITE}; font-size:80px; font-weight:700;">{self._countdown_value}</span>'
+            )
             self._bar_timer.setValue(0)
             self._timer.start(_COUNTDOWN_MS)
 
@@ -198,7 +202,9 @@ class StroopWidget(BaseGameWidget):
             if self._countdown_value > 0:
                 self._go(_COUNTDOWN)
             else:
-                self._clear_main_text()
+                self._lbl_feedback.setFixedHeight(52)
+                self._lbl_feedback.setText("")
+                self._lbl_main.show()
                 self._countdown_done = True
                 if self._db_ready:
                     self._begin_trial()

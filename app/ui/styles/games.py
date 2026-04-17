@@ -61,25 +61,25 @@ GAMES_STYLES = f"""
 
     QLabel#rtCardTitle,
     QLabel#accCardTitle,
-    QLabel#piCardTitle {{
+    QLabel#qualityCardTitle {{
         color: {OFF_WHITE};
     }}
 
     QLabel#rtCardValue,
     QLabel#accCardValue,
-    QLabel#piCardValue {{
+    QLabel#qualityCardValue {{
         color: {GRAY};
     }}
 
     QLabel#rtCardGlobal,
     QLabel#accCardGlobal,
-    QLabel#piCardGlobal {{
+    QLabel#qualityCardGlobal {{
         color: {OFF_WHITE};
     }}
 
     QWidget#rtCardWidget,
     QWidget#accCardWidget,
-    QWidget#piCardWidget {{
+    QWidget#qualityCardWidget {{
         background-color: {BACKGROUND_GLASS};
         border: 1px solid {BORDER_LIGHTGREY};
         border-radius: 18px;

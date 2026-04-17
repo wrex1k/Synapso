@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import sys
+import os
+
 import pygame
 from PySide6.QtCore import QElapsedTimer, Qt, QTimer, Signal
 from PySide6.QtGui import QImage, QPixmap
@@ -24,10 +27,17 @@ def _get_cached_font(size: int, bold: bool) -> pygame.font.Font:
     key = (size, bool(bold))
     font = _FONT_CACHE.get(key)
     if font is None:
-        font = pygame.font.SysFont(GENERAL_SANS, size, bold=bold)
+        filename = "GeneralSans-Bold.otf" if bold else "GeneralSans-Regular.otf"
+        font = pygame.font.Font(_get_font_path(filename), size)
         _FONT_CACHE[key] = font
     return font
 
+def _get_font_path(filename: str) -> str:
+    if getattr(sys, "frozen", False):
+        base = sys._MEIPASS
+    else:
+        base = os.path.join(os.path.dirname(__file__), "..", "..", "..")
+    return os.path.join(base, "resources", "font", "general-sans", filename)
 
 _IDLE = "idle"
 _STIMULUS = "stimulus"

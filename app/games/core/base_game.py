@@ -19,11 +19,7 @@ class TrialResult:
     reaction_time_ms: float
     is_correct: bool
     pi_trial: float = 0.0
-    pi_adjusted: float = 0.0
     accuracy: float = 0.0
-    consecutive_bad_count: int = 0
-    consecutive_correct_count: int = 0
-    rt_exceeded_threshold: bool = False
     stimulus_payload: dict = field(default_factory=dict)
     response_payload: dict = field(default_factory=dict)
     scoring_payload: dict = field(default_factory=dict)

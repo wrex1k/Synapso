@@ -41,7 +41,7 @@ class StroopTutorial(BaseTutorialWidget):
         ]
 
     def _get_intro_title(self) -> str:
-        return translate("StroopTutorial", "Stroop test")
+        return translate("StroopTutorial", "Stroop Test")
 
     def _get_intro_subtitle(self) -> str:
         return translate("StroopTutorial", "Train your cognitive control and selective attention")
@@ -109,13 +109,6 @@ class StroopTutorial(BaseTutorialWidget):
         for_yellow.setObjectName("tutorialBaseText")
         controls_row_layout.addWidget(for_yellow)
 
-        key_o = KeyWidget("O")
-        key_o.setProperty("compact", True)
-        controls_row_layout.addWidget(key_o)
-
-        for_orange = QLabel(translate("StroopTutorial", "for ORANGE,"))
-        for_orange.setObjectName("tutorialBaseText")
-        controls_row_layout.addWidget(for_orange)
 
         key_p = KeyWidget("P")
         key_p.setProperty("compact", True)

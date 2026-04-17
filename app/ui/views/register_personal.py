@@ -92,6 +92,7 @@ class RegisterPersonal(QWidget):
         titleFrame.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
 
         title_layout = QVBoxLayout(titleFrame)
+        title_layout.setContentsMargins(0, 0, 0, 0)
         title_row = QHBoxLayout()
 
         # title

@@ -134,10 +134,20 @@ class SettingsView(QWidget):
         logger.info("Language changed to %s", lang)
 
         from app.service.auth_service import sync_user_language
-        registry.run_thread(
+
+        def _on_sync_finished(_result) -> None:
+            logger.debug("sync-language-thread finished")
+
+        started = registry.operation("sync-language-thread").start(
+            registry.run_thread,
             lambda: sync_user_language(lang),
+            _on_sync_finished,
             name="sync-language-thread",
         )
+        if started:
+            logger.debug("sync-language-thread started")
+        else:
+            logger.debug("sync-language-thread already running, skipped")
 
     def _sync_language_buttons(self) -> None:
         current = get_language()

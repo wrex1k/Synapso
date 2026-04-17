@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 
 _GAME_SLUGS = ["stroop", "memory_grid", "mental_rotation"]
 _GAME_LABELS = {
-    "stroop": "Stroop",
+    "stroop": "Stroop Test",
     "memory_grid": "Memory Grid",
     "mental_rotation": "Mental Rotation",
 }
@@ -178,7 +178,7 @@ class DashboardController(QObject):
             reaction = row.get("avg_reaction_time_ms")
             reaction_text = f"{int(reaction)} ms" if isinstance(reaction, (int, float)) else "—"
             acc = row.get("avg_accuracy")
-            acc_text = f"{acc}%" if isinstance(acc, (int, float)) else "—"
+            acc_text = f"{acc:.2f}%" if isinstance(acc, (int, float)) else "—"
             items.append(
                 {
                     "game": self._label_for_slug(slug),
@@ -223,7 +223,7 @@ class DashboardController(QObject):
             }
 
         return {
-            "best_accuracy": self._fmt_pct(fav_row.get("avg_accuracy_overall")),
+            "best_accuracy": self._fmt_pct(fav_row.get("avg_accuracy")),
             "fastest_reaction": self._fmt_ms(fav_row.get("avg_reaction_time_ms")),
         }
 
@@ -246,7 +246,7 @@ class DashboardController(QObject):
         }
 
     def _get_today_runs(self) -> list[tuple[datetime | None, str, dict]]:
-        today = datetime.now(timezone.utc).date()
+        today = datetime.now().astimezone().date()
         return [
             item
             for item in self._get_all_runs_sorted_desc()
@@ -264,7 +264,7 @@ class DashboardController(QObject):
         return runs
 
     def _compute_current_streak(self) -> int:
-        today = datetime.now(timezone.utc).date()
+        today = datetime.now().astimezone().date()
         days = {
             dt.date()
             for dt, _, _ in self._get_all_runs_sorted_desc()
@@ -342,7 +342,7 @@ class DashboardController(QObject):
             dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
-            return dt + timedelta(hours=1)
+            return dt.astimezone()
         except Exception:
             logger.exception("DashboardController._parse_dt: failed to parse value=%s", value)
             return None
@@ -351,7 +351,7 @@ class DashboardController(QObject):
         if dt is None:
             return "—"
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now().astimezone()
 
         if dt.date() == now.date():
             return translate("DashboardView", "Today at {time}").format(

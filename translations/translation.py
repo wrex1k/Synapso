@@ -6,6 +6,7 @@ and get_translation_manager as a singleton accessor.
 """
 
 import os
+import sys
 from typing import Optional
 
 from PySide6.QtCore import QCoreApplication, QLocale, QTranslator, QT_TRANSLATE_NOOP
@@ -22,7 +23,10 @@ class TranslationManager:
         """Initialize with no translator loaded and English as default."""
         self.translator: Optional[QTranslator] = None
         self.current_language: str = "en"
-        self.translations_dir = os.path.dirname(__file__)
+        if getattr(sys, "frozen", False):
+            self.translations_dir = sys._MEIPASS
+        else:
+            self.translations_dir = os.path.dirname(__file__)
 
     def load_translation(self, language: str = "sk") -> bool:
         """Load a .qm translation file for the given language code."""
@@ -105,8 +109,8 @@ QT_TRANSLATE_NOOP('StroopWidget', 'Press the key matching the {word}')
 QT_TRANSLATE_NOOP('StroopWidget', 'ink color')
 QT_TRANSLATE_NOOP('MemoryGridWidget', 'Select the {word} you remember')
 QT_TRANSLATE_NOOP('MemoryGridWidget', 'grid squares')
-QT_TRANSLATE_NOOP('MentalRotationWidget', 'Press the key if the {word}')
-QT_TRANSLATE_NOOP('MentalRotationWidget', 'shapes are the same')
+QT_TRANSLATE_NOOP('MentalRotationWidget', 'Decide if the {word}')
+QT_TRANSLATE_NOOP('MentalRotationWidget', 'shapes are the same or different')
 
 def get_error_message(error_code: str, context: str = "Errors") -> str:
     """Return a translated error message for the given error code."""
