@@ -1,22 +1,25 @@
-"""Controller for handling profile view interactions (edit profile, change password, delete account)."""
-
 from typing import Callable, Optional
 
-from PySide6.QtCore import QObject, Slot
+from PySide6.QtCore import QObject, Signal, Slot
 
 from app.core.registry import registry
 from app.service.auth_service import change_password, delete_account
 from app.service.activity_service import stop_heartbeat
+from app.service.user_service import update_user_profile
+from app.repository.user_repository import save_user, delete_user, upload_avatar_blob
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
-from app.repository.user_repository import save_user, delete_user, upload_avatar_blob, check_username_exists
-from app.repository.supabase_client import get_client
 from app.utils.validator import validate_username, validate_birthdate, validate_password, validate_passwords_match
+from app.utils.error_codes import AuthError, ProfileError
 from translations.translation import translate
 
 
 class ProfileController(QObject):
+    """Controller responsible for managing profile edits, password changes, avatar uploads, and account deletion."""
+    username_changed = Signal(str)
+    avatar_changed = Signal(bytes)
+    
     def __init__(
         self,
         view,
@@ -43,6 +46,7 @@ class ProfileController(QObject):
 
     @Slot(str, object)
     def save_profile(self, username: str, birthday):
+        """Validate profile fields and start async profile save if no operation is running."""
         err = validate_username(username)
         if err:
             self.view.set_profile_feedback(err, is_error=True)
@@ -54,29 +58,27 @@ class ProfileController(QObject):
                 return
 
         old_username = self.user.username
-        old_birthday = self.user.birthday_date
-
-        self.user.username = username
-        self.user.birthday_date = birthday
-        user_dict = self.user.to_dict()
 
         def _save():
-            if username != old_username and check_username_exists(username):
-                return (False, "username_taken")
-            save_user(user_dict)
-            return (True, None)
+            return update_user_profile(
+                self.user.id,
+                old_username=old_username,
+                new_username=username,
+                birthday_date=birthday,
+            )
 
         def _done(result):
-            if isinstance(result, tuple) and not result[0]:
-                self.user.username = old_username
-                self.user.birthday_date = old_birthday
-                _, err_msg = result
-                if err_msg == "username_taken":
+            success, err_msg = result
+            if not success:
+                if err_msg == ProfileError.USERNAME_TAKEN:
                     self.view.set_profile_feedback(translate("ProfileView", "Username is already taken"), is_error=True)
                 else:
                     self.view.set_profile_feedback(translate("ProfileView", "Failed to save profile"), is_error=True)
                 return
-            self.navbar.setName(username)
+            
+            self.user.username = username
+            self.user.birthday_date = birthday
+            self.username_changed.emit(username)
             self.view.set_profile_feedback(translate("ProfileView", "Profile saved successfully"))
             logger.info("Profile updated for user ..%s", self.user.id[-10:])
 
@@ -91,6 +93,7 @@ class ProfileController(QObject):
 
     @Slot(str, str, str)
     def change_password(self, current_pw: str, new_pw: str, confirm_pw: str):
+        """Validate password fields and start async password change if no operation is running."""
         err = validate_passwords_match(new_pw, confirm_pw)
         if err:
             self.view.set_password_feedback(err, is_error=True)
@@ -108,9 +111,9 @@ class ProfileController(QObject):
             if ok:
                 self.view.set_password_feedback(translate("ProfileView", "Password changed successfully"))
                 self.view.clear_password_fields()
-            elif err_msg == "wrong_current_password":
+            elif err_msg == AuthError.WRONG_CURRENT_PASSWORD:
                 self.view.set_password_feedback(translate("ProfileView", "Current password is incorrect"), is_error=True)
-            elif err_msg == "password_same_as_old":
+            elif err_msg == AuthError.PASSWORD_SAME_AS_OLD:
                 self.view.set_password_feedback(translate("ProfileView", "New password must differ from the current one"), is_error=True)
             else:
                 self.view.set_password_feedback(translate("ProfileView", "Failed to change password"), is_error=True)
@@ -127,6 +130,7 @@ class ProfileController(QObject):
 
     @Slot()
     def delete_account(self):
+        """Stop heartbeat and start async account deletion if no operation is running."""
         user_id = self.user.id
 
         stop_heartbeat()
@@ -163,19 +167,21 @@ class ProfileController(QObject):
 
     @Slot(bytes)
     def upload_avatar(self, image_bytes: bytes):
+        """Start async avatar upload and persist the updated path if no operation is running."""
         user_id = self.user.id
 
         def _upload():
             path = upload_avatar_blob(user_id, image_bytes)
             if path:
-                get_client().table("users").update({"avatar_path": path}).eq("id", user_id).execute()
+                user_dict = {"id": user_id, "avatar_path": path, "username": self.user.username}
+                save_user(user_dict)
             return path
 
         def _done(avatar_path):
             if avatar_path:
                 self.user.avatar_path = avatar_path
                 self.user.avatar_blob = image_bytes
-                self.navbar.set_avatar_bytes(image_bytes)
+                self.avatar_changed.emit(image_bytes)
                 self.view.set_profile_feedback(translate("ProfileView", "Profile photo updated"))
                 self.view.avatar_upload_succeeded.emit(image_bytes)
                 logger.info("Avatar uploaded for user ..%s", user_id[-10:])
@@ -191,3 +197,10 @@ class ProfileController(QObject):
         )
         if started:
             logger.info("Uploading avatar for user ..%s", user_id[-10:])
+
+    def cleanup(self):
+        """Cancel any running operations."""
+        self._save_operation.cancel()
+        self._password_operation.cancel()
+        self._delete_operation.cancel()
+        self._avatar_operation.cancel()

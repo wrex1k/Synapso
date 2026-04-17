@@ -1,23 +1,21 @@
 from datetime import datetime, timezone
 
-from app.repository.supabase_client import get_client, with_retry
+from app.repository.supabase_client import get_client, with_retry, refresh_session
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-"""
-ActivityRepository provides functions to manage user activity heartbeats to update last seen attribute:
-- send_heartbeat: updates the last seen timestamp and time_played for a user in the database.
-"""
-
-
 def send_heartbeat(user_id: str, elapsed_seconds: int):
+    """Send user activity heartbeat to update last seen and time played."""
     if not user_id:
         logger.warning("Heartbeat skipped: no user_id provided")
         return
 
     try:
+        refresh_session()
+
         def _do_heartbeat():
+            """Execute heartbeat upsert operation."""
             data = {
                 "user_id": user_id,
                 "last_seen": datetime.now(timezone.utc).isoformat(),
@@ -38,8 +36,8 @@ def send_heartbeat(user_id: str, elapsed_seconds: int):
     except Exception as e:
         logger.exception("Failed to send heartbeat (user_id: ..%s): %s", user_id[-10:], str(e))
 
-
 def get_time_played(user_id: str) -> int:
+    """Retrieve total time played for user."""
     data = with_retry(
         lambda: get_client().table("user_activity")
         .select("time_played")

@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Optional
-import hashlib
-
 
 @dataclass
 class User:
@@ -21,8 +19,10 @@ class User:
         data = {
             "id": self.id,
             "username": self.username,
-            "birthday_date": self.birthday_date.isoformat(),
         }
+        
+        if self.birthday_date:
+            data["birthday_date"] = self.birthday_date.isoformat()
 
         if self.avatar_path:
             data["avatar_path"] = self.avatar_path

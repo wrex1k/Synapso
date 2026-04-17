@@ -1,41 +1,35 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any
 
 from PySide6.QtCore import QObject, QThread, Signal
 
 from app.core.registry import registry
-from app.games.core.base_game import GAME_ID_MAP
+from app.games.core.base_game import GAME_SLUGS, GAME_ID_TO_SLUG
 from app.models.user import User
-from app.repository.activity_repository import get_time_played
-from app.repository.run_repository import fetch_user_run_history
-from app.repository.stats_repository import fetch_all_user_stats, fetch_player_game_stats
-from app.utils.logger import get_logger
-from translations.translation import get_translation_manager, translate
+from app.repository.run_repository import parse_datetime
+from app.service.stats_service import get_dashboard_stats, calculate_user_streak, estimate_daily_goal, calculate_goal_status
+from app.utils.formatters import format_time_duration, format_day_label, format_percentage, format_milliseconds, format_relative_datetime, format_pi, format_game_label
 
-logger = get_logger(__name__)
+from translations.translation import translate
 
-_GAME_SLUGS = ["stroop", "memory_grid", "mental_rotation"]
-_GAME_LABELS = {
-    "stroop": "Stroop Test",
-    "memory_grid": "Memory Grid",
-    "mental_rotation": "Mental Rotation",
-}
-_GAME_ID_TO_SLUG = {value: key for key, value in GAME_ID_MAP.items()}
 _MIN_UTC = datetime.min.replace(tzinfo=timezone.utc)
 
+MAX_RECENT_GAMES = 3
+TREND_CHART_POINTS = 10
 
 @dataclass
 class DashboardData:
+    """Container for dashboard data used by the dashboard controller."""
     time_played_total: int
     all_stats: dict[str, Any]
-    per_game: dict[str, dict | None]
     histories: dict[str, list[dict]]
 
 
 class DashboardController(QObject):
+    """Controller responsible for loading dashboard data and building UI models."""
     data_changed = Signal()
     loading_started = Signal()
     loading_finished = Signal()
@@ -49,21 +43,27 @@ class DashboardController(QObject):
         self._data = DashboardData(
             time_played_total=0,
             all_stats={"games": []},
-            per_game={},
             histories={},
         )
 
     @property
     def loaded_once(self) -> bool:
+        """Return whether the dashboard has already been loaded at least once."""
         return self._loaded_once
 
     def mark_loaded_once(self) -> None:
+        """Mark the dashboard as loaded at least once."""
         self._loaded_once = True
 
     def is_loading(self) -> bool:
-        return any(getattr(t, "isRunning", lambda: False)() for t in self._threads)
+        """Return whether any dashboard loading thread is currently running."""
+        return any(thread.isRunning() for thread in self._threads)
 
     def load(self) -> None:
+        """Start asynchronous loading of dashboard data if no load is currently running."""
+        if self.is_loading():
+            return
+    
         self.loading_started.emit()
         thread = registry.run_thread(
             self._fetch_all,
@@ -73,139 +73,97 @@ class DashboardController(QObject):
         self._keep_thread(thread)
 
     def _keep_thread(self, thread: QThread) -> None:
+        """Track a running thread and emit loading_finished after the last one completes."""
         self._threads.append(thread)
 
-        def _cleanup_thread(t=thread):
+        def _cleanup_thread(t: QThread = thread):
             if t in self._threads:
                 self._threads.remove(t)
-            self.loading_finished.emit()
+
+            if not self.is_loading():
+                self.loading_finished.emit()
 
         thread.finished.connect(_cleanup_thread)
 
     def _fetch_all(self) -> DashboardData:
-        time_played_total = 0
-        try:
-            time_played_total = get_time_played(self._user.id) or 0
-        except Exception:
-            logger.exception("Failed to load total time played")
-
-        try:
-            all_stats = fetch_all_user_stats(self._user.id) or {"games": []}
-        except Exception:
-            logger.exception("Failed to load all user stats")
-            all_stats = {"games": []}
-
-        per_game: dict[str, dict | None] = {}
-        histories: dict[str, list[dict]] = {}
-
-        for slug in _GAME_SLUGS:
-            try:
-                per_game[slug] = fetch_player_game_stats(self._user.id, slug)
-            except Exception:
-                logger.exception("Failed to load per-game stats for %s", slug)
-                per_game[slug] = None
-
-            try:
-                histories[slug] = fetch_user_run_history(self._user.id, slug, limit=20) or []
-            except Exception:
-                logger.exception("Failed to load run history for %s", slug)
-                histories[slug] = []
-
+        """Fetch all dashboard data required for dashboard view models."""
+        data = get_dashboard_stats(self._user.id, GAME_SLUGS)
+        
         return DashboardData(
-            time_played_total=time_played_total,
-            all_stats=all_stats,
-            per_game=per_game,
-            histories=histories,
+            time_played_total=data["time_played_total"],
+            all_stats=data["all_stats"],
+            histories=data["histories"],
         )
 
     def _on_data_loaded(self, result: DashboardData | None) -> None:
+        """Store loaded dashboard data and notify the UI when loading succeeds."""
         if not result:
             return
 
         self._data = result
         self.data_changed.emit()
 
-    def get_welcome_model(self) -> dict[str, str]:
-        streak = self._compute_current_streak()
-        all_runs = self._get_all_runs_sorted_desc()
-        total_games = len(all_runs)
-        favorite_game_slug = self._get_most_played_slug()
-
+    def _compute_base_stats(self) -> dict[str, Any]:
+        """Compute shared dashboard statistics reused by multiple dashboard sections."""
+        games = self._data.all_stats.get("games", [])
+        streak = calculate_user_streak(self._data.histories)
+        goal = estimate_daily_goal(self._data.histories)
+        today_runs = self._get_today_runs()
+        
         return {
-            "daily_streak": self._format_day_label(streak) if streak else "—",
-            "total_games": str(total_games) if total_games else "—",
-            "time_played": self._format_time(self._data.time_played_total),
-            "favorite_game": self._label_for_slug(favorite_game_slug),
+            "streak": streak,
+            "total_runs": sum(g.get("total_runs", 0) for g in games),
+            "time_played": self._data.time_played_total,
+            "favorite_slug": self._get_most_played_slug(),
+            "goal": goal,
+            "today_done": len(today_runs),
         }
 
-    def get_activity_model(self) -> dict[str, str]:
-        history_runs = self._get_all_runs_sorted_desc()
-        total_runs = len(history_runs)
-        total_trials = sum((row.get("total_trials") or 0) for _, _, row in history_runs)
-        streak = self._compute_current_streak()
-
-        goal = self._estimate_daily_goal()
-        done = len(self._get_today_runs())
-        shown_done = min(done, goal) if goal > 0 else done
-
-        if done >= goal and goal > 0:
-            goal_hint = translate("DashboardView", "Goal completed for today")
-        elif done == 0:
-            goal_hint = translate("DashboardView", "Start a session to begin today’s goal")
-        else:
-            remaining = max(goal - done, 0)
-            goal_hint = translate(
-                "DashboardView",
-                "{count} more session(s) to reach today’s goal",
-            ).format(count=remaining)
+    def get_welcome_model(self) -> dict[str, str]:
+        """Return formatted data for the welcome section."""
+        stats = self._compute_base_stats()
 
         return {
-            "total_runs": str(total_runs) if total_runs else "—",
-            "total_trials": str(total_trials) if total_trials else "—",
-            "current_streak": self._format_day_label(streak) if streak else "—",
-            "time_played": self._format_time(self._data.time_played_total),
-            "goal_progress": f"{shown_done} / {goal}",
+            "daily_streak": format_day_label(stats["streak"]),
+            "total_games": str(stats["total_runs"]),
+            "time_played": format_time_duration(stats["time_played"]),
+            "favorite_game": format_game_label(stats["favorite_slug"]),
+        }
+
+    def get_goal_model(self) -> dict[str, str]:
+        """Return formatted data for the daily goal section."""
+        stats = self._compute_base_stats()
+        
+        goal_status = calculate_goal_status(stats["today_done"], stats["goal"])
+        
+        if goal_status["status"] == "completed":
+            goal_hint = translate("DashboardView", "Goal completed for today")
+        elif goal_status["status"] == "not_started":
+            goal_hint = translate("DashboardView", "Start a session to begin today's goal")
+        else:
+            goal_hint = translate("DashboardView", "{count} more session(s) to reach today's goal").format(count=goal_status["remaining"])
+
+        return {
+            "goal_progress": f"{goal_status['shown_done']} / {goal_status['goal']}",
             "goal_hint": goal_hint,
         }
 
-    def get_recent_games_model(self) -> list[dict[str, str]]:
-        runs = self._get_all_runs_sorted_desc()
-        items: list[dict[str, str]] = []
-
-        for dt, slug, row in runs[:3]:
-            pi = row.get("pi_run")
-            pi_text = f"{pi:.2f} PI" if isinstance(pi, (int, float)) else "—"
-            reaction = row.get("avg_reaction_time_ms")
-            reaction_text = f"{int(reaction)} ms" if isinstance(reaction, (int, float)) else "—"
-            acc = row.get("avg_accuracy")
-            acc_text = self._fmt_pct(acc) if isinstance(acc, (int, float)) else "—"
-            items.append(
-                {
-                    "game": self._label_for_slug(slug),
-                    "date": self._relative_datetime_text(dt),
-                    "pi": pi_text,
-                    "reaction": reaction_text,
-                    "accuracy": acc_text,
-                }
-            )
-
-        return items
-
     def get_trend_chart_model(self) -> dict[str, Any]:
+        """Return recent PI values and chart range for the most played game."""
         most_played_slug = self._get_most_played_slug()
         if not most_played_slug:
             return {"slug": None, "values": [], "y_range": (0.0, 1.0)}
 
         runs: list[tuple[datetime | None, float]] = []
-        for row in self._data.histories.get(most_played_slug, []) or []:
+        for row in self._data.histories.get(most_played_slug, []):
             pi = row.get("pi_run")
             if pi is None:
                 continue
-            runs.append((self._parse_dt(row.get("started_at")), float(pi)))
+            runs.append((parse_datetime(row.get("started_at")), float(pi)))
 
         runs.sort(key=lambda item: item[0] or _MIN_UTC)
-        values = [pi for _, pi in runs][-10:]
-        y_range = self._safe_y_range(values) if values else (0.0, 1.0)
+        values = [pi for _, pi in runs][-TREND_CHART_POINTS:]
+        y_range = self._calculate_safe_y_range(values) if values else (0.0, 1.0)
 
         return {
             "slug": most_played_slug,
@@ -214,38 +172,60 @@ class DashboardController(QObject):
         }
 
     def get_highlights_model(self) -> dict[str, str]:
+        """Return highlight metrics for the most played game."""
         fav_row = self._get_most_played_row()
 
         if not fav_row:
             return {
-                "best_accuracy": "—",
-                "fastest_reaction": "—",
+                "best_accuracy": translate("DashboardView", "No data"),
+                "fastest_reaction": translate("DashboardView", "No data"),
             }
 
         return {
-            "best_accuracy": self._fmt_pct(fav_row.get("avg_accuracy")),
-            "fastest_reaction": self._fmt_ms(fav_row.get("avg_reaction_time_ms")),
+            "best_accuracy": format_percentage(fav_row.get("avg_accuracy")),
+            "fastest_reaction": format_milliseconds(fav_row.get("avg_reaction_time_ms")),
         }
 
-    def get_continue_model(self) -> dict[str, Any]:
+    def get_recent_games_model(self) -> list[dict[str, str]]:
+        """Return formatted summaries of the most recent game sessions."""
         runs = self._get_all_runs_sorted_desc()
+        items: list[dict[str, str]] = []
+
+        for dt, slug, row in runs[:MAX_RECENT_GAMES]:
+            items.append(
+                {
+                    "game": format_game_label(slug),
+                    "date": format_relative_datetime(dt),
+                    "pi": format_pi(row.get("pi_run")),
+                    "reaction": format_milliseconds(row.get("avg_reaction_time_ms")),
+                    "accuracy": format_percentage(row.get("avg_accuracy")),
+                }
+            )
+
+        return items
+    
+    def get_continue_model(self) -> dict[str, Any]:
+        """Return data for the continue section based on the latest played session."""
+        runs = self._get_all_runs_sorted_desc()
+        no_data = translate("DashboardView", "No data")
         if not runs:
             return {
                 "slug": None,
-                "game_name": "—",
-                "info": "—",
+                "game_name": no_data,
+                "info": no_data,
                 "enabled": False,
             }
 
         dt, slug, _row = runs[0]
         return {
             "slug": slug,
-            "game_name": self._label_for_slug(slug),
-            "info": self._relative_datetime_text(dt),
+            "game_name": format_game_label(slug),
+            "info": format_relative_datetime(dt),
             "enabled": True,
         }
 
     def _get_today_runs(self) -> list[tuple[datetime | None, str, dict]]:
+        """Return all runs started on the current local date."""
         today = datetime.now().astimezone().date()
         return [
             item
@@ -254,52 +234,19 @@ class DashboardController(QObject):
         ]
 
     def _get_all_runs_sorted_desc(self) -> list[tuple[datetime | None, str, dict]]:
+        """Collect all runs across games and sort them from newest to oldest."""
         runs: list[tuple[datetime | None, str, dict]] = []
 
         for slug, hist in self._data.histories.items():
-            for row in hist or []:
-                runs.append((self._parse_dt(row.get("started_at")), slug, row))
+            for row in hist:
+                runs.append((parse_datetime(row.get("started_at")), slug, row))
 
         runs.sort(key=lambda item: item[0] or _MIN_UTC, reverse=True)
         return runs
 
-    def _compute_current_streak(self) -> int:
-        today = datetime.now().astimezone().date()
-        days = {
-            dt.date()
-            for dt, _, _ in self._get_all_runs_sorted_desc()
-            if dt is not None and dt.date() <= today
-        }
-
-        if not days:
-            return 0
-
-        cursor = today if today in days else today - timedelta(days=1)
-        streak = 0
-
-        while cursor in days:
-            streak += 1
-            cursor -= timedelta(days=1)
-
-        return streak
-
-    def _estimate_daily_goal(self) -> int:
-        runs_by_day: dict[Any, int] = {}
-
-        for dt, _, _ in self._get_all_runs_sorted_desc():
-            if dt is None:
-                continue
-            day = dt.date()
-            runs_by_day[day] = runs_by_day.get(day, 0) + 1
-
-        if not runs_by_day:
-            return 3
-
-        avg = sum(runs_by_day.values()) / len(runs_by_day)
-        return max(1, round(avg))
-
     def _get_most_played_row(self) -> dict | None:
-        games = self._data.all_stats.get("games", []) or []
+        """Return the aggregated stats row for the most played game."""
+        games = self._data.all_stats.get("games", [])
         return max(
             (g for g in games if g.get("total_runs") is not None),
             key=lambda g: g.get("total_runs") or 0,
@@ -307,15 +254,14 @@ class DashboardController(QObject):
         )
 
     def _get_most_played_slug(self) -> str | None:
+        """Return the slug of the most played game."""
         row = self._get_most_played_row()
         if not row:
             return None
-        return self._game_slug_from_id(row.get("game_id"))
+        return GAME_ID_TO_SLUG.get(row.get("game_id"))
 
-    def _game_slug_from_id(self, game_id: Any) -> str | None:
-        return _GAME_ID_TO_SLUG.get(game_id)
-
-    def _safe_y_range(self, values: list[float]) -> tuple[float, float]:
+    def _calculate_safe_y_range(self, values: list[float]) -> tuple[float, float]:
+        """Calculate safe Y-axis range with padding for chart display."""
         if not values:
             return 0.0, 1.0
 
@@ -329,78 +275,9 @@ class DashboardController(QObject):
         padding = (high - low) * 0.12
         return round(low - padding, 3), round(high + padding, 3)
 
-    def _label_for_slug(self, slug: str | None) -> str:
-        if not slug:
-            return "—"
-        return translate("DashboardView", _GAME_LABELS.get(slug, slug))
-
-    def _parse_dt(self, value: str | None) -> datetime | None:
-        if not value:
-            return None
-
-        try:
-            dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
-            return dt.astimezone()
-        except Exception:
-            logger.exception("DashboardController._parse_dt: failed to parse value=%s", value)
-            return None
-
-    def _relative_datetime_text(self, dt: datetime | None) -> str:
-        if dt is None:
-            return "—"
-
-        now = datetime.now().astimezone()
-
-        if dt.date() == now.date():
-            return translate("DashboardView", "Today at {time}").format(
-                time=dt.strftime("%H:%M")
-            )
-
-        if dt.date() == (now.date() - timedelta(days=1)):
-            return translate("DashboardView", "Yesterday at {time}").format(
-                time=dt.strftime("%H:%M")
-            )
-
-        return dt.strftime("%d.%m.%Y • %H:%M")
-
-    def _format_time(self, seconds: int) -> str:
-        if not seconds:
-            return translate("DashboardView", "0 min")
-
-        hours, rem = divmod(int(seconds), 3600)
-        minutes = rem // 60
-
-        if hours:
-            return translate("DashboardView", "{hours}h {minutes}m").format(
-                hours=hours,
-                minutes=minutes,
-            )
-
-        return translate("DashboardView", "{minutes} min").format(minutes=minutes)
-
-    def _format_day_label(self, count: int) -> str:
-        lang = getattr(get_translation_manager(), "current_language", "en")
-
-        if lang == "en" or str(lang).startswith("en-"):
-            return f"{count} day" if count == 1 else f"{count} days"
-
-        txt = translate("DashboardView", "%n day", n=count)
-        result = txt.replace("%n", str(count))
-
-        if result.endswith(" day") and not result.endswith(" days") and count != 1:
-            return f"{count} days"
-
-        return result
-
-    def _fmt_pct(self, value: float | None) -> str:
-        if value is None:
-            return "—"
-        pct = value * 100 if value <= 1.0 else value
-        return f"{pct:.0f}%"
-
-    def _fmt_ms(self, value: float | None) -> str:
-        if value is None:
-            return "—"
-        return f"{int(value)} ms"
+    def cleanup(self):
+        """Stop any running threads."""
+        for thread in self._threads:
+            if thread.isRunning():
+                thread.quit()
+                thread.wait()

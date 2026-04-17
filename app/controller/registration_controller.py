@@ -1,13 +1,7 @@
-"""Controller for handling the registration UI actions and sign-up flow.
-Provides a thin bridge between the registration views and the authentication.
-"""
-
 import datetime
 from typing import Callable
 
 from PySide6.QtCore import QObject, Signal, Slot
-from email_validator import EmailNotValidError
-from email_validator import validate_email as validate_email_deliverable
 from translations.translation import get_error_message
 
 from app.utils.logger import get_logger
@@ -15,29 +9,26 @@ from app.utils.logger import get_logger
 logger = get_logger(__name__)
 from app.core.registry import registry
 
-from app.repository.user_repository import save_user, upload_avatar_blob, check_username_exists
+from app.repository.user_repository import check_username_exists
 from app.utils.validator import validate_password, validate_email, validate_username, validate_birthdate
 from app.service.auth_service import sign_up
+from app.service.user_service import complete_registration
 from app.ui.views.register_auth import RegisterAuth
 from app.ui.views.register_personal import RegisterPersonal
 from app.models.user import User
+from app.utils.error_codes import AuthError
 
 
 
 class RegistrationController(QObject):
-    """Handle registration interactions across personal and auth steps.
-
-    This controller validates personal data, checks username availability,
-    completes the sign-up flow on a background thread and forwards the
-    final result via `on_complete`.
-    """
+    """Controller responsible for managing the two-step user registration flow."""
 
     register_success = Signal(object)
     register_failed = Signal(str)
+    register_personal_error = Signal(str)
     personal_check_passed = Signal()
     personal_check_failed = Signal(str)
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         view: tuple[RegisterPersonal, RegisterAuth],
@@ -59,6 +50,7 @@ class RegistrationController(QObject):
 
         self.register_success.connect(self._finish_success)
         self.register_failed.connect(self._finish_error)
+        self.register_personal_error.connect(self._finish_personal_error)
         self.personal_check_passed.connect(self._on_personal_check_passed)
         self.personal_check_failed.connect(self._on_personal_check_failed)
 
@@ -110,12 +102,11 @@ class RegistrationController(QObject):
                 birthday_date,
                 avatar_blob,
             ),
-            on_finished=self._on_personal_check_result,
             name="username-check-thread",
         )
 
         if not started:
-            logger.debug("Username check thread already running, ignoring request")
+            logger.warning("Username check operation already running, ignoring request")
             return
 
         self._personal_view.show_checking_state()
@@ -134,7 +125,6 @@ class RegistrationController(QObject):
                     get_error_message("username_already_taken")
                 )
                 return
-        # pylint: disable=broad-exception-caught
         except Exception as e:
             logger.error("Username check error: %s", e)
             self.personal_check_failed.emit(
@@ -155,87 +145,71 @@ class RegistrationController(QObject):
         started = self._operation.start(
             registry.run_thread,
             lambda: self._do_register(password),
-            on_finished=self._on_register_result,
             name="registration-thread",
         )
 
         if not started:
-            logger.debug("Registration thread already running, ignoring request")
+            logger.warning("Registration operation already running, ignoring request")
 
     def _do_register(self, password: str):
         """Validate credentials, sign the user up and persist profile data."""
-        try:
-            password = password.strip()
-            err = validate_password(password)
-            if err:
-                self.register_failed.emit(err)
-                return
-        # pylint: disable=broad-exception-caught
-        except Exception as e:
-            logger.error("Password validation error: %s", e)
-            self.register_failed.emit("Invalid password")
+        password = password.strip()
+        err = validate_password(password)
+        if err:
+            self.register_failed.emit(err)
             return
 
         try:
-            email = validate_email_deliverable(
-                self._draft.email.strip(),
-                check_deliverability=False,
-            ).normalized
-        except EmailNotValidError:
-            logger.error("Invalid email format: %s", self._draft.email)
-            self.register_failed.emit("Invalid email format")
-            return
-
-        try:
-            auth_user = sign_up(email, password)
-            self._draft.id = auth_user.id
-
-            if self._draft.avatar_blob:
-                avatar_path = upload_avatar_blob(
-                    self._draft.id,
-                    self._draft.avatar_blob,
-                )
-                self._draft.avatar_path = avatar_path
-            else:
-                self._draft.avatar_path = "default.webp"
-
-            save_user(self._draft.to_dict())
-            self._draft.created_at = datetime.datetime.now(datetime.timezone.utc)
-            logger.info(
-                "User registered successfully (user_id: ..%s, username: %s)",
-                self._draft.id[-10:],
-                self._draft.username,
+            auth_user = sign_up(self._draft.email.strip(), password)
+            
+            completed_user = complete_registration(
+                self._draft,
+                auth_user.id,
+                self._draft.avatar_blob
             )
-            self.register_success.emit(self._draft)
+            
+            self.register_success.emit(completed_user)
 
-        # pylint: disable=broad-exception-caught
         except Exception as e:
-            error_str = str(e).lower()
+            error_str = str(e)
+            logger.error("Registration error: %s", e)
 
+            if error_str == AuthError.USER_ALREADY_REGISTERED:
+                self.register_personal_error.emit(
+                    get_error_message("user_already_registered")
+                )
+                return
+            
+            if error_str == AuthError.EMAIL_ALREADY_IN_USE:
+                self.register_personal_error.emit(
+                    get_error_message("email_already_in_use")
+                )
+                return
+            
+            if error_str == AuthError.USERNAME_ALREADY_TAKEN:
+                self.register_personal_error.emit(
+                    get_error_message("username_already_taken")
+                )
+                return
+            
+            error_lower = error_str.lower()
             if (
-                "duplicate" in error_str
-                or "already exists" in error_str
-                or "unique constraint" in error_str
+                "duplicate" in error_lower
+                or "already exists" in error_lower
+                or "unique constraint" in error_lower
             ):
-                self._auth_view.reset_ui()
-
-                if "email" in error_str or "23505" in str(e):
-                    self._personal_view.show_personal_error(
+                if "email" in error_lower:
+                    self.register_personal_error.emit(
                         get_error_message("email_already_in_use")
                     )
                 else:
-                    self._personal_view.show_personal_error(
+                    self.register_personal_error.emit(
                         get_error_message("username_already_taken")
                     )
-
-                self.on_back_to_personal()
                 return
 
             logger.error("Unexpected registration error: %s", e)
-            error = str(e)
-            if error == "user_already_registered":
-                error = get_error_message("user_already_registered")
-            self.register_failed.emit(error)
+            self.register_failed.emit(error_str)
 
     @Slot(object)
     def _finish_success(self, user: User):
@@ -250,6 +224,13 @@ class RegistrationController(QObject):
         self._auth_view.reset_ui()
         self._auth_view.show_auth_error(msg)
 
+    @Slot(str)
+    def _finish_personal_error(self, msg: str):
+        """Navigate back to personal step and show a user-friendly error."""
+        self._auth_view.reset_ui()
+        self.on_back_to_personal()
+        self._personal_view.show_personal_error(msg)
+
     @Slot()
     def _on_personal_check_passed(self):
         """Advance to auth step after successful personal data validation."""
@@ -261,16 +242,6 @@ class RegistrationController(QObject):
         """Show personal step validation / availability error."""
         self._personal_view.reset_checking_state()
         self._personal_view.show_personal_error(error)
-
-    @Slot(object)
-    def _on_register_result(self, result: object):
-        """Consume background registration completion callback."""
-        _ = result
-
-    @Slot(object)
-    def _on_personal_check_result(self, result: object):
-        """Consume background username-check completion callback."""
-        _ = result
 
     def _back_to_login(self):
         """Return from registration flow back to the login screen."""
@@ -301,6 +272,10 @@ class RegistrationController(QObject):
 
             if self._draft.avatar_blob:
                 self._personal_view.set_avatar_from_blob(self._draft.avatar_blob)
-        # pylint: disable=broad-exception-caught
         except Exception as e:
             logger.error("Failed to prefill personal data: %s", e)
+
+    def cleanup(self) -> None:
+        """Cancel any running registration or username check operations."""
+        self._operation.cancel()
+        self._check_operation.cancel()

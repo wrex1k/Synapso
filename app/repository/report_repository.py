@@ -5,9 +5,8 @@ from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-
-
 def save_report(user_id: str, body: str) -> bool:
+    """Save user report to database."""
     try:
         data = {
             "user_id": user_id,

@@ -3,8 +3,20 @@ import os
 import sys
 from pathlib import Path
 
+import resources_rc
 from dotenv import load_dotenv
-from app.utils.logger import setup_logging, get_logger
+from PySide6.QtGui import Qt, QIcon
+from PySide6.QtWidgets import QApplication
+
+from app.core.app import App
+from app.ui.styles.fonts import load_fonts
+from app.utils.crash_handler import install_crash_handlers, log_startup_diagnostics
+from app.utils.cursor import create_custom_cursor
+from app.utils.logger import get_logger, setup_logging
+from app.utils.settings import get_language
+from app.utils.window import window_resize
+from translations.translation import init_translations
+
 
 if getattr(sys, "frozen", False):
     load_dotenv(dotenv_path=Path(sys.executable).parent / ".env", override=False)
@@ -15,43 +27,40 @@ setup_logging()
 
 _logger = get_logger(__name__)
 
-from app.utils.crash_handler import install_crash_handlers, log_startup_diagnostics
-from app.utils.breadcrumbs import add_breadcrumb
-
-from PySide6.QtGui import Qt, QIcon, QPalette, QColor
-from PySide6.QtWidgets import QApplication, QStyleFactory
-
-import resources_rc
-
-from app.core.app import App
-from app.ui.styles.fonts import load_fonts
-
-from app.utils.settings import get_language
-from app.utils.window import window_resize
-from app.utils.cursor import create_custom_cursor
-
-from translations.translation import init_translations
-
 def get_resource_path(relative: str) -> str:
+    """Return absolute path to a resource."""
     if getattr(sys, "frozen", False):
         return os.path.join(sys._MEIPASS, relative)
     return os.path.join(os.path.dirname(__file__), relative)
 
 
 def _get_app_icon() -> QIcon:
-    for name in ("synapso.ico", "logo.ico"):
-        ico_path = get_resource_path(f"resources/images/graphics/{name}")
-        if os.path.isfile(ico_path):
-            return QIcon(ico_path)
+    """Load and return the application icon."""
+    ico_path = get_resource_path("resources/images/graphics/synapso.ico")
+    return QIcon(ico_path)
 
-    icon = QIcon(":/images/graphics/logo.png")
-    if not icon.isNull():
-        return icon
-
-    return QIcon()
-
+def _force_taskbar_icon_for_frameless_window(window) -> None:
+    """Ensure the window icon appears in the Windows taskbar when using a frameless window."""
+    if sys.platform == "win32":
+        hwnd = int(window.winId())
+        GWL_EXSTYLE = -20
+        WS_EX_APPWINDOW = 0x00040000
+        WS_EX_TOOLWINDOW = 0x00000080
+        style = ctypes.windll.user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+        ctypes.windll.user32.SetWindowLongW(
+            hwnd, GWL_EXSTYLE, (style | WS_EX_APPWINDOW) & ~WS_EX_TOOLWINDOW
+        )
+        swp_nomove = 0x0002
+        swp_nosize = 0x0001
+        swp_nozorder = 0x0004
+        swp_framechanged = 0x0020
+        ctypes.windll.user32.SetWindowPos(
+            hwnd, None, 0, 0, 0, 0,
+            swp_nomove | swp_nosize | swp_nozorder | swp_framechanged,
+        )
 
 def _acquire_single_instance_lock() -> object | None:
+    """Create a Windows mutex to ensure only one application instance is running."""
     if sys.platform != "win32":
         return None
     handle = ctypes.windll.kernel32.CreateMutexW(None, False, "Local\\SynapsoApp")
@@ -60,67 +69,53 @@ def _acquire_single_instance_lock() -> object | None:
         return None
     return handle
 
-
 def main():
+    # Set a unique AppUserModelID on Windows for correct taskbar behavior
     if sys.platform == "win32":
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
             "Synapso.SynapsoApp.1"
         )
 
+    # Enable High DPI scaling
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
 
     app = QApplication(sys.argv)
 
-    # override system-dependent widget colors with Fusion style and a custom dark palette
-    app.setStyle(QStyleFactory.create("Fusion"))
-
-    dark_palette = QPalette()
-    dark_palette.setColor(QPalette.ColorRole.Window,          QColor(30, 30, 30))
-    dark_palette.setColor(QPalette.ColorRole.WindowText,      QColor(250, 250, 250))
-    dark_palette.setColor(QPalette.ColorRole.Base,            QColor(25, 25, 25))
-    dark_palette.setColor(QPalette.ColorRole.AlternateBase,   QColor(40, 40, 40))
-    dark_palette.setColor(QPalette.ColorRole.Text,            QColor(250, 250, 250))
-    dark_palette.setColor(QPalette.ColorRole.Button,          QColor(50, 50, 50))
-    dark_palette.setColor(QPalette.ColorRole.ButtonText,      QColor(250, 250, 250))
-    dark_palette.setColor(QPalette.ColorRole.BrightText,      QColor(255, 255, 255))
-    dark_palette.setColor(QPalette.ColorRole.Highlight,       QColor(34, 117, 111))
-    dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(250, 250, 250))
-    app.setPalette(dark_palette)
-
-    # install crash handlers after QApplication exists
+    # Ínstall crash handlers after QApplication exists
     install_crash_handlers()
     log_startup_diagnostics()
 
-    # set window Icon
-    app.setWindowIcon(_get_app_icon())
+    # Set window Icon
+    app_icon = _get_app_icon()
+    app.setWindowIcon(app_icon)
 
-    # initialize translations based on saved language preference or system language
+    # Initialize translations based on saved language preference or system language
     lang = get_language()
     init_translations(lang)
-    add_breadcrumb("app", "Translations initialized", language=lang)
 
-    # get custom cursor for the entire application
+    # Get custom cursor for the entire application
     app.setOverrideCursor(create_custom_cursor())
 
-    # load custom fonts
+    # Load custom fonts
     load_fonts()
-    add_breadcrumb("app", "Fonts loaded")
 
     _logger.info("Creating main application window")
     window = App()
+    window.setWindowIcon(app_icon)
+
+    # Force taskbar icon
+    _force_taskbar_icon_for_frameless_window(window=window)
 
     window.setMinimumSize(1600, 1000)
-    window_resize(window, 1600, 1000)
+    window_resize(window=window, new_width=1600, new_height=1000)
 
     window.show()
 
     _logger.info("Entering Qt event loop")
-    add_breadcrumb("app", "Qt event loop started")
     exit_code = app.exec()
     _logger.info("Application exited with code %d", exit_code)
-    add_breadcrumb("app", "Application exited", exit_code=exit_code)
     sys.exit(exit_code)
 
 if __name__ == "__main__":

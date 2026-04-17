@@ -1,7 +1,3 @@
-"""GameService is the service layer for game lifecycle management. It orchestrates the flow of a game
-from tutorial to play,and handles all interactions with the database and PI system.
-"""
-
 import uuid
 from datetime import datetime, timezone
 
@@ -13,15 +9,13 @@ from app.repository.run_repository import (
 )
 from app.repository.tutorial_repository import set_tutorial_completed
 from app.repository.stats_repository import fetch_player_game_stats, upsert_player_game_stats
-from app.service.pi_system import TrialResult as PITrialResult, process_run, calculate_elo_rating
+from app.models.performance import TrialResult as PITrialResult
+from app.service.pi_system import process_run, calculate_elo_rating
 from app.service.population_baseline import get_population_baseline
 from app.utils.logger import get_logger
-from app.utils.breadcrumbs import add_breadcrumb
 from app.utils.crash_handler import set_last_backend_op
 
 logger = get_logger(__name__)
-
-
 
 def _compute_player_stats_update(
     current: dict | None,
@@ -33,7 +27,7 @@ def _compute_player_stats_update(
     consistency_score: float | None = None,
     elo_rating: int = 1000,
 ) -> dict:
-    """Compute the new player_game_stats values after a completed run."""
+    """Compute updated player stats after a completed run."""
     if current:
         total_runs = current.get("total_runs", 0)
         total_trials = current.get("total_trials", 0)
@@ -54,6 +48,7 @@ def _compute_player_stats_update(
         old_rt = old_acc = old_quality = old_consistency = 0.0
 
     def _running_avg(old_val: float, new_val: float | None) -> float:
+        """Compute running average with new value."""
         if new_val is None:
             return old_val
         if total_runs == 0:
@@ -83,22 +78,23 @@ def _compute_player_stats_update(
 
 
 class GameService:
-    """Orchestrates game lifecycle: tutorial -> play -> save."""
+    """Orchestrate game lifecycle from tutorial to play and save."""
 
     def __init__(self, game: BaseGame):
+        """Initialize service with game instance."""
         self.game = game
         self._run_id: str | None = None
         self._run_stage: str = "training"
 
     def create_tutorial_runner(self) -> TutorialRunner:
-        """Create a TutorialRunner for the current game."""
+        """Create tutorial runner for the current game."""
         factory = getattr(self.game, "create_tutorial_runner", None)
         if callable(factory):
             return factory()
         return TutorialRunner(self.game)
 
     def complete_tutorial(self, runner: TutorialRunner) -> bool:
-        """Mark the tutorial as completed in DB if passed."""
+        """Mark tutorial as completed in database if passed."""
         passed = runner.passed
 
         if passed:
@@ -117,18 +113,17 @@ class GameService:
         return passed
 
     def start_run(self, stage: str = "training", initialize_game: bool = True) -> str:
-        """Initialize a game run. Call in a background thread before starting tutorial or play."""
+        """Initialize a game run and return run ID."""
         if initialize_game:
             self.game.begin_run()
 
         self.game.started_at = datetime.now(timezone.utc)
         self._run_id = str(uuid.uuid4())
         self._run_stage = stage
-        add_breadcrumb("game", "Run started", game=self.game.game_slug, stage=stage, run_id=self._run_id[-8:])
         return self._run_id
 
     def persist_run_creation(self, stage: str | None = None) -> None:
-        """Persist the run creation in DB. Call in a background thread immediately after start_run."""
+        """Persist run creation to database."""
         if not self._run_id or not self.game.started_at:
             logger.warning("persist_run_creation called before start_run — skipping")
             return
@@ -144,15 +139,14 @@ class GameService:
             logger.warning("Failed to persist run creation: %s", e)
 
     def abort_run(self) -> None:
-        """Cancel the current run (player quit before finishing)."""
+        """Cancel the current run and mark as abandoned."""
         if self._run_id:
             abandon_run(self._run_id)
             self._run_id = None
 
     def finish_run(self, stage: str = "training", status: str = "completed") -> dict:
-        """Finalize the run, compute PI, and save all results. Call in a background thread after play is done."""
+        """Finalize run, compute metrics, and save all results."""
         set_last_backend_op(f"finish_run:{self.game.game_slug}")
-        add_breadcrumb("game", "Finishing run", game=self.game.game_slug, run_id=(self._run_id or "?")[-8:])
         metrics = self.game.end_run()
 
         # Fetch recent runs for consistency computation

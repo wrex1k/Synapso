@@ -1,13 +1,3 @@
-"""
-RunRepository manages game run and trial data in Supabase:
-- create_run:                     create a new run and return its ID
-- abandon_run:                    mark a run as abandoned
-- save_run:                       finalize a run with aggregate metrics
-- save_trials:                    persist individual trial rows
-- fetch_pi_normalized_raw_values: normalized PI values for baseline computation
-- fetch_pi_run_stats_per_game:    mean/std of pi_run values for normalization
-- fetch_user_run_history:         recent completed runs for a user/game
-"""
 from datetime import datetime, timezone
 import uuid
 
@@ -18,9 +8,22 @@ from app.games.core.base_game import GAME_ID_MAP
 
 logger = get_logger(__name__)
 
+def parse_datetime(value: str | None) -> datetime | None:
+    """Parse ISO datetime string to timezone-aware datetime."""
+    if not value:
+        return None
 
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone()
+    except Exception:
+        logger.exception("parse_datetime: failed to parse value=%s", value)
+        return None
 
 def create_run(user_id: str, game_slug: str, stage: str, started_at: datetime, run_id: str | None = None):
+    """Create a new run in the database."""
     set_last_backend_op(f"create_run:{game_slug}")
     try:
         game_id = GAME_ID_MAP.get(game_slug, 1)
@@ -53,9 +56,8 @@ def create_run(user_id: str, game_slug: str, stage: str, started_at: datetime, r
         logger.exception("Failed to create run: %s", e)
         return None
 
-
 def abandon_run(run_id: str) -> None:
-    """Mark a run as abandoned in the database."""
+    """Mark run as abandoned in database."""
     try:
         get_client().table("runs").update({
             "status": "abandoned",
@@ -64,7 +66,6 @@ def abandon_run(run_id: str) -> None:
         logger.info("Run abandoned: run_id=%s", run_id)
     except Exception as e:
         logger.warning("Failed to mark run abandoned %s: %s", run_id, e)
-
 
 def save_run(
     user_id: str,
@@ -77,7 +78,7 @@ def save_run(
     started_at: datetime | None = None,
     run_id: str | None = None,
 ) -> str | None:
-    """Save a completed game run with aggregate metrics."""
+    """Save completed run with aggregate metrics to database."""
     set_last_backend_op(f"save_run:{game_slug}")
     try:
         effective_run_id = run_id or str(uuid.uuid4())
@@ -142,7 +143,6 @@ def save_run(
         logger.exception("Failed to save run for game=%s, run_id=%s: %s", game_slug, run_id, e)
         return None
 
-
 def save_trials(run_id: str, game_slug: str, trials: list) -> None:
     """Save individual trial data for a completed run."""
     if not trials:
@@ -200,10 +200,10 @@ def save_trials(run_id: str, game_slug: str, trials: list) -> None:
     except Exception as e:
         logger.exception("Failed to save trials for run=%s: %s", run_id, e)
 
-
 def fetch_user_run_history(user_id: str, game_slug: str, limit: int = 20) -> list[dict]:
-    """Return the most recent completed training runs for a user and game, in chronological order."""
+    """Return recent completed training runs in chronological order."""
     def _fetch():
+        """Query user run history from database."""
         game_id = GAME_ID_MAP.get(game_slug, 1)
         client = get_client()
         result = (
@@ -232,11 +232,10 @@ def fetch_user_run_history(user_id: str, game_slug: str, limit: int = 20) -> lis
         )
         return []
 
-
 def fetch_recent_completed_training_runs(
     user_id: str, game_slug: str, limit: int = 5,
 ) -> list[dict]:
-    """Return the last N completed training runs (by ended_at asc) for consistency computation."""
+    """Return last N completed training runs for consistency computation."""
     try:
         game_id = GAME_ID_MAP.get(game_slug, 1)
         client = get_client()
@@ -260,9 +259,8 @@ def fetch_recent_completed_training_runs(
         )
         return []
 
-
 def fetch_rating_eligible_run_count(user_id: str, game_slug: str) -> int:
-    """Return the number of completed rating-eligible training runs for this player/game."""
+    """Return count of rating-eligible runs for player."""
     try:
         game_id = GAME_ID_MAP.get(game_slug, 1)
         client = get_client()

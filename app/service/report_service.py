@@ -1,12 +1,10 @@
 from app.utils.logger import get_logger
-
-logger = get_logger(__name__)
 from app.repository.report_repository import save_report
 
-
+logger = get_logger(__name__)
 
 def submit_report(user_id: str, body: str) -> bool:
-    """Submit a user report by saving it to the database via the repository layer."""
+    """Submit a user report to the database."""
     if not body:
         logger.debug("Empty report skipped")
         return False

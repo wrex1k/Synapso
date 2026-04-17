@@ -5,13 +5,13 @@ from typing import Callable, Optional
 from PySide6.QtCore import QObject, QThread, Qt, Signal, Slot
 
 from app.utils.logger import get_logger
-from app.utils.breadcrumbs import add_breadcrumb
 
 logger = get_logger(__name__)
 
 
 
 class _Runner(QObject):
+    """Worker object that executes a function in a separate thread."""
     finished = Signal(object)
 
     def __init__(self, fn: Callable[[], object]):
@@ -25,12 +25,12 @@ class _Runner(QObject):
 
         except Exception:
             logger.exception("Unhandled exception in thread task")
-            add_breadcrumb("thread", "Thread task exception", fn=repr(self._fn))
             result = None
         self.finished.emit(result)
 
 
 class _CallbackProxy(QObject):
+    """Proxy object for safely dispatching callbacks from thread results."""
     def __init__(self, callback: Callable[[object], None]):
         super().__init__()
         self._callback = callback
@@ -40,17 +40,18 @@ class _CallbackProxy(QObject):
         self._callback(result)
 
 class Operation:
+    """Manages a single background operation with thread lifecycle control."""
     def __init__(self, key: str | None = None):
         self._key = key
         self._thread: Optional[QThread] = None
 
     def is_running(self) -> bool:
+        """Check if the operation's thread is currently running."""
         if self._thread is None:
             return False
         try:
             return self._thread.isRunning()
         except RuntimeError:
-            # C++ QThread object was already deleted; treat as finished
             self._thread = None
             return False
 
@@ -58,10 +59,11 @@ class Operation:
         self,
         run_thread_fn: Callable[..., QThread],
         fn: Callable[[], object],
-        on_finished: Callable[[object], None],
+        on_finished: Callable[[object], None] | None = None,
         *,
         name: str | None = None,
     ) -> bool:
+        """Start the operation if not already running, returning True if started."""
         if self.is_running():
             return False
         
@@ -78,6 +80,7 @@ class Operation:
         return True
 
     def cancel(self, wait_ms: int = 2000) -> None:
+        """Cancel the running operation and wait for the thread to finish."""
         t = self._thread
         if not t:
             return
@@ -93,15 +96,18 @@ class Operation:
 
 
 class Registry:
+    """Central registry for managing background operations and cleanup handlers."""
     def __init__(self):
         self._handlers: list[Callable[[], None]] = []
         self._ops: dict[str, Operation] = {}
 
     def register(self, fn: Callable[[], None]) -> None:
+        """Register a cleanup handler to be called during shutdown."""
         if callable(fn):
             self._handlers.append(fn)
 
     def cleanup(self) -> None:
+        """Execute all registered cleanup handlers."""
         for fn in list(self._handlers):
             try:
                 fn()
@@ -109,6 +115,7 @@ class Registry:
                 logger.exception("Error during cleanup handler: %r", fn)
 
     def operation(self, key: str) -> Operation:
+        """Get or create an operation identified by the given key."""
         op = self._ops.get(key)
         if op is None:
             op = Operation(key=key)
@@ -117,6 +124,7 @@ class Registry:
         return op
 
     def run_thread(self, fn: Callable[[], object], on_finished: Callable[[object], None] | None = None, *, name: str | None = None) -> QThread:
+        """Create and start a new thread that executes the given function."""
         thread = QThread()
         if name:
             thread.setObjectName(name)

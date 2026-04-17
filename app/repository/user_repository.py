@@ -5,18 +5,8 @@ from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-"""
-UserRepository provides functions to manage user data: 
-- Saving user data to the database
-- Fetching user data from the database
-- Uploading avatar images to Supabase storage
-- Fetching avatar images from Supabase storage
-"""
-
-
-
-# upload the avatar image blob to Supabase storage and return the storage path
 def upload_avatar_blob(user_id: str, image_bytes: bytes) -> str:
+    """Upload avatar image blob to Supabase storage and return storage path."""
     filename = f"{user_id}.webp"
     storage = get_client().storage
 
@@ -40,8 +30,8 @@ def upload_avatar_blob(user_id: str, image_bytes: bytes) -> str:
 
     return filename
 
-# save user data to the database
 def save_user(user_data: dict):
+    """Save user data to the database."""
     try:
         res = (
             get_client()
@@ -55,8 +45,8 @@ def save_user(user_data: dict):
         logger.error("Failed to save user: %s", str(e))
         raise
 
-# fetch the user record from the database given the user ID
 def fetch_user(user_id: str) -> dict:
+    """Fetch user record from database by user ID."""
     if not user_id:
         return {}
 
@@ -87,6 +77,7 @@ def fetch_user(user_id: str) -> dict:
         return {}
 
 def check_username_exists(username: str) -> bool:
+    """Check if username already exists in database."""
     if not username:
         return False
 
@@ -98,9 +89,8 @@ def check_username_exists(username: str) -> bool:
 
     return bool(getattr(resp, "data", False))
 
-
-# delete the user record and all associated data from the database
 def delete_user(user_id: str) -> None:
+    """Delete user record and all associated data from database."""
     try:
         client = get_client()
 
@@ -128,8 +118,8 @@ def delete_user(user_id: str) -> None:
         logger.error("Failed to delete user: %s", e)
         raise
 
-# fetch the avatar image blob from Supabase storage given the storage path
 def fetch_avatar(avatar_path: str) -> Optional[bytes]:
+    """Fetch avatar image blob from Supabase storage."""
     if not avatar_path:
         return None
 

@@ -1,7 +1,3 @@
-"""Controller for handling the login UI actions and auth flow.
-Provides a thin bridge between the `LoginAuth` view and the authentication service.
-"""
-
 from typing import Callable
 
 from email_validator import validate_email, EmailNotValidError
@@ -17,15 +13,8 @@ from app.utils.validator import validate_password
 from translations.translation import get_error_message
 from app.ui.views.login_auth import LoginAuth
 
-
-
-# pylint: disable=too-few-public-methods
 class LoginController(QObject):
-    """Handle login interactions from the `LoginAuth` view.
-
-    This controller validates input, performs sign-in on a background
-    thread and forwards the result via `on_success`.
-    """
+    """Controller responsible for managing user login and authentication."""
 
     def __init__(self, view: "LoginAuth", on_success: Callable[[str], None], parent=None):
         super().__init__(parent)
@@ -37,11 +26,7 @@ class LoginController(QObject):
         self.view.login_data_submit.connect(self.login)
 
     def login(self, email: str, password: str):
-        """Validate credentials and start background sign-in.
-
-        Displays localized error messages via the view on validation
-        or authentication failure.
-        """
+        """Validate credentials and start background sign-in if no operation is running."""
         try:
             email = validate_email(email.strip(), check_deliverability=False).normalized
         except EmailNotValidError:
@@ -49,11 +34,9 @@ class LoginController(QObject):
             self.view.show_login_error(get_error_message("invalid_email_format"))
             return
 
-        try:
-            validate_password(password)
-        except ValueError as e:
-            logger.error("Invalid password: %s", e)
-            self.view.show_login_error(get_error_message("invalid_password"))
+        err = validate_password(password)
+        if err:
+            self.view.show_login_error(err)
             return
 
         started = self._operation.start(
@@ -65,14 +48,19 @@ class LoginController(QObject):
 
         if started:
             logger.info("User attempting login with email: %s", email)
-            return
+        else:
+            logger.warning("Login operation already running, ignoring request for email: %s", email)
 
-    # Handle the authentication result returned from the background thread.
     @Slot(object)
     def _on_login_return(self, user):
+        """Handle sign-in result and invoke success callback or display error."""
         if not user:
             self.view.show_login_error(get_error_message("invalid_credentials"))
             return
 
         logger.info("User logged in successfully (user_id: ..%s)", user.id[-10:])
         self.on_success(user)
+
+    def cleanup(self) -> None:
+        """Cancel any running login operation."""
+        self._operation.cancel()

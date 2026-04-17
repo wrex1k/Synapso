@@ -8,12 +8,12 @@ from app.games.stroop.config import COLORS
 
 _COLOR_MAP = {c.name.lower(): c.rgb for c in COLORS}
 
-
 def _clamp01(value: float) -> float:
+    """Clamp value to range 0-1."""
     return max(0.0, min(1.0, value))
 
-
 def _stroop_accuracy(trial: Any) -> float:
+    """Calculate accuracy score for Stroop trial with color proximity fallback."""
     is_correct = bool(getattr(trial, "is_correct", False))
     if is_correct:
         return 1.0
@@ -35,8 +35,8 @@ def _stroop_accuracy(trial: Any) -> float:
     proximity = _clamp01(1.0 - normalized)
     return min(0.20, proximity ** 3)
 
-
 def _memory_grid_accuracy(trial: Any) -> float:
+    """Calculate accuracy score for Memory Grid trial based on hits and false positives."""
     is_correct = bool(getattr(trial, "is_correct", False))
     if is_correct:
         return 1.0
@@ -49,8 +49,8 @@ def _memory_grid_accuracy(trial: Any) -> float:
     score = (hits / target) - 0.5 * (false_positives / target)
     return _clamp01(score)
 
-
 def _mental_rotation_accuracy(trial: Any) -> float:
+    """Calculate accuracy score for Mental Rotation trial."""
     is_correct = bool(getattr(trial, "is_correct", False))
     return 1.0 if is_correct else 0.0
 
@@ -61,8 +61,8 @@ _ACCURACY_ADAPTERS = {
     "mental_rotation": _mental_rotation_accuracy,
 }
 
-
 def compute_trial_accuracy(game_slug: str, trial: Any) -> float:
+    """Compute trial accuracy using game-specific adapter or fallback to binary correctness."""
     adapter = _ACCURACY_ADAPTERS.get(game_slug)
     if adapter is None:
         return 1.0 if bool(getattr(trial, "is_correct", False)) else 0.0

@@ -10,48 +10,41 @@ from app.service.activity_service import stop_heartbeat
 from app.repository.supabase_client import get_client, clear_current_session
 from app.repository.user_repository import fetch_user
 from app.utils.settings import get_language
-from app.utils.logger import get_logger
-from app.utils.breadcrumbs import add_breadcrumb
-from app.utils.logger import set_user_context
+from app.utils.logger import get_logger, set_user_context
 from app.utils.crash_handler import set_last_backend_op
+from app.utils.error_codes import AuthError
 
 logger = get_logger(__name__)
 
-
-"""
-Authentication service handles 
-user sign-up, sign-in, session management, and logout by interacting with the Supabase backend.
-"""
-
-
-# the service name used for keyring storage
 SERVICE_NAME = os.getenv("SERVICE_NAME", "synapso")
 
-
-# thread pool for keyring operations
 _thread_pool = QThreadPool.globalInstance()
 _thread_pool.setMaxThreadCount(2)
 
 class KeyringWorker(QRunnable):
+    """Base worker class for keyring operations."""
     
     def __init__(self):
+        """Initialize worker with auto-delete enabled."""
         super().__init__()
         self.setAutoDelete(True)
     
     def run(self):
+        """Execute keyring operation in background thread."""
         raise NotImplementedError
 
-
-# worker for storing session tokens in keyring
 class StoreTokensWorker(KeyringWorker):
+    """Worker for storing session tokens in keyring."""
     
     def __init__(self, access_token: str | None, refresh_token: str | None, recovery: bool = False):
+        """Initialize with tokens to store."""
         super().__init__()
         self.access_token = access_token
         self.refresh_token = refresh_token
         self.recovery = recovery
     
     def run(self):
+        """Store tokens in system keyring."""
         try:
             if not (self.access_token and self.refresh_token):
                 logger.debug("No session tokens to store")
@@ -71,10 +64,11 @@ class StoreTokensWorker(KeyringWorker):
         except Exception as e:
             logger.error("Session storage unavailable: %s", e)
 
-
-# worker for clearing session tokens from keyring
 class ClearTokensWorker(KeyringWorker):
+    """Worker for clearing session tokens from keyring."""
+
     def run(self):
+        """Delete tokens from system keyring."""
         for key in ("access_token", "refresh_token"):
             try:
                 keyring.delete_password(SERVICE_NAME, key)
@@ -85,12 +79,10 @@ class ClearTokensWorker(KeyringWorker):
             except Exception as e:
                 logger.error("Failed to clear session tokens from keyring: %s", e)
 
-
-# refresh user if restart app, if successful restore session tokens and return the User
 def refresh_up() -> User | None:
+    """Restore session from stored tokens and return user."""
     logger.info("Attempting to restore session from tokens")
     set_last_backend_op("refresh_session")
-    add_breadcrumb("auth", "Attempting session restore")
     try:
         session = _refresh_session()
         if not session or not getattr(session, "access_token", None):
@@ -116,9 +108,9 @@ def refresh_up() -> User | None:
     except Exception as e:
         logger.error("Failed to refresh user session: %s", e)
         return None
-    
-# sign up within email and password, if successful store session tokens, set the session and return user data in response
+
 def sign_up(email: str, password: str) -> User:
+    """Sign up a new user with email and password."""
     logger.debug("User signing up with email: %s..", email)
     try:
         response = get_client().auth.sign_up({
@@ -131,31 +123,32 @@ def sign_up(email: str, password: str) -> User:
     except AuthApiError as e:
         msg = str(e).lower()
         logger.error("Sign up API error: %s", e)
-        if "already registered" in msg:
-            raise RuntimeError("user_already_registered") from e
+        if "already registered" in msg or "already_exists" in msg:
+            raise RuntimeError(AuthError.USER_ALREADY_REGISTERED.value) from e
         raise RuntimeError(msg) from e
 
     if getattr(response, "error", None):
         error_msg = str(response.error).lower()
         logger.error("Sign up failed: %s", error_msg)
-        if "already registered" in error_msg:
-            raise RuntimeError("user_already_registered")
+        if "already registered" in error_msg or "already_exists" in error_msg:
+            raise RuntimeError(AuthError.USER_ALREADY_REGISTERED.value)
         raise RuntimeError(error_msg)
 
     user = getattr(response, "user", None)
     if not user:
         raise RuntimeError("Sign up failed")
 
+    if not getattr(user, "identities", None):
+        raise RuntimeError(AuthError.USER_ALREADY_REGISTERED.value)
+
     _store_session_tokens(getattr(response, "session", None))
     return user
 
-
-# sign in within email and password, if succesfull store session tokens, set the session and return user data in response
 def sign_in(email: str, password: str) -> User | None:
+    """Sign in user with email and password."""
     try:
         logger.info("Signing in user")
         set_last_backend_op("sign_in")
-        add_breadcrumb("auth", "Sign in attempt")
         response = get_client().auth.sign_in_with_password({"email": email, "password": password})
 
         _store_session_tokens(getattr(response, "session", None))
@@ -172,15 +165,12 @@ def sign_in(email: str, password: str) -> User | None:
 
     except Exception as e:
         logger.error("Sign in failed: %s", e)
-        add_breadcrumb("auth", "Sign in failed", error=str(e))
         return None
 
-
-# sign out, clear stored tokens
 def sign_out():
+    """Sign out user and clear session tokens."""
     logger.info("User sign out started")
     set_last_backend_op("sign_out")
-    add_breadcrumb("auth", "Sign out started")
     try:
         stop_heartbeat()
         logger.debug("Heartbeat stopped")
@@ -198,21 +188,19 @@ def sign_out():
         clear_current_session()
         set_user_context(None)
         logger.info("User signed out and session cleared")
-        add_breadcrumb("auth", "Sign out completed")
     except Exception as e:
         logger.exception("Failed to clear session tokens: %s", e)
 
-# sync language preference into Supabase user_metadata so email templates can read {{ .Data.language }}
 def sync_user_language(lang: str) -> None:
+    """Sync language preference to user metadata."""
     try:
         get_client().auth.update_user({"data": {"language": lang}})
         logger.debug("User language synced to Supabase metadata: %s", lang)
     except Exception as e:
         logger.warning("Failed to sync language to Supabase user metadata: %s", e)
 
-
-# send password reset email from supabase
 def send_password_reset_email(email: str) -> tuple[bool, str | None]:
+    """Send password reset email to user."""
     try:
         get_client().auth.reset_password_for_email(email)
         return (True, None)
@@ -220,10 +208,9 @@ def send_password_reset_email(email: str) -> tuple[bool, str | None]:
     except Exception as e:
         logger.error("send_password_reset_email failed: %s", str(e))
         return (False, str(e))
- 
 
-# verify OTP code for password reset
 def verify_otp_code(email: str, otp_code: str) -> tuple[bool, str | None, tuple[str, str] | None]:
+    """Verify OTP code for password reset."""
     try:
         response = get_client().auth.verify_otp({
             "email": email,
@@ -247,9 +234,8 @@ def verify_otp_code(email: str, otp_code: str) -> tuple[bool, str | None, tuple[
         logger.exception("verify_otp_code failed: %s", e)
         return (False, str(e), None)
 
-
-# update password using OTP token
 def update_password_with_token(new_password: str) -> tuple[bool, str | None]:
+    """Update password using recovery token."""
     try:
         supabase = get_client()
         access_token = _get_access_token(recovery=True)
@@ -271,9 +257,8 @@ def update_password_with_token(new_password: str) -> tuple[bool, str | None]:
             return (False, "password_same_as_old")
         return (False, str(e))
 
-
-# store session tokens asynchronously in background thread
 def _store_session_tokens(session, recovery: bool = False):
+    """Store session tokens asynchronously in background thread."""
     try:
         access_token = getattr(session, "access_token", None)
         refresh_token = getattr(session, "refresh_token", None)
@@ -287,9 +272,8 @@ def _store_session_tokens(session, recovery: bool = False):
     except Exception as e:
         logger.exception(f"EXCEPTION store_session_tokens error: {e}")
 
-
-# store session tokens synchronously (for refresh operations that need immediate storage)
 def _store_session_tokens_sync(session):
+    """Store session tokens synchronously for refresh operations."""
     try:
         access_token = getattr(session, "access_token", None)
         refresh_token = getattr(session, "refresh_token", None)
@@ -303,8 +287,8 @@ def _store_session_tokens_sync(session):
     except Exception as e:
         logger.exception(f"EXCEPTION store_session_tokens_sync error: {e}")
 
-# refresh session using the stored refresh token
 def _refresh_session():
+    """Refresh session using stored refresh token."""
     refresh_token = _get_refresh_token()
     if not refresh_token:
         return None
@@ -323,18 +307,16 @@ def _refresh_session():
 
     return None
 
-
-# retrieve the current refresh token from secure storage
 def _get_refresh_token(recovery: bool = False) -> str | None:
+    """Retrieve refresh token from secure storage."""
     try:
         token_name = "recovery_refresh_token" if recovery else "refresh_token"
         return keyring.get_password(SERVICE_NAME, token_name)
     except Exception:
         return None
 
-
-# retrieve the current access token from secure storage
 def _get_access_token(recovery: bool = False) -> str | None:
+    """Retrieve access token from secure storage."""
     try:
         token_name = "recovery_access_token" if recovery else "access_token"
         return keyring.get_password(SERVICE_NAME, token_name)
@@ -342,19 +324,17 @@ def _get_access_token(recovery: bool = False) -> str | None:
         logger.exception("get_access_token error: %s", e)
     return None
 
-
-# return True if both access and refresh tokens are present in secure storage
 def check_session_tokens() -> bool:
+    """Check if both access and refresh tokens are present in storage."""
     return bool(_get_access_token()) and bool(_get_refresh_token())
 
-
-# clear stored tokens from keyring asynchronously
 def _clear_session_tokens():
+    """Clear stored tokens from keyring asynchronously."""
     worker = ClearTokensWorker()
     _thread_pool.start(worker)
 
-# fetch email from Supabase auth table
 def get_auth_email() -> str | None:
+    """Get authenticated user email from Supabase session."""
     access_token = _get_access_token()
     if not access_token:
         return None
@@ -370,9 +350,10 @@ def get_auth_email() -> str | None:
         logger.warning("Failed to fetch email from auth: %s", e)
     return None
 
-# change password with current password, if successful update the password in Supabase and return success, otherwise return error message
 def change_password(current_password: str, new_password: str) -> tuple[bool, str | None]:
+    """Change user password with current password verification."""
     try:
+        _refresh_session()
         email = get_auth_email()
         if not email:
             return (False, "Could not retrieve current session email")
@@ -392,9 +373,11 @@ def change_password(current_password: str, new_password: str) -> tuple[bool, str
             return (False, "password_same_as_old")
         return (False, str(e))
 
-
 def delete_account(user_id: str) -> tuple[bool, str | None]:
+    """Delete user account and all associated data."""
     try:
+        logger.debug("delete_account: refreshing session before delete (user ..%s)", user_id[-10:])
+        _refresh_session()
         logger.debug("delete_account: invoking delete-account edge function (user ..%s)", user_id[-10:])
         response = get_client().functions.invoke("delete-account", invoke_options={"body": {}})
         logger.debug("delete_account: edge function response: %s", response)

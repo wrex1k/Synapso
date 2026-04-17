@@ -4,12 +4,13 @@ import threading
 from pathlib import Path
 
 from dotenv import load_dotenv
-from supabase import Client, create_client
+from supabase import Client, create_client, acreate_client
 
 from app.utils.logger import get_logger
 logger = get_logger(__name__)
 
 def _load_env() -> None:
+    """Load environment variables from .env file."""
     if getattr(sys, "frozen", False):
         env_path = Path(sys.executable).parent / ".env"
         load_dotenv(dotenv_path=env_path, override=False)
@@ -22,9 +23,8 @@ _current_access_token: str | None = None
 _current_refresh_token: str | None = None
 _client_lock = threading.Lock()
 
-
-
 def get_client() -> Client:
+    """Get or create Supabase client singleton with session restore."""
     global _client
 
     with _client_lock:
@@ -49,10 +49,8 @@ def get_client() -> Client:
 
         return _client
 
-
 def reset_client() -> None:
-    """Force-recreate the sync client on the next get_client() call.
-    Saves the current session first so it can be restored on reconnect."""
+    """Force-recreate client on next call with session restore."""
     global _client, _current_access_token, _current_refresh_token
     with _client_lock:
         if _client is not None:
@@ -65,15 +63,25 @@ def reset_client() -> None:
                 pass
         _client = None
 
-
 def clear_current_session() -> None:
     """Clear cached session tokens on logout."""
     global _current_access_token, _current_refresh_token
     _current_access_token = None
     _current_refresh_token = None
 
+def refresh_session() -> None:
+    """Refresh the current Supabase auth session to keep tokens valid."""
+    try:
+        client = get_client()
+        session = client.auth.get_session()
+        refresh_token = getattr(session, "refresh_token", None) if session else None
+        if refresh_token:
+            client.auth.refresh_session(refresh_token)
+    except Exception as e:
+        logger.warning("refresh_session failed: %s", e)
 
 def get_service_client() -> Client | None:
+    """Get or create Supabase service role client."""
     global _service_client
 
     if _service_client is None:
@@ -89,13 +97,12 @@ def get_service_client() -> Client | None:
 
 
 async def create_realtime_client():
-    """Create a fresh async Supabase client for Realtime subscriptions."""
+    """Create async Supabase client for Realtime subscriptions."""
     _load_env()
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_ANON_KEY")
     if not url or not key:
         raise RuntimeError("Missing Supabase env variables: SUPABASE_URL and SUPABASE_ANON_KEY must be set")
-    from supabase import acreate_client
     client = await acreate_client(url, key)
     if _current_access_token:
         await client.realtime.set_auth(_current_access_token)

@@ -1,25 +1,39 @@
-"""
-StatsRepository manages player performance statistics, leaderboards, and game activity in Supabase:
-- fetch_game_stats:         activity counts and aggregate metrics for a game's info panel
-- fetch_leaderboard:        ranked player list for a game
-- subscribe_leaderboard:    real-time leaderboard change subscription
-- fetch_player_game_stats:  a single user's cumulative stats for a game
-- upsert_player_game_stats: persist updated cumulative stats for a user/game
-- fetch_all_user_stats:     all cumulative stats for a user across every game
-"""
+import asyncio
+import concurrent.futures
+import sys
+import threading as _threading
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 
-from app.repository.supabase_client import get_client, with_retry
+from app.repository.supabase_client import get_client, with_retry, create_realtime_client
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 from app.games.core.base_game import GAME_ID_MAP
 
+_rt_loop: asyncio.AbstractEventLoop | None = None
+_rt_loop_lock = _threading.Lock()
 
+def _get_or_start_realtime_loop():
+    """Return shared asyncio loop for realtime subscriptions."""
+    import asyncio
+    global _rt_loop
+    with _rt_loop_lock:
+        if _rt_loop is None or _rt_loop.is_closed():
+            if sys.platform == "win32":
+                _rt_loop = asyncio.SelectorEventLoop()
+            else:
+                _rt_loop = asyncio.new_event_loop()
+            thread = _threading.Thread(
+                target=_rt_loop.run_forever,
+                name="synapso-rt-loop",
+                daemon=True,
+            )
+            thread.start()
+        return _rt_loop
 
 def _fetch_run_counts(client, game_db_id: int, today_start: str, week_start: str) -> dict:
-    """Query the four run-count metrics from the DB."""
+    """Query run count metrics from database."""
     def build_base():
         """Build a fresh base query for each count operation."""
         return client.table("runs").select("run_id", count="exact").eq("game_id", game_db_id).eq("stage", "training")
@@ -36,29 +50,23 @@ def _fetch_run_counts(client, game_db_id: int, today_start: str, week_start: str
         "players_playing": players_playing,
     }
 
-
 def _fetch_player_stats(client, game_db_id: int) -> list[dict]:
-    """Fetch the player_game_stats rows for a game, used to compute leaderboard and averages."""
+    """Fetch player stats rows for game."""
     res = (
         client.table("player_game_stats")
-        .select("user_id, avg_reaction_time_ms, avg_accuracy, quality_average, skill_rating")
+        .select("user_id, avg_reaction_time_ms, avg_accuracy, avg_quality, elo_rating")
         .eq("game_id", game_db_id)
         .execute()
     )
     rows = res.data or []
     for row in rows:
-        if "quality_average" in row:
-            row["avg_quality"] = row.pop("quality_average")
-        if "skill_rating" in row:
-            row["elo_rating"] = row.pop("skill_rating")
         q = row.get("avg_quality")
         if q is not None and 0 < q <= 1:
             row["avg_quality"] = q * 100
     return rows
 
-
 def _avg_and_user_diff(rows: list[dict], field: str, user_id: str | None) -> tuple[float | None, float | None]:
-    """Compute the average of the specified field across all rows, and the difference between the user's value and the average."""
+    """Compute average of field and user difference from average."""
     if not user_id:
         values = [r[field] for r in rows if r.get(field) is not None]
         return (sum(values) / len(values) if values else None), None
@@ -72,10 +80,10 @@ def _avg_and_user_diff(rows: list[dict], field: str, user_id: str | None) -> tup
 
     return others_avg, sum(user_values) / len(user_values) - others_avg
 
-
 def fetch_game_stats(game_db_id: int, user_id: str | None = None) -> dict:
-    """Fetch activity counts and aggregate metrics for a game."""
+    """Fetch activity counts and aggregate metrics for game."""
     def _fetch():
+        """Query game stats from database."""
         client = get_client()
         now = datetime.now(timezone.utc)
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
@@ -129,17 +137,17 @@ def fetch_game_stats(game_db_id: int, user_id: str | None = None) -> dict:
             "acc_diff": None,
         }
 
-
 def fetch_leaderboard(game_db_id: int, user_id: str, limit: int | None = None) -> dict:
-    """Fetch ranked player list for a game, annotated with online status."""
+    """Fetch ranked player list for game with online status."""
     def _fetch():
+        """Query leaderboard from database."""
         client = get_client()
 
         query = (
             client.table("player_game_stats")
-            .select("user_id, skill_rating, users!inner(username, avatar_path)")
+            .select("user_id, elo_rating, users!inner(username, avatar_path)")
             .eq("game_id", game_db_id)
-            .order("skill_rating", desc=True)
+            .order("elo_rating", desc=True)
         )
         if limit is not None:
             query = query.limit(limit)
@@ -170,7 +178,7 @@ def fetch_leaderboard(game_db_id: int, user_id: str, limit: int | None = None) -
         for rank, row in enumerate(data, 1):
             uid = row["user_id"]
             user_info = row.get("users") or {}
-            rating_val = row.get("skill_rating", 1000)
+            rating_val = row.get("elo_rating", 1000)
             entries.append({
                 "user_id": uid,
                 "username": user_info.get("username", "Player"),
@@ -189,21 +197,26 @@ def fetch_leaderboard(game_db_id: int, user_id: str, limit: int | None = None) -
         logger.warning("Failed to fetch leaderboard for game_id=%d: %s", game_db_id, e)
         return {"entries": [], "user_rank": None}
 
-
 def subscribe_leaderboard(
     game_db_id: int,
     on_change: Callable,
     on_loop_ready: Callable | None = None,
+    on_task_ready: Callable | None = None,
 ) -> None:
-    """Subscribe to real-time changes in player_game_stats for the specified game, and call on_change() when a change is detected."""
+    """Subscribe to real-time player stats changes for game."""
     import asyncio
     from app.repository.supabase_client import create_realtime_client
 
     async def _run() -> None:
+        """Async task for subscribing to realtime changes."""
+        if on_task_ready is not None:
+            on_task_ready(asyncio.current_task())
+
         client = await create_realtime_client()
         channel = client.channel(f"pgs-game-{game_db_id}")
 
         def _handle_realtime_change(payload: dict | None) -> None:
+            """Process incoming realtime payload and trigger callback."""
             logger.debug("Realtime raw payload for game_id=%d: %s", game_db_id, payload)
             data = (payload or {}).get("data") or {}
             event_type = data.get("type")
@@ -232,36 +245,30 @@ def subscribe_leaderboard(
             await asyncio.Event().wait()
         logger.warning("Realtime: listen() returned unexpectedly for game_id=%d", game_db_id)
 
-    loop = asyncio.new_event_loop()
+    loop = _get_or_start_realtime_loop()
+    if on_loop_ready is not None:
+        on_loop_ready(loop)
+
+    future = asyncio.run_coroutine_threadsafe(_run(), loop)
     try:
-        if on_loop_ready is not None:
-            on_loop_ready(loop)
-        loop.run_until_complete(_run())
+        future.result()
+    except (asyncio.CancelledError, concurrent.futures.CancelledError):
+        logger.info("Realtime listener cancelled for game_id=%d", game_db_id)
     except BaseException as exc:
         logger.warning("Realtime listener ended for game_id=%d: %s", game_db_id, exc)
-    finally:
-        try:
-            pending = asyncio.all_tasks(loop)
-            if pending:
-                for task in pending:
-                    task.cancel()
-                loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-        except Exception:
-            pass
-        loop.close()
-
 
 def fetch_player_game_stats(user_id: str, game_slug: str) -> dict | None:
-    """Fetch the current player_game_stats row, or None if the player has no entry yet."""
+    """Fetch player stats row or None if no entry exists."""
     def _fetch():
+        """Query player stats from database."""
         game_id = GAME_ID_MAP.get(game_slug, 1)
         client = get_client()
         res = (
             client.table("player_game_stats")
             .select(
                 "total_runs, total_trials, best_pi_run, "
-                "avg_reaction_time_ms, avg_accuracy, quality_average, "
-                "consistency_average, skill_rating"
+                "avg_reaction_time_ms, avg_accuracy, avg_quality, "
+                "avg_consistency, elo_rating"
             )
             .eq("user_id", user_id)
             .eq("game_id", game_id)
@@ -269,14 +276,6 @@ def fetch_player_game_stats(user_id: str, game_slug: str) -> dict | None:
         )
         row = res.data[0] if res.data else None
         if row is not None:
-            # Rename DB column names to internal keys used throughout the codebase
-            if "quality_average" in row:
-                row["avg_quality"] = row.pop("quality_average")
-            if "consistency_average" in row:
-                row["avg_consistency"] = row.pop("consistency_average")
-            if "skill_rating" in row:
-                row["elo_rating"] = row.pop("skill_rating")
-            # Compatibility: pre-backfill rows may store on 0-1 scale
             q = row.get("avg_quality")
             if q is not None and 0 < q <= 1:
                 row["avg_quality"] = q * 100
@@ -293,22 +292,14 @@ def fetch_player_game_stats(user_id: str, game_slug: str) -> dict | None:
         )
         return None
 
-
 def upsert_player_game_stats(user_id: str, game_slug: str, data: dict) -> dict | None:
     """Upsert the player_game_stats row for the user and game with the provided data, returning the new row or None on failure."""
     try:
         game_id = GAME_ID_MAP.get(game_slug, 1)
         client = get_client()
-        # Remap internal keys to actual DB column names
-        _KEY_MAP = {
-            "avg_quality": "quality_average",
-            "avg_consistency": "consistency_average",
-            "elo_rating": "skill_rating",
-        }
-        db_data = {_KEY_MAP.get(k, k): v for k, v in data.items()}
         response = (
             client.table("player_game_stats")
-            .upsert({"user_id": user_id, "game_id": game_id, **db_data}, on_conflict="user_id,game_id")
+            .upsert({"user_id": user_id, "game_id": game_id, **data}, on_conflict="user_id,game_id")
             .execute()
         )
         logger.debug("player_game_stats upserted: user=..%s, game_slug=%s", user_id[-10:], game_slug)
@@ -323,27 +314,20 @@ def upsert_player_game_stats(user_id: str, game_slug: str, data: dict) -> dict |
 def fetch_all_user_stats(user_id: str) -> dict:
     """Fetch all cumulative stats for a user across every game they have played."""
     def _fetch():
+        """Query all user stats from database."""
         client = get_client()
         result = (
             client.table("player_game_stats")
             .select(
                 "game_id, total_runs, total_trials, best_pi_run, "
-                "avg_reaction_time_ms, avg_accuracy, quality_average, "
-                "consistency_average, skill_rating"
+                "avg_reaction_time_ms, avg_accuracy, avg_quality, "
+                "avg_consistency, elo_rating"
             )
             .eq("user_id", user_id)
             .execute()
         )
         rows = result.data or []
         for row in rows:
-            # Rename DB column names to internal keys used throughout the codebase
-            if "quality_average" in row:
-                row["avg_quality"] = row.pop("quality_average")
-            if "consistency_average" in row:
-                row["avg_consistency"] = row.pop("consistency_average")
-            if "skill_rating" in row:
-                row["elo_rating"] = row.pop("skill_rating")
-            # Compatibility: pre-backfill rows may store on 0-1 scale
             q = row.get("avg_quality")
             if q is not None and 0 < q <= 1:
                 row["avg_quality"] = q * 100
