@@ -12,7 +12,8 @@ from app.utils.validator import validate_email, validate_otp, validate_password,
 from app.ui.components.back_button import BackButton
 from app.ui.components.input_field import InputField
 from app.utils.event_filters import context_menu_event_filter, enter_key_event_filter, password_event_filter
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+logger = get_logger(__name__)
 from app.utils.ui_helpers import draw_background, update_button_state
 from translations.translation import translate
 

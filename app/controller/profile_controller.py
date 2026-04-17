@@ -6,7 +6,10 @@ from PySide6.QtCore import QObject, Slot
 
 from app.core.registry import registry
 from app.service.auth_service import change_password, delete_account
-from app.utils.logger import logger
+from app.service.activity_service import stop_heartbeat
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 from app.repository.user_repository import save_user, delete_user, upload_avatar_blob, check_username_exists
 from app.utils.validator import validate_username, validate_birthdate, validate_password, validate_passwords_match
 from translations.translation import translate
@@ -125,18 +128,28 @@ class ProfileController(QObject):
     def delete_account(self):
         user_id = self.user.id
 
+        stop_heartbeat()
+        logger.info("delete_account: heartbeat stopped on main thread (user ..%s)", user_id[-10:])
+
         def _delete():
+            logger.info("delete_account: deleting public rows (user ..%s)", user_id[-10:])
             delete_user(user_id)
+            logger.info("delete_account: public rows removed, invoking edge function (user ..%s)", user_id[-10:])
             return delete_account(user_id)
 
         def _done(result):
+            if result is None:
+                logger.error("delete_account: worker raised an unexpected exception (user ..%s)", user_id[-10:])
+                self.view.set_profile_feedback(translate("ProfileView", "Failed to delete account"), is_error=True)
+                return
             ok, err = result
             if ok:
-                logger.info("Account deleted for user ..%s", user_id[-10:])
+                logger.info("delete_account: account deletion complete, navigating to login (user ..%s)", user_id[-10:])
                 if self.on_logout:
                     self.on_logout()
             else:
                 logger.error("delete_account failed: %s", err)
+                self.view.set_profile_feedback(translate("ProfileView", "Failed to delete account"), is_error=True)
 
         started = self._delete_operation.start(
             registry.run_thread,
@@ -145,7 +158,7 @@ class ProfileController(QObject):
             name="profile-delete-account-thread",
         )
         if started:
-            logger.info("Deleting account for user ..%s", user_id[-10:])
+            logger.info("delete_account: worker thread started (user ..%s)", user_id[-10:])
 
     @Slot(bytes)
     def upload_avatar(self, image_bytes: bytes):

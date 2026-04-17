@@ -4,7 +4,9 @@ from PySide6.QtCore import QBuffer, QByteArray, QEvent, QIODevice, QSize, Qt, Si
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import QDialog, QFileDialog, QFrame, QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSizePolicy, QVBoxLayout, QWidget
 from datetime import datetime
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 from app.models.user import User
 from app.repository.user_repository import fetch_avatar
 from app.utils.ui_helpers import image_to_rounded, build_header

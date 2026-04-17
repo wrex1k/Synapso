@@ -1,10 +1,12 @@
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMainWindow
 
 from app.models.user import User
 
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+from app.utils.breadcrumbs import add_breadcrumb
+from app.utils.logging_config import set_user_context
+from app.utils.crash_handler import set_active_view
 from app.utils.window import set_central_widget
 from app.service.auth_service import refresh_up
 from app.service.activity_service import start_heartbeat
@@ -24,14 +26,14 @@ from app.controller.logout_controller import LogoutController
 
 from app.utils.frameless_window import FramelessWindowMixin
 
+logger = get_logger(__name__)
+
 
 class App(FramelessWindowMixin, QMainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # set window title and icon
         self.setWindowTitle("Synapso")
-        self.setWindowIcon(QIcon(":/images/graphics/logo.png"))
 
         # set initial window size and properties
         self.resize(1000, 800)
@@ -91,16 +93,16 @@ class App(FramelessWindowMixin, QMainWindow):
         self.loginWidget.start_registration.connect(self._start_registration_flow)
         self.loginWidget.forgot_password_signal.connect(self._go_to_forgot_password)
 
-        # log the app initialization
-        logger.info(f"{80 * "-"}")
-        logger.info("Views, controllers, and signal connections initializing..")
+        logger.info("Views, controllers, and signal connections initialized")
+        add_breadcrumb("app", "Main window initialized")
 
         # attempt refreshing the remembered user or show the login screen
         try:
             user = refresh_up()
 
             if user and user.id:
-                logger.info("User refreshed successfully..")
+                logger.info("Session restored for user (user_id: ..%s)", user.id[-10:])
+                add_breadcrumb("auth", "Session restored", user_id=user.id[-10:])
                 self.openApp(user)
                 return
 
@@ -108,49 +110,66 @@ class App(FramelessWindowMixin, QMainWindow):
 
         except Exception as e:
             logger.exception("Session refresh failed: %s", e)
+            add_breadcrumb("auth", "Session refresh failed", error=str(e))
             self._start_login_flow()
 
     # show the login screen
     def _start_login_flow(self):
-        logger.info("Login flow started..")
+        logger.info("Login flow started")
+        set_active_view("login")
+        add_breadcrumb("nav", "Login flow started")
         set_central_widget(self, self.loginWidget)
 
     # show the registration flow starting with personal info step
     def _start_registration_flow(self):
         set_central_widget(self, self.registerPersonalWidget)
-        logger.info("Registration flow started..")
+        set_active_view("register_personal")
+        add_breadcrumb("nav", "Registration flow started")
+        logger.info("Registration flow started")
     
     # go to forgot password screen
     def _go_to_forgot_password(self):
         set_central_widget(self, self.forgotPasswordWidget)
-        logger.info("Forgot password flow started..")
+        set_active_view("forgot_password")
+        add_breadcrumb("nav", "Forgot password flow started")
+        logger.info("Forgot password flow started")
 
     # return to the login screen
     def _back_to_login(self):
         set_central_widget(self, self.loginWidget)
-        logger.info("Returned to login screen..")
+        set_active_view("login")
+        add_breadcrumb("nav", "Returned to login")
+        logger.info("Returned to login screen")
 
     # return to the personal screen
     def _back_to_personal(self):
         set_central_widget(self, self.registerPersonalWidget)
-        logger.info("Returned to personal registration step..")
+        set_active_view("register_personal")
+        logger.info("Returned to personal registration step")
 
     # go to the auth screen
     def _go_to_register_auth(self):
         set_central_widget(self, self.registerAuthWidget)
-        logger.info("Navigated to auth registration step..")
+        set_active_view("register_auth")
+        logger.info("Navigated to auth registration step")
 
     # show a app view
     def openApp(self, user: "User"):
+        set_user_context(user.id)
+        add_breadcrumb("auth", "User logged in", user_id=user.id[-10:])
+        set_active_view("dashboard")
+
         self.appWidget = AppWidget(user, parent=self)
         self.appWidget.logout_requested.connect(self._logoutController.logout)
 
         start_heartbeat(user.id)
         set_central_widget(self, self.appWidget)
+        logger.info("App view opened for user (user_id: ..%s)", user.id[-10:])
 
     # clean up threads and resources on app close
     def closeEvent(self, event):
-        logger.info("Application closing..")
+        logger.info("Application shutdown started")
+        add_breadcrumb("app", "Application shutdown started")
 
         for controller in (
             getattr(self, "_registrationController", None),
@@ -161,7 +180,9 @@ class App(FramelessWindowMixin, QMainWindow):
                 try:
                     controller.cleanup()
                 except Exception as e:
-                    logger.error("Cleanup error: %s", e)
+                    logger.error("Cleanup error in %s: %s", controller.__class__.__name__, e)
 
+        logger.info("Application shutdown completed")
+        add_breadcrumb("app", "Application shutdown completed")
         event.accept()
         super().closeEvent(event)

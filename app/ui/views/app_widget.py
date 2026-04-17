@@ -17,8 +17,12 @@ from app.ui.views.statistics import StatisticsView
 from app.ui.views.about import AboutView
 from app.ui.views.settings import SettingsView
 from app.utils.ui_helpers import draw_background
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+from app.utils.breadcrumbs import add_breadcrumb
+from app.utils.crash_handler import set_active_view
 from app.service.activity_service import flush_heartbeat
+
+logger = get_logger(__name__)
 
 
 
@@ -155,7 +159,9 @@ class AppWidget(QWidget):
             games.refresh_user_avatar(self._user.avatar_path, data)
 
     def on_page_clicked(self, page_name: str):
-        logger.info("User navigated to %s..", page_name)
+        logger.info("User navigated to %s", page_name)
+        set_active_view(page_name)
+        add_breadcrumb("nav", f"Navigated to {page_name}")
         for name, button in self.pages.items():
             selected = (name == page_name)
             suffix = "selected" if selected else "unselected"
@@ -173,7 +179,9 @@ class AppWidget(QWidget):
         )
 
     def _go_to_profile(self):
-        logger.info("User opened profile..")
+        logger.info("User opened profile")
+        set_active_view("profile")
+        add_breadcrumb("nav", "Opened profile")
         for name, button in self.pages.items():
             icon = QIcon(f":/images/icons/{name}-unselected.png")
             if icon.isNull():
@@ -186,7 +194,8 @@ class AppWidget(QWidget):
         self.contentWidget.setCurrentWidget(self.profile_page)
 
     def _on_logout_clicked(self, checked: bool = False):
-        logger.info("User initiated logout..")
+        logger.info("User initiated logout")
+        add_breadcrumb("auth", "Logout initiated")
         self.logoutButton.setEnabled(False)
         self.logout_requested.emit()
 
@@ -194,7 +203,9 @@ class AppWidget(QWidget):
         self.logout_requested.emit()
 
     def _show_fullscreen_game(self, widget):
-        logger.info("Game session started: %s..", widget.__class__.__name__)
+        logger.info("Game session started: %s", widget.__class__.__name__)
+        add_breadcrumb("game", "Game session started", widget=widget.__class__.__name__)
+        set_active_view(f"game:{widget.__class__.__name__}")
         flush_heartbeat()
         widget.session_done.connect(self._hide_fullscreen_game)
 

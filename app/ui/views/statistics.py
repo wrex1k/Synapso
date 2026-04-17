@@ -484,21 +484,22 @@ class StatisticsView(QWidget):
         else:
             self._ins_best_game.setText("—")
 
-        # Strongest metric (across games: highest of avg_accuracy or pi relative to others)
-        all_acc = [g.get("avg_accuracy_overall") or 0 for g in games_data]
-        all_rt  = [g.get("avg_reaction_time_ms") or 0 for g in games_data]
-        if all_acc and max(all_acc) > 0:
-            # simple heuristic: compare normalised accuracy vs reaction speed
-            norm_acc = max(all_acc)
-            norm_rt  = min(all_rt) if all_rt else None
-            if norm_rt is not None and norm_acc >= 0.75:
-                self._ins_best_metric.setText(translate("StatisticsView", "Accuracy"))
-            elif norm_rt is not None and norm_rt < 600:
-                self._ins_best_metric.setText(translate("StatisticsView", "Reaction time"))
-            else:
-                self._ins_best_metric.setText("—")
-        else:
+        best_acc = max((g.get("avg_accuracy_overall") or 0.0 for g in games_data), default=0.0)
+        rt_values = [
+            g["avg_reaction_time_ms"]
+            for g in games_data
+            if g.get("avg_reaction_time_ms") is not None and g["avg_reaction_time_ms"] > 0
+        ]
+        best_rt = min(rt_values) if rt_values else None
+        _RT_REF = 1200.0
+        rt_score = max(0.0, 1.0 - (best_rt / _RT_REF)) if best_rt is not None else 0.0
+
+        if best_acc == 0.0 and rt_score == 0.0:
             self._ins_best_metric.setText("—")
+        elif best_acc >= rt_score:
+            self._ins_best_metric.setText(translate("StatisticsView", "Accuracy"))
+        else:
+            self._ins_best_metric.setText(translate("StatisticsView", "Reaction time"))
 
         # Needs improvement: lowest accumulated_pi game
         worst_game_row = min(

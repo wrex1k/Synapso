@@ -1,7 +1,8 @@
 from PySide6.QtWidgets import QWidget
 
 from app.utils.window import window_resize
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+logger = get_logger(__name__)
 
 
 # common screen resolutions for testing

@@ -6,7 +6,9 @@ TutorialRepository manages game tutorial completion state in Supabase:
 from datetime import datetime, timezone
 
 from app.repository.supabase_client import get_client
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 from app.games.core.base_game import GAME_ID_MAP
 
 

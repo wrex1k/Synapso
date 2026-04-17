@@ -25,7 +25,11 @@ from app.repository.stats_repository import fetch_game_stats, fetch_leaderboard,
 from app.repository.tutorial_repository import get_tutorial_completed
 from app.repository.user_repository import fetch_avatar
 from app.core.registry import registry
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+from app.utils.breadcrumbs import add_breadcrumb
+from app.utils.crash_handler import set_active_view, set_last_backend_op
+
+logger = get_logger(__name__)
 from app.utils.ui_helpers import build_header, image_to_rounded
 from translations.translation import translate
 
@@ -781,6 +785,8 @@ class GamesView(QWidget):
         game = factory(self._user_id)
         service = GameService(game)
         runner = service.create_tutorial_runner()
+        logger.info("Launching tutorial for game=%s", game_id)
+        add_breadcrumb("game", "Tutorial launched", game=game_id)
         self._open_session(game_id, "tutorial", game, service, runner)
 
     def _launch_intro_tutorial(self, game_id: str) -> None:
@@ -804,6 +810,8 @@ class GamesView(QWidget):
             return
         game = factory(self._user_id)
         service = GameService(game)
+        logger.info("Launching play for game=%s", game_id)
+        add_breadcrumb("game", "Play launched", game=game_id)
         self._open_session(game_id, "play", game, service, None)
 
     def _open_session(
@@ -937,6 +945,8 @@ class GamesView(QWidget):
         if game_db_id in self._rt_workers:
             return
 
+        logger.info("Starting realtime subscription for game_db_id=%d", game_db_id)
+        add_breadcrumb("realtime", "Realtime subscription started", game_db_id=game_db_id)
         thread = QThread()
         thread.setObjectName(f"rt-pgs-{game_db_id}")
         worker = _RealtimeWorker(game_db_id)
@@ -958,6 +968,8 @@ class GamesView(QWidget):
         self._load_stats_for(key, game_db_id)
 
     def _stop_all_realtime(self) -> None:
+        logger.info("Stopping all realtime subscriptions")
+        add_breadcrumb("realtime", "Stopping all realtime subscriptions")
         for _db_id, (thread, worker) in list(self._rt_workers.items()):
             worker.stop()
             self._dying_threads.append(thread)

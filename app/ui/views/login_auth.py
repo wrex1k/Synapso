@@ -12,7 +12,8 @@ from PySide6.QtWidgets import (
 
 from app.ui.components.input_field import InputField
 from app.utils.event_filters import context_menu_event_filter, enter_key_event_filter, password_event_filter
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+logger = get_logger(__name__)
 from app.utils.settings import get_language, set_language
 from app.utils.ui_helpers import draw_background, update_button_state
 from translations.translation import get_translation_manager, translate

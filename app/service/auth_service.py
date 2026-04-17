@@ -7,9 +7,15 @@ from PySide6.QtCore import QRunnable, QThreadPool
 
 from app.models.user import User
 from app.service.activity_service import stop_heartbeat
-from app.repository.supabase_client import get_client, get_service_client, clear_current_session
+from app.repository.supabase_client import get_client, clear_current_session
 from app.repository.user_repository import fetch_user
-from app.utils.logger import logger
+from app.utils.settings import get_language
+from app.utils.logger import get_logger
+from app.utils.breadcrumbs import add_breadcrumb
+from app.utils.logging_config import set_user_context
+from app.utils.crash_handler import set_last_backend_op
+
+logger = get_logger(__name__)
 
 
 """
@@ -83,12 +89,14 @@ class ClearTokensWorker(KeyringWorker):
 # refresh user if restart app, if successful restore session tokens and return the User
 def refresh_up() -> User | None:
     logger.info("Attempting to restore session from tokens")
+    set_last_backend_op("refresh_session")
+    add_breadcrumb("auth", "Attempting session restore")
     try:
         session = _refresh_session()
         if not session or not getattr(session, "access_token", None):
-            logger.warning("We can't find your session. Please sign in again.")
+            logger.warning("Session not found — user needs to sign in again")
             return None
-        logger.info("Session refreshed successfully, fetching user data..")
+        logger.info("Session refreshed, fetching user data")
 
         response = get_client().auth.get_user(session.access_token)
         user = getattr(response, "user", None)
@@ -115,7 +123,10 @@ def sign_up(email: str, password: str) -> User:
     try:
         response = get_client().auth.sign_up({
             "email": email,
-            "password": password
+            "password": password,
+            "options": {
+                "data": {"language": get_language()}
+            },
         })
     except AuthApiError as e:
         msg = str(e).lower()
@@ -142,7 +153,9 @@ def sign_up(email: str, password: str) -> User:
 # sign in within email and password, if succesfull store session tokens, set the session and return user data in response
 def sign_in(email: str, password: str) -> User | None:
     try:
-        logger.info("Signing in user: %s..", email)
+        logger.info("Signing in user")
+        set_last_backend_op("sign_in")
+        add_breadcrumb("auth", "Sign in attempt")
         response = get_client().auth.sign_in_with_password({"email": email, "password": password})
 
         _store_session_tokens(getattr(response, "session", None))
@@ -158,12 +171,16 @@ def sign_in(email: str, password: str) -> User | None:
         return user
 
     except Exception as e:
-        logger.error("sign_in failed: %s", str(e))
+        logger.error("Sign in failed: %s", e)
+        add_breadcrumb("auth", "Sign in failed", error=str(e))
         return None
 
 
 # sign out, clear stored tokens
 def sign_out():
+    logger.info("User sign out started")
+    set_last_backend_op("sign_out")
+    add_breadcrumb("auth", "Sign out started")
     try:
         stop_heartbeat()
         logger.debug("Heartbeat stopped")
@@ -179,11 +196,20 @@ def sign_out():
     try:
         _clear_session_tokens()
         clear_current_session()
-        logger.debug("Session tokens cleared")
+        set_user_context(None)
+        logger.info("User signed out and session cleared")
+        add_breadcrumb("auth", "Sign out completed")
     except Exception as e:
         logger.exception("Failed to clear session tokens: %s", e)
 
-#} password reset functions for sending reset email, verifying OTP code and updating password with token
+# sync language preference into Supabase user_metadata so email templates can read {{ .Data.language }}
+def sync_user_language(lang: str) -> None:
+    try:
+        get_client().auth.update_user({"data": {"language": lang}})
+        logger.debug("User language synced to Supabase metadata: %s", lang)
+    except Exception as e:
+        logger.warning("Failed to sync language to Supabase user metadata: %s", e)
+
 
 # send password reset email from supabase
 def send_password_reset_email(email: str) -> tuple[bool, str | None]:
@@ -245,8 +271,6 @@ def update_password_with_token(new_password: str) -> tuple[bool, str | None]:
             return (False, "password_same_as_old")
         return (False, str(e))
 
-
-#} session management functions for refreshing the session, retrieving tokens
 
 # store session tokens asynchronously in background thread
 def _store_session_tokens(session, recovery: bool = False):
@@ -319,6 +343,11 @@ def _get_access_token(recovery: bool = False) -> str | None:
     return None
 
 
+# return True if both access and refresh tokens are present in secure storage
+def check_session_tokens() -> bool:
+    return bool(_get_access_token()) and bool(_get_refresh_token())
+
+
 # clear stored tokens from keyring asynchronously
 def _clear_session_tokens():
     worker = ClearTokensWorker()
@@ -366,10 +395,9 @@ def change_password(current_password: str, new_password: str) -> tuple[bool, str
 
 def delete_account(user_id: str) -> tuple[bool, str | None]:
     try:
-        service = get_service_client()
-        if service is None:
-            return (False, "Service client unavailable — check SUPABASE_SERVICE_KEY")
-        service.auth.admin.delete_user(user_id)
+        logger.debug("delete_account: invoking delete-account edge function (user ..%s)", user_id[-10:])
+        response = get_client().functions.invoke("delete-account", invoke_options={"body": {}})
+        logger.debug("delete_account: edge function response: %s", response)
         sign_out()
         return (True, None)
     except Exception as e:

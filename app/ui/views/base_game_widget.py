@@ -5,7 +5,10 @@ from PySide6.QtCore import QElapsedTimer, Qt, QTimer, Signal
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QProgressBar, QVBoxLayout, QWidget
 
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+from app.utils.breadcrumbs import add_breadcrumb
+
+logger = get_logger(__name__)
 from app.core.registry import registry
 from app.service.game_service import GameService
 from app.utils.ui_helpers import draw_background
@@ -172,6 +175,7 @@ class BaseGameWidget(QWidget):
         self.setFocus()
         self._db_ready = False
         self._countdown_done = False
+        add_breadcrumb("game", f"{self._game_name} tutorial starting")
         self._show_countdown()
         if self._should_skip_tutorial_async_init():
             self._db_ready = True
@@ -189,6 +193,7 @@ class BaseGameWidget(QWidget):
         self.setFocus()
         self._db_ready = False
         self._countdown_done = False
+        add_breadcrumb("game", f"{self._game_name} play starting")
         self._show_countdown()
         self._start_play_flow_async()
 
@@ -276,6 +281,7 @@ class BaseGameWidget(QWidget):
         return False
 
     def _finish_session(self, completed: bool) -> None:
+        add_breadcrumb("game", f"{self._game_name} session finished", completed=completed, mode=self._mode)
         if self._service:
             if self._mode == "training":
                 if completed:

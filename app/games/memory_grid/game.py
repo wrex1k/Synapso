@@ -5,7 +5,8 @@ from enum import Enum, auto
 
 from app.games.core.base_game import BaseGame, TrialResult
 from app.games.memory_grid.config import LEVEL_PARAMS, MAX_LEVEL, MIN_LEVEL
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+logger = get_logger(__name__)
 
 class MemoryGridGame(BaseGame):
     """Spatial working-memory game based on reproducing highlighted cells."""

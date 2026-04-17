@@ -8,7 +8,8 @@ from PySide6.QtWidgets import (
 )
 
 from app.utils.ui_helpers import draw_background
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+logger = get_logger(__name__)
 from translations.translation import translate
 
 

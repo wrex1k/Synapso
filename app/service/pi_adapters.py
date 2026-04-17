@@ -32,7 +32,8 @@ def _stroop_accuracy(trial: Any) -> float:
     distance = math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2)
     max_distance = math.sqrt(3 * 255 ** 2)
     normalized = min(1.0, distance / max_distance)
-    return min(0.49, _clamp01(1.0 - normalized ** 1.5))
+    proximity = _clamp01(1.0 - normalized)
+    return min(0.20, proximity ** 3)
 
 
 def _memory_grid_accuracy(trial: Any) -> float:

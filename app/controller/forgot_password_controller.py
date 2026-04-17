@@ -8,7 +8,9 @@ from typing import Callable
 from PySide6.QtCore import QObject, Signal, QTimer
 
 from app.core.registry import registry
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 from translations.translation import get_error_message
 from app.service.auth_service import send_password_reset_email, verify_otp_code, update_password_with_token

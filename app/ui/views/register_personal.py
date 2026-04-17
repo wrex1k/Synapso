@@ -8,7 +8,8 @@ from app.ui.components.back_button import BackButton
 from app.ui.components.input_field import InputField
 from app.utils.avatar import qpixmap_to_webp_blob, rounded_pixmap, restore_webp_blob_avatar
 from app.utils.event_filters import enter_key_event_filter
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+logger = get_logger(__name__)
 from app.utils.ui_helpers import draw_background, update_button_state
 from app.utils.validator import validate_email, validate_username, validate_birthdate
 from translations.translation import translate

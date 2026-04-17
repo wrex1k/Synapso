@@ -3,7 +3,8 @@ from PySide6.QtGui import QCursor, QFont
 from PySide6.QtWidgets import QLabel, QLineEdit, QSizePolicy, QVBoxLayout, QWidget, QProgressBar
 import re
 
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+logger = get_logger(__name__)
 
 
 class InputField(QWidget):

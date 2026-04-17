@@ -10,7 +10,9 @@ from email_validator import EmailNotValidError
 from email_validator import validate_email as validate_email_deliverable
 from translations.translation import get_error_message
 
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 from app.core.registry import registry
 
 from app.repository.user_repository import save_user, upload_avatar_blob, check_username_exists

@@ -86,6 +86,10 @@ class DashboardView(QWidget):
         self._highlights_subtitle_lbl: QLabel | None = None
         self._continue_play_btn: QPushButton | None = None
 
+        self._refresh_timer = QTimer(self)
+        self._refresh_timer.setInterval(60_000)
+        self._refresh_timer.timeout.connect(self._controller.load)
+
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -400,13 +404,15 @@ class DashboardView(QWidget):
         if not self._controller.loaded_once:
             self._controller.mark_loaded_once()
             self._controller.load()
-            return
+        elif not self._controller.is_loading():
+            self._controller.load()
+            self._update_welcome_title()
 
-        if self._controller.is_loading():
-            return
+        self._refresh_timer.start()
 
-        self._controller.load()
-        self._update_welcome_title()
+    def hideEvent(self, event) -> None:
+        super().hideEvent(event)
+        self._refresh_timer.stop()
 
     def changeEvent(self, event) -> None:
         super().changeEvent(event)

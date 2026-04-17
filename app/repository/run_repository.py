@@ -11,13 +11,17 @@ RunRepository manages game run and trial data in Supabase:
 from datetime import datetime, timezone
 import uuid
 
-from app.repository.supabase_client import get_client, get_service_client
-from app.utils.logger import logger
+from app.repository.supabase_client import get_client
+from app.utils.logger import get_logger
+from app.utils.crash_handler import set_last_backend_op
 from app.games.core.base_game import GAME_ID_MAP
+
+logger = get_logger(__name__)
 
 
 
 def create_run(user_id: str, game_slug: str, stage: str, started_at: datetime):
+    set_last_backend_op(f"create_run:{game_slug}")
     try:
         game_id = GAME_ID_MAP.get(game_slug, 1)
 
@@ -34,7 +38,7 @@ def create_run(user_id: str, game_slug: str, stage: str, started_at: datetime):
             "status": "running",
         }
 
-        client = get_service_client() or get_client()
+        client = get_client()
         result = client.table("runs").insert(payload).execute()
 
         if result.data:
@@ -50,7 +54,7 @@ def create_run(user_id: str, game_slug: str, stage: str, started_at: datetime):
 def abandon_run(run_id: str) -> None:
     """Mark a run as abandoned in the database."""
     try:
-        (get_service_client() or get_client()).table("runs").update({
+        get_client().table("runs").update({
             "status": "abandoned",
             "ended_at": datetime.now(timezone.utc).isoformat(),
         }).eq("run_id", run_id).execute()
@@ -71,6 +75,7 @@ def save_run(
     run_id: str | None = None,
 ) -> str | None:
     """Save a completed game run with aggregate metrics."""
+    set_last_backend_op(f"save_run:{game_slug}")
     try:
         effective_run_id = run_id or str(uuid.uuid4())
 
@@ -98,7 +103,7 @@ def save_run(
             "status": status_normalized,
         }
 
-        client = get_service_client() or get_client()
+        client = get_client()
 
         if run_id:
             result = client.table("runs").update(update_data).eq("run_id", effective_run_id).execute()
@@ -139,6 +144,7 @@ def save_trials(run_id: str, game_slug: str, trials: list) -> None:
     """Save individual trial data for a completed run."""
     if not trials:
         return
+    set_last_backend_op(f"save_trials:{game_slug}")
 
     game_id = GAME_ID_MAP.get(game_slug, 1)
 
@@ -191,7 +197,7 @@ def save_trials(run_id: str, game_slug: str, trials: list) -> None:
 
             rows.append(base_row)
 
-        client = get_service_client() or get_client()
+        client = get_client()
         result = client.table("trials").insert(rows).execute()
         logger.debug("save_trials: result.data length=%d", len(result.data) if result.data else 0)
         logger.info("Saved %d trials to trials table for run=%s", len(rows), run_id)

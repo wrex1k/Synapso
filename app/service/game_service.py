@@ -11,7 +11,11 @@ from app.repository.run_repository import abandon_run, create_run, fetch_pi_run_
 from app.repository.tutorial_repository import set_tutorial_completed
 from app.repository.stats_repository import fetch_player_game_stats, upsert_player_game_stats
 from app.service.pi_system import TrialResult as PITrialResult, normalize_pi, process_run
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+from app.utils.breadcrumbs import add_breadcrumb
+from app.utils.crash_handler import set_last_backend_op
+
+logger = get_logger(__name__)
 
 
 
@@ -27,8 +31,8 @@ def _compute_player_stats_update(
 ) -> dict:
     """Compute the new player_game_stats values after a completed run."""
     if current:
-        old_bank = current.get("accumulated_pi", 0.0)
-        old_pi_norm = current.get("accumulated_pi_normalized") or 0.0
+        old_avg_pi = current.get("accumulated_pi", 0.0)
+        old_avg_pi_normalized = current.get("accumulated_pi_normalized") or 0.0
         total_runs = current.get("total_runs", 0)
         total_trials = current.get("total_trials", 0)
         best_pi = current.get("best_pi_run")
@@ -37,32 +41,32 @@ def _compute_player_stats_update(
         old_quality = current.get("quality_average") or 0.0
         old_consistency = current.get("consistency_average") or 0.0
     else:
-        old_bank = 0.0
-        old_pi_norm = 0.0
+        old_avg_pi = 0.0
+        old_avg_pi_normalized = 0.0
         total_runs = 0
         total_trials = 0
         best_pi = None
         old_rt = old_acc = old_quality = old_consistency = 0.0
 
     def _running_avg(old_val: float, new_val: float | None) -> float:
-        """Count-weighted running average. Bootstraps from new_val when old is uninitialized."""
+        """Count-weighted running average. Bootstraps from new_val on the first run only."""
         if new_val is None:
             return old_val
-        if total_runs == 0 or old_val == 0.0:
+        if total_runs == 0:
             return new_val
         return (old_val * total_runs + new_val) / (total_runs + 1)
 
-    new_bank = _running_avg(old_bank, pi_run)
-    new_pi_norm = _running_avg(old_pi_norm, pi_run_normalized)
+    new_avg_pi = _running_avg(old_avg_pi, pi_run)
+    new_avg_pi_normalized = _running_avg(old_avg_pi_normalized, pi_run_normalized)
     new_best_pi = pi_run if (best_pi is None or pi_run > best_pi) else best_pi
 
     now = datetime.now(timezone.utc).isoformat()
 
-    logger.info("\nPI UPDATE:\n pi_run=%.2f  |  old_avg=%.2f  new_avg=%.2f  (runs=%d)", pi_run, old_bank, new_bank, total_runs)
+    logger.info("\nPI UPDATE:\n pi_run=%.2f  |  old_avg=%.2f  new_avg=%.2f  (runs=%d)", pi_run, old_avg_pi, new_avg_pi, total_runs)
 
     return {
-        "accumulated_pi": new_bank,
-        "accumulated_pi_normalized": new_pi_norm,
+        "accumulated_pi": new_avg_pi,
+        "accumulated_pi_normalized": new_avg_pi_normalized,
         "total_runs": total_runs + 1,
         "total_trials": total_trials + max(0, int(trial_count)),
         "best_pi_run": new_best_pi,
@@ -117,6 +121,7 @@ class GameService:
         self.game.started_at = datetime.now(timezone.utc)
         self._run_id = str(uuid.uuid4())
         self._run_stage = stage
+        add_breadcrumb("game", "Run started", game=self.game.game_slug, stage=stage, run_id=self._run_id[-8:])
         return self._run_id
 
     def persist_run_creation(self, stage: str | None = None) -> None:
@@ -143,6 +148,8 @@ class GameService:
 
     def finish_run(self, stage: str = "training", status: str = "completed") -> dict:
         """Finalize the run, compute PI, and save all results. Call in a background thread after play is done."""
+        set_last_backend_op(f"finish_run:{self.game.game_slug}")
+        add_breadcrumb("game", "Finishing run", game=self.game.game_slug, run_id=(self._run_id or "?")[-8:])
         metrics = self.game.end_run()
 
         pi_trials = []
@@ -245,7 +252,7 @@ class GameService:
         return {
             **metrics,
             "pi_run": round(run_result.pi_run, 2),
-            "pi_run_normalized": round(run_result.pi_run_normalized_raw, 2),
+            "pi_run_normalized_raw": round(run_result.pi_run_normalized_raw, 2),
             "quality_score": round(run_result.quality_score, 3),
             "consistency_score": round(run_result.consistency_score, 3),
         }

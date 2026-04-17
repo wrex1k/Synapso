@@ -5,7 +5,9 @@ from datetime import datetime, timezone
 import statistics
 import math
 
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 from app.games.stroop.config import get_rt_penalty_thresholds as get_stroop_rt_thresholds
 from app.games.memory_grid.config import get_rt_penalty_thresholds as get_memory_grid_rt_thresholds
 from app.games.mental_rotation.config import get_rt_penalty_thresholds as get_mental_rotation_rt_thresholds

@@ -1,7 +1,9 @@
 from typing import Optional
 
 from app.repository.supabase_client import get_client
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 """
 UserRepository provides functions to manage user data: 

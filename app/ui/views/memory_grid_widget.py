@@ -6,7 +6,8 @@ from PySide6.QtGui import QImage, QMouseEvent, QPixmap
 from PySide6.QtWidgets import QLabel
 
 from app.core.registry import registry
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+logger = get_logger(__name__)
 from app.ui.styles.colors import *
 from app.ui.styles.games import get_memory_grid_counter_style, get_memory_grid_phase_style, format_ratio_counter
 from app.ui.views.base_game_widget import BaseGameWidget

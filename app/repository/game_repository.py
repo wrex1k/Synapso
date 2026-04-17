@@ -3,7 +3,9 @@ GameRepository manages the games catalog in Supabase:
 - fetch_games: return all active games ordered by id
 """
 from app.repository.supabase_client import get_client
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 

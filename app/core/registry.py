@@ -4,7 +4,10 @@ from typing import Callable, Optional
 
 from PySide6.QtCore import QObject, QThread, Qt, Signal, Slot
 
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+from app.utils.breadcrumbs import add_breadcrumb
+
+logger = get_logger(__name__)
 
 
 
@@ -21,7 +24,8 @@ class _Runner(QObject):
             result = self._fn()
 
         except Exception:
-            logger.exception("Thread task error")
+            logger.exception("Unhandled exception in thread task")
+            add_breadcrumb("thread", "Thread task exception", fn=repr(self._fn))
             result = None
         self.finished.emit(result)
 

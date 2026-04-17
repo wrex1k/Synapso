@@ -7,7 +7,9 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QTextEdit, QWidget, QScrollArea, QStackedWidget
 
 from app.ui.styles.about import ABOUT_STYLES
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 from app.utils.settings import get_language
 from app.utils.ui_helpers import build_header
 from translations.translation import translate
@@ -23,7 +25,10 @@ BUILT_WITH = [
 def _parse_all_changelogs() -> list[dict]:
     root = Path(__file__).parent.parent.parent.parent
     lang = get_language()
-    changelog_path = root / f"CHANGELOG.{lang}.md"
+    localized_path = root / f"CHANGELOG.{lang}.md"
+    default_path = root / "CHANGELOG.md"
+
+    changelog_path = localized_path if localized_path.exists() else default_path
 
     try:
         content = changelog_path.read_text(encoding="utf-8")

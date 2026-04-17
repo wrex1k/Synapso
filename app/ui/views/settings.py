@@ -9,6 +9,7 @@ from app.utils.settings import get_language, set_language
 from app.utils.ui_helpers import build_header
 from translations.translation import get_translation_manager, translate
 from app.utils.logger import logger
+from app.core.registry import registry
 
 
 
@@ -131,6 +132,12 @@ class SettingsView(QWidget):
         self._sync_language_buttons()
         self._retranslate_ui()
         logger.info("Language changed to %s", lang)
+
+        from app.service.auth_service import sync_user_language
+        registry.run_thread(
+            lambda: sync_user_language(lang),
+            name="sync-language-thread",
+        )
 
     def _sync_language_buttons(self) -> None:
         current = get_language()

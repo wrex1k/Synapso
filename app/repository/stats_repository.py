@@ -10,8 +10,10 @@ StatsRepository manages player performance statistics, leaderboards, and game ac
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 
-from app.repository.supabase_client import get_client, get_service_client, with_retry
-from app.utils.logger import logger
+from app.repository.supabase_client import get_client, with_retry
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 from app.games.core.base_game import GAME_ID_MAP
 
 
@@ -228,7 +230,7 @@ def subscribe_leaderboard(
     try:
         loop.run_until_complete(_run())
     except Exception as exc:
-        logger.debug("Realtime listener ended for game_id=%d: %s", game_db_id, exc)
+        logger.warning("Realtime listener ended for game_id=%d: %s", game_db_id, exc)
     finally:
         try:
             pending = asyncio.all_tasks(loop)
@@ -245,7 +247,7 @@ def fetch_player_game_stats(user_id: str, game_slug: str) -> dict | None:
     """Fetch the current player_game_stats row, or None if the player has no entry yet."""
     try:
         game_id = GAME_ID_MAP.get(game_slug, 1)
-        client = get_service_client() or get_client()
+        client = get_client()
         res = (
             client.table("player_game_stats")
             .select(
@@ -269,7 +271,7 @@ def upsert_player_game_stats(user_id: str, game_slug: str, data: dict) -> dict |
     """Upsert the player_game_stats row for the user and game with the provided data, returning the new row or None on failure."""
     try:
         game_id = GAME_ID_MAP.get(game_slug, 1)
-        client = get_service_client() or get_client()
+        client = get_client()
         response = (
             client.table("player_game_stats")
             .upsert({"user_id": user_id, "game_id": game_id, **data}, on_conflict="user_id,game_id")
@@ -287,7 +289,7 @@ def upsert_player_game_stats(user_id: str, game_slug: str, data: dict) -> dict |
 def fetch_all_user_stats(user_id: str) -> dict:
     """Fetch all cumulative stats for a user across every game they have played."""
     try:
-        client = get_service_client() or get_client()
+        client = get_client()
         result = (
             client.table("player_game_stats")
             .select(

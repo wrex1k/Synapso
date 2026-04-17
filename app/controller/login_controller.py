@@ -8,7 +8,9 @@ from email_validator import validate_email, EmailNotValidError
 from PySide6.QtCore import QObject, Slot
 
 from app.core.registry import registry
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 from app.service.auth_service import sign_in
 from app.utils.validator import validate_password

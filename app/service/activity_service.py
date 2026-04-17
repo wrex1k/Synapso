@@ -3,7 +3,10 @@ from datetime import datetime
 from PySide6.QtCore import QTimer
 
 from app.repository.activity_repository import send_heartbeat
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+from app.utils.breadcrumbs import add_breadcrumb
+
+logger = get_logger(__name__)
 
 """
 ActivityService manages the user activity heartbeats to update the last seen attribute in the database.
@@ -40,7 +43,8 @@ def start_heartbeat(user_id: str):
 
         # Start timer to send heartbeat every 30 seconds
         _heartbeat_timer.start(30000)
-        logger.debug("Heartbeat started for user (user_id: ..%s)", user_id[-10:])
+        logger.info("Heartbeat started for user (user_id: ..%s)", user_id[-10:])
+        add_breadcrumb("heartbeat", "Heartbeat started", user_id=user_id[-10:])
 
     except Exception as e:
         logger.error("Failed to start heartbeat timer: %s", e)
@@ -59,7 +63,8 @@ def stop_heartbeat():
         elapsed = int((datetime.now() - _last_tick).total_seconds()) if _last_tick else 0
         send_heartbeat(_current_user_id, elapsed)
         _heartbeat_timer.stop()
-        logger.debug("Heartbeat stopped for last user")
+        logger.info("Heartbeat stopped")
+        add_breadcrumb("heartbeat", "Heartbeat stopped")
     _heartbeat_timer = None
     _current_user_id = None
     _last_tick = None

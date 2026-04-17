@@ -7,7 +7,8 @@ from PySide6.QtWidgets import QLabel, QVBoxLayout
 
 from app.games.stroop.game import COLORS
 from app.core.registry import registry
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+logger = get_logger(__name__)
 from app.ui.styles.colors import PRIMARY_LIGHT, INCORRECT_COLOR, OFF_WHITE, FONT_PRIMARY
 from app.ui.views.base_game_widget import BaseGameWidget, _get_cached_font
 from translations.translation import translate

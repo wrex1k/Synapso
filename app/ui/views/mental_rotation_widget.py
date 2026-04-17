@@ -6,7 +6,8 @@ from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from app.core.registry import registry
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+logger = get_logger(__name__)
 from app.ui.styles.colors import CORRECT_COLOR, INCORRECT_COLOR, FONT_PRIMARY, OFF_WHITE, PRIMARY_LIGHT
 from app.ui.views.base_game_widget import BaseGameWidget
 from translations.translation import translate
