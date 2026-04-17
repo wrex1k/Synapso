@@ -75,6 +75,10 @@ def fetch_user(user_id: str) -> dict:
             return {}
 
         result = data[0]
+        
+        from app.service.auth_service import get_auth_email
+        result["email"] = get_auth_email()
+        logger.error("Fetched user email from auth: %s", result["email"] or "None")
         logger.info("User data fetched successfully..")
         logger.debug("Fetched user data (user_id: ..%s)", user_id[-10:])
         return result

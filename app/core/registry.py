@@ -26,6 +26,16 @@ class _Runner(QObject):
             result = None
         self.finished.emit(result)
 
+
+class _CallbackProxy(QObject):
+    def __init__(self, callback: Callable[[object], None]):
+        super().__init__()
+        self._callback = callback
+
+    @Slot(object)
+    def dispatch(self, result: object) -> None:
+        self._callback(result)
+
 class Operation:
     def __init__(self, key: str | None = None):
         self._key = key
@@ -109,8 +119,11 @@ class Registry:
         thread.started.connect(worker.run)
 
         if callable(on_finished):
-            worker.finished.connect(on_finished, Qt.QueuedConnection)
-            worker.finished.connect(lambda *_: logger.debug("%s finished", name.capitalize()), Qt.QueuedConnection)
+            callback_proxy = _CallbackProxy(on_finished)
+            thread._callback_proxy = callback_proxy
+            worker.finished.connect(callback_proxy.dispatch, Qt.QueuedConnection)
+            if name:
+                callback_proxy.destroyed.connect(lambda *_: logger.debug("%s finished", name.capitalize()))
 
         worker.finished.connect(thread.quit)
         worker.finished.connect(worker.deleteLater)

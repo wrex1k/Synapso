@@ -11,24 +11,25 @@ ActivityRepository provides functions to manage user activity heartbeats to upda
 
 logger = get_logger(__name__)
 
-def send_heartbeat(user_id: str):
+def send_heartbeat(user_id: str, elapsed_seconds: int):
     if not user_id:
         logger.warning("Heartbeat skipped: no user_id provided")
         return
 
     try:
-        logger.debug("Sending heartbeat (user_id: ..%s)", user_id[-10:])
-
+        data = {
+            "user_id": user_id,
+            "last_seen": datetime.now(timezone.utc).isoformat(),
+            "time_played": get_time_played(user_id) + elapsed_seconds,
+        }
+        
         result = get_client().table("user_activity").upsert(
-            {
-                "user_id": user_id,
-                "last_seen": datetime.now(timezone.utc).isoformat(),
-            },
+            data,
             on_conflict="user_id",
         ).execute()
         
         if result.data:
-            logger.info("Heartbeat sent successfully (user_id: ..%s)", user_id[-10:])
+            logger.debug("Heartbeat sent successfully (user_id: ..%s)", user_id[-10:])
         else:
             logger.debug("Heartbeat upsert executed (user_id: ..%s)", user_id[-10:])
 

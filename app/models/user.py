@@ -17,17 +17,6 @@ class User:
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
-    def auth_email(self) -> str:
-        return self.email.strip()
-
-    def diagnostic_id(self) -> str:
-        if not self.id:
-            return "anonymous"
-
-        return hashlib.sha256(
-            self.id.encode("utf-8")
-        ).hexdigest()[:8]
-
     def to_dict(self) -> dict:
         data = {
             "id": self.id,

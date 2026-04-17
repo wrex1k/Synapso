@@ -6,9 +6,9 @@ from supabase_auth.errors import AuthApiError
 from PySide6.QtCore import QRunnable, QThreadPool
 
 from app.models.user import User
-from app.repository.supabase_client import get_client
+from app.service.activity_service import stop_heartbeat
+from app.repository.supabase_client import get_client, clear_current_session
 from app.repository.user_repository import fetch_user
-from app.service.activity_service import start_heartbeat, stop_heartbeat
 from app.utils.logger import get_logger
 
 
@@ -83,10 +83,11 @@ class ClearTokensWorker(KeyringWorker):
 
 # refresh user if restart app, if successful restore session tokens and return the User
 def refresh_up() -> User | None:
+    logger.info("Attempting to restore session from tokens")
     try:
         session = _refresh_session()
         if not session or not getattr(session, "access_token", None):
-            logger.warning("Your session has expire. Please sign in again.")
+            logger.warning("We can't find your session. Please sign in again.")
             return None
         logger.info("Session refreshed successfully, fetching user data..")
 
@@ -103,46 +104,46 @@ def refresh_up() -> User | None:
             logger.warning("Refreshed session user not found in DB (user_id: ..%s)", user_id[-10:])
             return None
 
-        logger.debug("Starting heartbeat for refreshed user (user_id: ..%s)", user_id[-10:])
-        start_heartbeat(user_id)
-
         return User(**data)
 
     except Exception as e:
         logger.error("Failed to refresh user session: %s", e)
         return None
     
-# sing up within email and password, if succesfull store session tokens, set the session and return user data in response
+# sign up within email and password, if successful store session tokens, set the session and return user data in response
 def sign_up(email: str, password: str) -> User:
-    response = get_client().auth.sign_up({
-        "email": email,
-        "password": password
-    })
+    logger.debug("User signing up with email: %s..", email)
+    try:
+        response = get_client().auth.sign_up({
+            "email": email,
+            "password": password
+        })
+    except AuthApiError as e:
+        msg = str(e).lower()
+        logger.error("Sign up API error: %s", e)
+        if "already registered" in msg:
+            raise RuntimeError("user_already_registered") from e
+        raise RuntimeError(msg) from e
 
-    response_error = getattr(response, "error", None)
-    if response_error is not None:
-        error = str(response_error)
-        logger.error("Sign up failed: %s", error)
-        if "already registered" in error.lower():
+    if getattr(response, "error", None):
+        error_msg = str(response.error).lower()
+        logger.error("Sign up failed: %s", error_msg)
+        if "already registered" in error_msg:
             raise RuntimeError("user_already_registered")
-        raise RuntimeError(error)
+        raise RuntimeError(error_msg)
 
     user = getattr(response, "user", None)
-
     if not user:
         raise RuntimeError("Sign up failed")
 
     _store_session_tokens(getattr(response, "session", None))
-    user_id = user.id
-    logger.debug("Starting heartbeat for registered user (user_id: ..%s)", user_id[-10:])
-    start_heartbeat(user_id)
     return user
 
 
 # sign in within email and password, if succesfull store session tokens, set the session and return user data in response
 def sign_in(email: str, password: str) -> User | None:
     try:
-        logger.info("Signing in user: %s", email)
+        logger.info("Signing in user: %s..", email)
         response = get_client().auth.sign_in_with_password({"email": email, "password": password})
 
         _store_session_tokens(getattr(response, "session", None))
@@ -155,8 +156,6 @@ def sign_in(email: str, password: str) -> User | None:
             return None
 
         user = User(**data)
-        logger.debug("Starting heartbeat for logged in user (user_id: ..%s)", user_id[-10:])
-        start_heartbeat(user_id)
         return user
 
     except Exception as e:
@@ -180,6 +179,7 @@ def sign_out():
 
     try:
         _clear_session_tokens()
+        clear_current_session()
         logger.debug("Session tokens cleared")
     except Exception as e:
         logger.exception("Failed to clear session tokens: %s", e)
@@ -334,3 +334,22 @@ def check_session_tokens():
         return True
     logger.debug("Session tokens missing in keyring")
     return False
+
+
+# fetch email from Supabase auth table
+def get_auth_email() -> str | None:
+    access_token = _get_access_token()
+    if not access_token:
+        return None
+    
+    try:
+        response = get_client().auth.get_user(access_token)
+        user = getattr(response, "user", None)
+        if user:
+            email = getattr(user, "email", None)
+            if email:
+                logger.debug("Fetched auth email successfully")
+                return email
+    except Exception as e:
+        logger.warning("Failed to fetch email from auth: %s", e)
+    return None

@@ -5,12 +5,6 @@ from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-"""
-Provide screen resolution testing utilities, such as:
-- screen_resolutions: common screen resolution presets for testing
-- simulate_resolution: resize and lock a window to a chosen resolution for testing
-"""
-
 # common screen resolutions for testing
 screen_resolutions = {
     # standard displays
@@ -46,4 +40,4 @@ def simulate_resolution(window: QWidget, resolution: str = "hd"):
         return
     
     window_resize(window, width, height, lock_size=True)
-    logger.info("Simulating resolution: %dx%d (size locked for testing)", width, height)
+    logger.warning("Simulating resolution: %dx%d (size locked for testing)", width, height)

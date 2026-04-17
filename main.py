@@ -39,21 +39,8 @@ def main():
 
     window = App()
     window.show()
-
-    #Standard displays:
-    #simulate_resolution(window, "hd")        # 1366x768 (most common laptop)
-    #simulate_resolution(window, "fhd")       # 1920x1080 (Full HD)
-    #simulate_resolution(window, "small")     # 1280x720 (smaller displays)
-    #simulate_resolution(window, "qhd")       # 2560x1440 (2K)
-    #simulate_resolution(window, "4k")        # 3840x2160 (4K UHD)
     
-    # Ultra Wide displays:
-    #simulate_resolution(window, "uwfhd")     # 2560x1080 (21:9 UltraWide FHD)
-    #simulate_resolution(window, "uwqhd")     # 3440x1440 (21:9 UltraWide QHD)
-    #simulate_resolution(window, "superuw")   # 5120x2160 (32:9 Super UltraWide)
-    
-    # Custom resolution:
-    #simulate_resolution(window, "1440x900")  # Custom WIDTHxHEIGHT
+    simulate_resolution(window, "1600x1000")
 
     sys.exit(app.exec())
 

@@ -3,21 +3,26 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMainWindow
 
 from app.models.user import User
-from app.ui.views.app_widget import AppWidget
-from app.ui.views.forgot_password import ForgotPassword
-from app.ui.views.login_auth import LoginAuth
-from app.ui.views.register_auth import RegisterAuth
-from app.ui.views.register_personal import RegisterPersonal
-from app.controller.forgot_password_controller import ForgotPasswordController
-from app.controller.login_controller import LoginController
-from app.controller.logout_controller import LogoutController
-from app.controller.registration_controller import RegistrationController
-from app.utils.frameless_window import FramelessWindowMixin
 
-from app.service.auth_service import refresh_up
 from app.utils.logger import get_logger
 from app.utils.window import set_central_widget
+from app.service.auth_service import refresh_up
+from app.service.activity_service import start_heartbeat
+
+from app.ui.views.login_auth import LoginAuth
+from app.ui.views.register_personal import RegisterPersonal
+from app.ui.views.register_auth import RegisterAuth
+from app.ui.views.forgot_password import ForgotPassword
+from app.ui.views.app_widget import AppWidget
+
 from app.ui.styles.base import get_full_stylesheet
+
+from app.controller.login_controller import LoginController
+from app.controller.registration_controller import RegistrationController
+from app.controller.forgot_password_controller import ForgotPasswordController
+from app.controller.logout_controller import LogoutController
+
+from app.utils.frameless_window import FramelessWindowMixin
 
 logger = get_logger(__name__)
 
@@ -141,8 +146,8 @@ class App(FramelessWindowMixin, QMainWindow):
         self.appWidget = AppWidget(user, parent=self)
         self.appWidget.logout_requested.connect(self._logoutController.logout)
 
+        start_heartbeat(user.id)
         set_central_widget(self, self.appWidget)
-        logger.info("Welcome in app..")
 
     # clean up threads and resources on app close
     def closeEvent(self, event):
